@@ -7,6 +7,7 @@ from typing import Any
 from google import genai
 from google.genai import types
 import anthropic
+import openai
 
 
 class AIProvider:
@@ -138,6 +139,88 @@ class ClaudeProvider(AIProvider):
         return response.content[0].text.strip()
 
 
+class OpenAIProvider(AIProvider):
+    """OpenAI GPT API provider with structured output"""
+    
+    def __init__(self):
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        if not openai_api_key:
+            raise Exception("OPENAI_API_KEY environment variable is required when using OpenAI")
+        
+        self.client = openai.OpenAI(api_key=openai_api_key)
+    
+    def generate_content(self, system_instruction: str, user_prompt: str) -> str:
+        # Define the schema using OpenAI's JSON schema format - must be an object at root level
+        schema = {
+            "type": "object",
+            "properties": {
+                "tracks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "clips": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {"type": "string"},
+                                        "startTimeInSeconds": {"type": "number"},
+                                        "endTimeInSeconds": {"type": "number"},
+                                        "element": {"type": "string"},
+                                        "transitionFromPrevious": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {"type": "string"},
+                                                "durationInSeconds": {"type": "number"},
+                                                "direction": {"type": "string"}
+                                            },
+                                            "required": ["type", "durationInSeconds"]
+                                        },
+                                        "transitionToNext": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {"type": "string"},
+                                                "durationInSeconds": {"type": "number"},
+                                                "direction": {"type": "string"}
+                                            },
+                                            "required": ["type", "durationInSeconds"]
+                                        }
+                                    },
+                                    "required": ["id", "startTimeInSeconds", "endTimeInSeconds", "element"]
+                                }
+                            }
+                        },
+                        "required": ["clips"]
+                    }
+                }
+            },
+            "required": ["tracks"]
+        }
+        
+        response = self.client.chat.completions.create(
+            model="gpt-5",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "composition_blueprint",
+                    "schema": schema
+                }
+            },
+            temperature=1  # GPT-5 only supports default temperature of 1
+        )
+        
+        # Extract the tracks array from the structured response
+        import json
+        response_data = json.loads(response.choices[0].message.content.strip())
+        tracks_array = response_data.get("tracks", [])
+        return json.dumps(tracks_array)
+
+
 def get_ai_provider(gemini_api: Any = None, use_vertex_ai: bool = False) -> AIProvider:
     """Factory function to get the appropriate AI provider based on configuration"""
     use_claude = os.getenv('USE_CLAUDE', '').lower() in ['true', '1', 'yes']
@@ -163,6 +246,8 @@ def create_ai_provider(provider_type: str = None) -> AIProvider:
         return ClaudeProvider()
     elif provider_type == 'vertex':
         return VertexAIProvider()
+    elif provider_type == 'openai':
+        return OpenAIProvider()
     elif provider_type == 'gemini':
         if not gemini_api_key:
             raise ValueError("GEMINI_API_KEY not found in environment")

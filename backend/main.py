@@ -67,10 +67,12 @@ app.add_middleware(
 )
 
 # Ensure output directory exists before mounting static files
-os.makedirs("out", exist_ok=True)
+out_dir = os.path.abspath("out")
+os.makedirs(out_dir, exist_ok=True)
+print(f"📁 Static files directory: {out_dir}")
 
 # Mount static file serving for generated media
-app.mount("/media", StaticFiles(directory="out"), name="media")
+app.mount("/media", StaticFiles(directory=out_dir), name="media")
 
 
 # Pexels API Helper Functions
@@ -197,8 +199,13 @@ async def upload_url_to_gemini_directly(url: str, filename: str, client: httpx.A
 async def download_video_file(url: str, filename: str, client: httpx.AsyncClient = None) -> str:
     """Download video file from Pexels/Vimeo URL"""
     try:
-        filepath = os.path.join("out", filename)
-        os.makedirs("out", exist_ok=True)
+        # Use absolute path to ensure directory is created in the right place
+        out_dir = os.path.abspath("out")
+        filepath = os.path.join(out_dir, filename)
+        os.makedirs(out_dir, exist_ok=True)
+        
+        print(f"📁 Creating output directory: {out_dir}")
+        print(f"💾 Downloading to: {filepath}")
         
         if client:
             # Use shared client for connection reuse
@@ -207,6 +214,7 @@ async def download_video_file(url: str, filename: str, client: httpx.AsyncClient
             
             with open(filepath, 'wb') as f:
                 f.write(response.content)
+            print(f"✅ Download completed: {filepath} ({len(response.content)} bytes)")
         else:
             # Fallback to individual client  
             timeout = httpx.Timeout(60.0)  # 60 second timeout for large files
@@ -216,7 +224,17 @@ async def download_video_file(url: str, filename: str, client: httpx.AsyncClient
                 
                 with open(filepath, 'wb') as f:
                     f.write(response.content)
+                print(f"✅ Download completed: {filepath} ({len(response.content)} bytes)")
         
+        # Verify file was created and has content
+        if not os.path.exists(filepath):
+            raise Exception(f"File was not created: {filepath}")
+        
+        file_size = os.path.getsize(filepath)
+        if file_size == 0:
+            raise Exception(f"Downloaded file is empty: {filepath}")
+        
+        print(f"🔍 File verification passed: {filepath} ({file_size} bytes)")
         return filepath
     except Exception as e:
         print(f"❌ Download failed for {url}: {str(e)}")
@@ -406,6 +424,7 @@ class CompositionRequest(BaseModel):
     current_composition: Optional[List[Dict[str, Any]]] = None  # Current composition blueprint for incremental editing
     conversation_history: Optional[List[ConversationMessage]] = []  # Past requests and responses for context
     preview_frame: Optional[str] = None  # Base64 encoded screenshot of current frame
+    model_type: Optional[str] = "gemini"  # AI model to use: gemini, claude, vertex, openai (defaults to gemini)
 
 
 class GeneratedComposition(BaseModel):
@@ -592,7 +611,8 @@ async def generate_composition(request: CompositionRequest) -> CompositionRespon
         "preview_settings": request.preview_settings,
         "media_library": request.media_library,
         "current_composition": request.current_composition,
-        "conversation_history": request.conversation_history
+        "conversation_history": request.conversation_history,
+        "model_type": request.model_type
     }
     
     # Call the blueprint generation module (LLM-agnostic)
@@ -1065,6 +1085,13 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                 
                 # Wait for both to complete
                 filepath, gemini_file_id = await asyncio.gather(download_task, gemini_task)
+                
+                # Verify the downloaded file exists
+                if not os.path.exists(filepath):
+                    raise Exception(f"Downloaded file does not exist: {filepath}")
+                
+                print(f"📂 File saved to: {filepath}")
+                print(f"🔗 Will be served at: /media/{file_name}")
                 
                 # Create stock result with both local URL and Gemini file ID
                 stock_result = StockVideoResult(

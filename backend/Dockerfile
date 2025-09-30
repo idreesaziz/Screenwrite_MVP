@@ -10,6 +10,9 @@ RUN uv sync --frozen
 
 COPY . .
 
+# Create output directory for media files
+RUN mkdir -p /app/out
+
 EXPOSE 3000
 
 CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]

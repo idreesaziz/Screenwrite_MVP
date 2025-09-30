@@ -513,8 +513,8 @@ export default function TimelineEditor() {
   }, []); // Empty dependency array since we're accessing playerRef.current directly
 
   // AI Composition Generation Function
-  const handleGenerateComposition = useCallback(async (userRequest: string, mediaBinItems: MediaBinItem[]): Promise<boolean> => {
-    console.log("🤖 AI Generation: Starting composition generation for:", userRequest);
+  const handleGenerateComposition = useCallback(async (userRequest: string, mediaBinItems: MediaBinItem[], modelType: string = "gemini"): Promise<boolean> => {
+    console.log("🤖 AI Generation: Starting composition generation for:", userRequest, "using model:", modelType);
     setIsAiGenerating(true);
     
     try {
@@ -535,6 +535,7 @@ export default function TimelineEditor() {
         current_composition: currentComposition, // Send current composition for incremental editing
         conversation_history: [],
         preview_frame: null,
+        model_type: modelType, // Add model selection
       });
 
       console.log("🤖 AI Generation: Received response:", response.data);

@@ -1,5 +1,7 @@
-// Set to true for production, false for development
-const isProduction = false;
+// Automatically detect production vs development
+const isProduction = typeof window !== "undefined" 
+  ? !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+  : process.env.NODE_ENV === 'production';
 
 export const getApiBaseUrl = (fastapi: boolean = false): string => {
   if (!isProduction) {

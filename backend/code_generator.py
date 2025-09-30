@@ -38,7 +38,12 @@ async def generate_composition_with_validation(
 
         # Create appropriate AI provider (completely self-contained)
         try:
-            provider = create_ai_provider()
+            # Get model_type from request, use environment-based selection if not specified
+            model_type = request.get("model_type")
+            if model_type:
+                provider = create_ai_provider(model_type)
+            else:
+                provider = create_ai_provider()
         except Exception as e:
             print(f"❌ Error in blueprint generation: {str(e)}")
             return {

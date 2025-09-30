@@ -15,6 +15,12 @@ import {
   Play,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { type MediaBinItem, type TimelineState } from "../timeline/types";
 import { cn } from "~/lib/utils";
 import axios from "axios";
@@ -76,7 +82,7 @@ interface ChatBoxProps {
   timelineState: TimelineState;
   // New props for AI composition generation
   isStandalonePreview?: boolean;
-  onGenerateComposition?: (userRequest: string, mediaBinItems: MediaBinItem[]) => Promise<boolean>;
+  onGenerateComposition?: (userRequest: string, mediaBinItems: MediaBinItem[], modelType?: string) => Promise<boolean>;
   isGeneratingComposition?: boolean;
   // Props for conversational edit system
   currentComposition?: string; // Current TSX composition code
@@ -122,6 +128,7 @@ export function ChatBox({
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [textareaHeight, setTextareaHeight] = useState(36); // Starting height for proper size
+  const [selectedModel, setSelectedModel] = useState<string>("gemini"); // AI model selection
   const [sendWithMedia, setSendWithMedia] = useState(false); // Track send mode
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
@@ -693,8 +700,13 @@ export function ChatBox({
       console.log("🔍 About to call backend with query:", query);
       console.log("🔍 Request body will be:", { query: query });
       
+      // Debug: Log the full URL being called
+      const fetchUrl = apiUrl("/fetch-stock-video", true);
+      console.log("🔍 Full fetch URL:", fetchUrl);
+      console.log("🔍 FastAPI base URL:", getApiBaseUrl(true));
+      
       // Call the actual backend API to fetch stock videos
-      const response = await fetch(apiUrl("/fetch-stock-video", true), {
+      const response = await fetch(fetchUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1009,7 +1021,7 @@ export function ChatBox({
       await logEditExecution(synthResponse.content);
       
       if (onGenerateComposition) {
-        const success = await onGenerateComposition(synthResponse.content, mediaBinItems);
+        const success = await onGenerateComposition(synthResponse.content, mediaBinItems, selectedModel);
         await logEditResult(success);
         
         const resultMessage = {
@@ -1639,6 +1651,35 @@ export function ChatBox({
 
         {/* Input Area */}
         <div className="border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          {/* Model Selector */}
+          <div className="px-3 pt-2 pb-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">AI Model:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-6 text-xs">
+                    {selectedModel === "gemini" ? "Gemini 2.5 Flash" : selectedModel === "openai" ? "GPT-5" : selectedModel}
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="w-40">
+                  <DropdownMenuItem 
+                    onClick={() => setSelectedModel("gemini")}
+                    className="text-xs"
+                  >
+                    Gemini 2.5 Flash
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSelectedModel("openai")}
+                    className="text-xs"
+                  >
+                    GPT-5
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          
           <div className="p-3 relative">
             <div className="relative">
               <textarea
