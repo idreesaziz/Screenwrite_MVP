@@ -466,8 +466,17 @@ class GeminiUploadResponse(BaseModel):
     error_message: Optional[str] = None
 
 
+def is_youtube_url(url: str) -> bool:
+    """Check if the URL is a YouTube URL."""
+    youtube_domains = [
+        'youtube.com', 'www.youtube.com', 'm.youtube.com',
+        'youtu.be', 'www.youtu.be'
+    ]
+    return any(domain in url.lower() for domain in youtube_domains)
+
+
 class VideoAnalysisRequest(BaseModel):
-    gemini_file_id: str
+    file_url: str  # Can be YouTube URL or Gemini file ID (files/abc123)
     question: str
 
 
@@ -711,25 +720,42 @@ Fix the error and return the corrected code."""
 
 @app.post("/analyze-video")
 async def analyze_video(request: VideoAnalysisRequest) -> VideoAnalysisResponse:
-    """Analyze a video file using Gemini Files API reference."""
+    """Analyze a video file using Gemini - supports both YouTube URLs and uploaded file IDs."""
     
     try:
-        print(f"🎬 Video Analysis: Analyzing file {request.gemini_file_id}")
+        print(f"🎬 Video Analysis: Analyzing {request.file_url}")
         print(f"🔍 Question: {request.question}")
         
-        if USE_VERTEX_AI:
-            # For Vertex AI, the gemini_file_id is actually a Cloud Storage URI
+        # Check if it's a YouTube URL
+        if is_youtube_url(request.file_url):
+            print(f"📺 Detected YouTube URL: {request.file_url}")
+            
+            # For YouTube URLs, use Gemini's direct URL support with correct structure
+            response = gemini_api.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=types.Content(
+                    parts=[
+                        types.Part(
+                            file_data=types.FileData(file_uri=request.file_url)
+                        ),
+                        types.Part(text=request.question)
+                    ]
+                ),
+                config=types.GenerateContentConfig(temperature=0.1)
+            )
+        elif USE_VERTEX_AI:
+            # For Vertex AI, the file_url is actually a Cloud Storage URI
             # Use a simpler approach - pass the file URI directly in contents
             response = gemini_api.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=[request.gemini_file_id, request.question],
+                contents=[request.file_url, request.question],
                 config=types.GenerateContentConfig(temperature=0.1)
             )
         else:
             # For regular Gemini API, use the file reference directly
-            # The gemini_file_id is the file URI from Files API (e.g., "files/abc123")
+            # The file_url is the file URI from Files API (e.g., "files/abc123")
             # We need to get the file object from the file ID
-            file_obj = gemini_api.files.get(name=request.gemini_file_id)
+            file_obj = gemini_api.files.get(name=request.file_url)
             
             # Check if file is ready for analysis
             if hasattr(file_obj, 'state') and file_obj.state != 'ACTIVE':
