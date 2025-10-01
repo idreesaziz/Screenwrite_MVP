@@ -196,47 +196,142 @@ async def upload_url_to_gemini_directly(url: str, filename: str, client: httpx.A
         raise HTTPException(status_code=500, detail=f"Failed to upload directly to Gemini: {str(e)}")
 
 
+async def download_video_file_with_retry(url: str, filename: str, client: httpx.AsyncClient = None, max_retries: int = 3) -> str:
+    """Download video file with retry mechanism for reliability"""
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            if attempt > 0:
+                print(f"🔄 Retry attempt {attempt + 1}/{max_retries} for {filename}")
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s
+            
+            return await download_video_file(url, filename, client)
+            
+        except Exception as e:
+            last_error = e
+            print(f"❌ Download attempt {attempt + 1} failed: {str(e)}")
+            
+            # If this was the last attempt, re-raise the error
+            if attempt == max_retries - 1:
+                break
+    
+    # All retries failed
+    print(f"💥 All {max_retries} download attempts failed for {filename}")
+    raise HTTPException(status_code=500, detail=f"Failed to download after {max_retries} attempts: {str(last_error)}")
+
+
 async def download_video_file(url: str, filename: str, client: httpx.AsyncClient = None) -> str:
-    """Download video file from Pexels/Vimeo URL"""
+    """Download video file from Pexels/Vimeo URL with streaming and integrity verification"""
     try:
         # Use absolute path to ensure directory is created in the right place
         out_dir = os.path.abspath("out")
         filepath = os.path.join(out_dir, filename)
+        temp_filepath = f"{filepath}.tmp"  # Use temporary file during download
         os.makedirs(out_dir, exist_ok=True)
         
         print(f"📁 Creating output directory: {out_dir}")
-        print(f"💾 Downloading to: {filepath}")
+        print(f"💾 Streaming download to: {filepath}")
+        
+        # Remove any existing temp file
+        if os.path.exists(temp_filepath):
+            os.remove(temp_filepath)
         
         if client:
-            # Use shared client for connection reuse
-            response = await client.get(url, follow_redirects=True)
-            response.raise_for_status()
-            
-            with open(filepath, 'wb') as f:
-                f.write(response.content)
-            print(f"✅ Download completed: {filepath} ({len(response.content)} bytes)")
-        else:
-            # Fallback to individual client  
-            timeout = httpx.Timeout(60.0)  # 60 second timeout for large files
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.get(url, follow_redirects=True)
+            # Use shared client for connection reuse with streaming
+            async with client.stream('GET', url, follow_redirects=True) as response:
                 response.raise_for_status()
                 
-                with open(filepath, 'wb') as f:
-                    f.write(response.content)
-                print(f"✅ Download completed: {filepath} ({len(response.content)} bytes)")
+                # Get expected file size from headers
+                expected_size = None
+                if 'content-length' in response.headers:
+                    expected_size = int(response.headers['content-length'])
+                    print(f"📏 Expected file size: {expected_size} bytes")
+                
+                # Stream download to temporary file
+                downloaded_size = 0
+                with open(temp_filepath, 'wb') as f:
+                    async for chunk in response.aiter_bytes(chunk_size=8192):  # 8KB chunks
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                
+                # Verify download integrity
+                if expected_size and downloaded_size != expected_size:
+                    raise Exception(f"Download incomplete: expected {expected_size} bytes, got {downloaded_size} bytes")
+                
+                print(f"✅ Streaming download completed: {downloaded_size} bytes")
+        else:
+            # Fallback to individual client with streaming
+            timeout = httpx.Timeout(120.0)  # Increased timeout for large files
+            async with httpx.AsyncClient(timeout=timeout) as individual_client:
+                async with individual_client.stream('GET', url, follow_redirects=True) as response:
+                    response.raise_for_status()
+                    
+                    # Get expected file size from headers
+                    expected_size = None
+                    if 'content-length' in response.headers:
+                        expected_size = int(response.headers['content-length'])
+                        print(f"📏 Expected file size: {expected_size} bytes")
+                    
+                    # Stream download to temporary file
+                    downloaded_size = 0
+                    with open(temp_filepath, 'wb') as f:
+                        async for chunk in response.aiter_bytes(chunk_size=8192):  # 8KB chunks
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+                    
+                    # Verify download integrity
+                    if expected_size and downloaded_size != expected_size:
+                        raise Exception(f"Download incomplete: expected {expected_size} bytes, got {downloaded_size} bytes")
+                    
+                    print(f"✅ Streaming download completed: {downloaded_size} bytes")
         
-        # Verify file was created and has content
+        # Atomic move: rename temp file to final file (prevents partial file access)
+        os.rename(temp_filepath, filepath)
+        
+        # Final verification with basic video file validation
         if not os.path.exists(filepath):
-            raise Exception(f"File was not created: {filepath}")
+            raise Exception(f"File was not created after move: {filepath}")
         
-        file_size = os.path.getsize(filepath)
-        if file_size == 0:
-            raise Exception(f"Downloaded file is empty: {filepath}")
+        final_file_size = os.path.getsize(filepath)
+        if final_file_size == 0:
+            raise Exception(f"Final file is empty: {filepath}")
         
-        print(f"🔍 File verification passed: {filepath} ({file_size} bytes)")
+        # Basic video file format validation
+        if final_file_size < 1024:  # Less than 1KB is definitely not a video
+            raise Exception(f"File too small to be a valid video: {final_file_size} bytes")
+        
+        # Check if file starts with valid video headers (basic corruption detection)
+        try:
+            with open(filepath, 'rb') as f:
+                file_header = f.read(8)
+                # Check for common video file signatures
+                if len(file_header) < 4:
+                    raise Exception("File header too short")
+                
+                # MP4 files typically start with specific bytes
+                # This is a basic check, not comprehensive
+                if not (file_header.startswith(b'\x00\x00\x00') or  # MP4 ftyp box
+                       file_header.startswith(b'ftyp') or           # MP4 ftyp
+                       file_header.startswith(b'\x1a\x45\xdf\xa3') or  # WebM/MKV
+                       file_header.startswith(b'RIFF')):            # AVI
+                    print(f"⚠️ Warning: Unexpected file header for video file: {file_header.hex()}")
+                    # Don't fail here, just warn - some valid videos might not match these patterns
+        except Exception as header_check_error:
+            print(f"⚠️ Could not verify file header (file may still be valid): {header_check_error}")
+        
+        print(f"🔍 File verification passed: {filepath} ({final_file_size} bytes)")
         return filepath
+        
     except Exception as e:
+        # Cleanup temporary file on error
+        if os.path.exists(temp_filepath):
+            try:
+                os.remove(temp_filepath)
+                print(f"🧹 Cleaned up temporary file: {temp_filepath}")
+            except:
+                pass
+        
         print(f"❌ Download failed for {url}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to download video: {str(e)}")
 
@@ -1233,8 +1328,8 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                 print(f"📥 Processing AI-selected video {index+1}/{len(selected_videos)}:")
                 print(f"  Download: {best_file['quality']} {best_file.get('width')}x{best_file.get('height')} - {best_file['link']}")
                 
-                # Download video file
-                filepath = await download_video_file(best_file["link"], file_name, client=shared_client)
+                # Download video file with retry mechanism
+                filepath = await download_video_file_with_retry(best_file["link"], file_name, client=shared_client)
                 
                 # Verify the downloaded file exists
                 if not os.path.exists(filepath):
