@@ -151,12 +151,12 @@ class StockVideoResult(BaseModel):
     quality: str = Field(description="Video quality (hd, sd)", default="sd")
     photographer: str = Field(description="Photographer/videographer name")
     photographer_url: str = Field(description="Photographer's Pexels profile URL")
-    gemini_file_id: str = Field(description="Gemini Files API file ID for analysis")
 
 
 class FetchStockVideoResponse(BaseModel):
     success: bool = Field(description="Whether search was successful")
     query: str = Field(description="Original search query")
-    videos: List[StockVideoResult] = Field(description="Top 3 downloaded stock videos")
+    videos: List[StockVideoResult] = Field(description="AI-curated stock videos (0-4 selected)")
     total_results: int = Field(description="Total number of results available from Pexels")
+    ai_curation_explanation: Optional[str] = Field(description="AI explanation for video selection", default=None)
     error_message: Optional[str] = Field(description="Error message if failed", default=None)

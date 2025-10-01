@@ -76,7 +76,7 @@ app.mount("/media", StaticFiles(directory=out_dir), name="media")
 
 
 # Pexels API Helper Functions
-async def search_pexels_videos(query: str):
+async def search_pexels_videos(query: str, per_page: int = 3):
     """Search Pexels for landscape videos using their API"""
     api_key = os.getenv("PEXELS_API_KEY")
     if not api_key:
@@ -88,7 +88,7 @@ async def search_pexels_videos(query: str):
     headers = {"Authorization": api_key}  # Pexels expects just the API key, not "Bearer"
     params = {
         "query": query,
-        "per_page": 3,  # Get top 3 results
+        "per_page": per_page,  # Configurable number of results
         "orientation": "landscape"  # Enforce landscape only
     }
     
@@ -404,6 +404,121 @@ async def upload_file_content_to_gemini(file_content: bytes, filename: str) -> s
     except Exception as e:
         print(f"❌ Gemini upload failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to upload to Gemini: {str(e)}")
+
+
+# AI Video Curation Function
+async def curate_videos_with_ai(videos: List[Dict], query: str, max_count: int = 4) -> Dict:
+    """
+    Use Gemini Flash Lite to select the most relevant videos from Pexels data
+    
+    Args:
+        videos: List of video metadata from Pexels API (with url, duration, etc.)
+        query: User's search query 
+        max_count: Maximum videos to return (0-4)
+    
+    Returns:
+        {
+            "selected": [1, 3, 7],  # Indices of selected videos (0-based)
+            "explanation": "These videos best match ocean waves request..."
+        }
+    """
+    if not videos:
+        return {"selected": [], "explanation": "No videos provided for curation"}
+    
+    def extract_title_from_url(url):
+        """Extract descriptive title from Pexels video URL slug"""
+        import re
+        match = re.search(r'/video/([^/]+)-\d+/?$', url)
+        if match:
+            slug = match.group(1)
+            title = slug.replace('-', ' ').title()
+            return title
+        return "Unknown video"
+    
+    try:
+        # Initialize Gemini client
+        from google import genai
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        
+        # Format videos for AI analysis using URL slug extraction
+        video_descriptions = []
+        for i, video in enumerate(videos):
+            url = video.get("url", "")
+            extracted_title = extract_title_from_url(url)
+            duration = video.get("duration", 0)
+            width = video.get("width", 0)
+            height = video.get("height", 0)
+            quality = f"{width}x{height}" if width and height else "Unknown quality"
+            
+            video_descriptions.append(f"[{i}] \"{extracted_title}\" ({duration}s, {quality})")
+        
+        # Create curation prompt with extracted titles
+        prompt = f"""You are a video curation expert. From the following {len(videos)} videos, select 0-{max_count} that are most relevant for: "{query}"
+
+Guidelines:
+- Only select videos that would genuinely help with this request
+- Prioritize videos that closely match the visual/thematic intent
+- Consider the extracted titles from video URLs as the main content indicator
+- It's better to return fewer high-quality matches than many mediocre ones
+- Return 0 videos if none are truly useful
+- Consider video duration for practical usability (prefer 5-30 seconds for most use cases)
+
+Videos to evaluate (extracted from URL slugs):
+{chr(10).join(video_descriptions)}
+
+Return JSON with selected video indices (0-based) and brief explanation."""
+
+        # Configure for speed
+        generation_config = types.GenerateContentConfig(
+            temperature=0.1,
+            response_mime_type="application/json",
+            response_schema=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    "selected": types.Schema(
+                        type=types.Type.ARRAY,
+                        items=types.Schema(type=types.Type.INTEGER)
+                    ),
+                    "explanation": types.Schema(type=types.Type.STRING)
+                },
+                required=["selected", "explanation"]
+            )
+        )
+        
+        # Call Gemini Flash Lite
+        response = client.models.generate_content(
+            model="gemini-flash-lite-latest",  # Using the model you specified
+            contents=prompt,
+            config=generation_config
+        )
+        
+        # Parse response
+        result = json.loads(response.text)
+        selected_indices = result.get("selected", [])
+        explanation = result.get("explanation", "AI selected videos based on relevance")
+        
+        # Validate indices
+        valid_indices = [i for i in selected_indices if 0 <= i < len(videos)]
+        
+        # Limit to max_count
+        final_indices = valid_indices[:max_count]
+        
+        print(f"🤖 AI Curation: Selected {len(final_indices)} videos from {len(videos)} for '{query}'")
+        print(f"🤖 Explanation: {explanation}")
+        
+        return {
+            "selected": final_indices,
+            "explanation": explanation
+        }
+        
+    except Exception as e:
+        print(f"❌ AI curation failed: {str(e)}")
+        # Fallback: return first min(max_count, len(videos)) videos
+        fallback_count = min(max_count, len(videos))
+        return {
+            "selected": list(range(fallback_count)),
+            "explanation": f"AI curation failed, returning first {fallback_count} videos"
+        }
 
 
 class Message(BaseModel):
@@ -1056,61 +1171,70 @@ async def check_generation_status(request: CheckGenerationStatusRequest):
 @app.post("/fetch-stock-video", response_model=FetchStockVideoResponse)
 async def fetch_stock_video(request: FetchStockVideoRequest):
     """
-    Optimized dual-quality stock video fetch endpoint with shared HTTP client:
-    1. Search Pexels for top 3 landscape videos
-    2. Download HIGH quality for frontend timeline use
-    3. Stream LOW quality directly to Gemini for fast AI analysis
-    4. Use single HTTP client for all operations (connection reuse)
-    5. Return videos with both local URLs and gemini_file_id ready for analysis
+    AI-Enhanced stock video fetch endpoint with intelligent curation:
+    1. Search Pexels for 20 landscape videos (balanced for API limits)
+    2. Use AI to curate and select 0-4 most relevant videos
+    3. Download HIGH quality for frontend timeline use (only selected videos)
+    4. Stream LOW quality directly to Gemini for fast AI analysis (only selected videos)
+    5. Use single HTTP client for all operations (connection reuse)
+    6. Return only the AI-curated videos with both local URLs and gemini_file_id
     """
-    print(f"Fetching stock videos for query: {request.query}")
+    print(f"🔍 Fetching stock videos for query: '{request.query}' with AI curation")
     
     try:
-        # Step 1: Search Pexels for landscape videos
-        search_results = await search_pexels_videos(request.query)
+        # Step 1: Search Pexels for 50 videos (more variety for better AI curation)
+        search_results = await search_pexels_videos(request.query, per_page=50)
         videos_data = search_results.get("videos", [])
         
         if not videos_data:
             raise HTTPException(status_code=404, detail="No videos found for query")
         
-        print(f"Found {len(videos_data)} videos from Pexels")
+        print(f"📊 Found {len(videos_data)} videos from Pexels for AI analysis")
         
-        # Step 2: Create shared HTTP client for all operations
+        # Step 2: Use AI to curate videos (select 0-4 most relevant)
+        print(f"🤖 Running AI curation on {len(videos_data)} videos...")
+        curation_result = await curate_videos_with_ai(videos_data, request.query, max_count=4)
+        selected_indices = curation_result["selected"]
+        curation_explanation = curation_result["explanation"]
+        
+        if not selected_indices:
+            print(f"🚫 AI found no relevant videos for query: '{request.query}'")
+            return FetchStockVideoResponse(
+                success=True,
+                query=request.query,
+                videos=[],
+                total_results=len(videos_data),
+                ai_curation_explanation=curation_explanation
+            )
+        
+        selected_videos = [videos_data[i] for i in selected_indices]
+        print(f"✨ AI selected {len(selected_videos)} videos: {selected_indices}")
+        print(f"🧠 AI reasoning: {curation_explanation}")
+        
+        # Step 3: Create shared HTTP client for all operations
         timeout = httpx.Timeout(60.0)
         async with httpx.AsyncClient(timeout=timeout) as shared_client:
             
-            # Step 3: Process all 3 videos in parallel with shared client
+            # Step 4: Process AI-selected videos in parallel - download only (no Gemini upload)
             async def process_video(video, index):
-                """Process a single video with dual quality: HD for frontend, low quality for Gemini"""
+                """Process a single video: download HD quality for frontend"""
                 video_files = video.get("video_files", [])
                 
                 # Select HIGH quality for frontend/local download
                 best_file = select_best_video_file(video_files)
-                # Select LOW quality for fast Gemini upload
-                gemini_file = select_lowest_quality_video_file(video_files)
                 
-                if not best_file or not gemini_file:
+                if not best_file:
                     raise Exception("No suitable video files found")
                 
                 # Generate filename
                 asset_id = str(uuid.uuid4())
                 file_name = f"stock_video_{asset_id}.mp4"
-                gemini_file_name = f"gemini_{file_name}"
                 
-                print(f"📥 Processing video {index+1}/3:")
-                print(f"  Frontend: {best_file['quality']} {best_file.get('width')}x{best_file.get('height')} - {best_file['link']}")
-                print(f"  Gemini: {gemini_file['quality']} {gemini_file.get('width')}x{gemini_file.get('height')} - {gemini_file['link']}")
+                print(f"📥 Processing AI-selected video {index+1}/{len(selected_videos)}:")
+                print(f"  Download: {best_file['quality']} {best_file.get('width')}x{best_file.get('height')} - {best_file['link']}")
                 
-                # Run both downloads in parallel using shared client
-                download_task = asyncio.create_task(
-                    download_video_file(best_file["link"], file_name, client=shared_client)
-                )
-                gemini_task = asyncio.create_task(
-                    upload_url_to_gemini_directly(gemini_file["link"], gemini_file_name, client=shared_client)
-                )
-                
-                # Wait for both to complete
-                filepath, gemini_file_id = await asyncio.gather(download_task, gemini_task)
+                # Download video file
+                filepath = await download_video_file(best_file["link"], file_name, client=shared_client)
                 
                 # Verify the downloaded file exists
                 if not os.path.exists(filepath):
@@ -1119,52 +1243,52 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                 print(f"📂 File saved to: {filepath}")
                 print(f"🔗 Will be served at: /media/{file_name}")
                 
-                # Create stock result with both local URL and Gemini file ID
+                # Create stock result with local URL only (no Gemini file ID)
                 stock_result = StockVideoResult(
                     id=video["id"],
                     pexels_url=video.get("url", ""),
                     download_url=f"/media/{file_name}",
                     preview_image=video.get("image", ""),
                     duration=video.get("duration", 0),
-                    width=best_file.get("width", video.get("width", 0)),  # Use best file dimensions
+                    width=best_file.get("width", video.get("width", 0)),
                     height=best_file.get("height", video.get("height", 0)),
                     file_type=best_file.get("file_type", "video/mp4"),
-                    quality=best_file.get("quality", "sd"),  # Use best file quality
+                    quality=best_file.get("quality", "sd") or "sd",  # Handle None quality
                     photographer=video.get("user", {}).get("name", "Unknown"),
-                    photographer_url=video.get("user", {}).get("url", ""),
-                    gemini_file_id=gemini_file_id  # ✅ Fast low-quality upload!
+                    photographer_url=video.get("user", {}).get("url", "")
                 )
                 
-                print(f"✅ Completed video {index+1}/3: {file_name} (Frontend: {best_file['quality']}) + Gemini: {gemini_file_id}")
+                print(f"✅ Completed AI-selected video {index+1}/{len(selected_videos)}: {file_name} ({best_file['quality']})")
                 return stock_result
             
-            # Process all 3 videos in parallel with shared client
+            # Process all AI-selected videos in parallel with shared client
             tasks = [
                 asyncio.create_task(process_video(video, i)) 
-                for i, video in enumerate(videos_data[:3])
+                for i, video in enumerate(selected_videos)
             ]
             
-            # Wait for all videos to complete (with error handling)
+            # Wait for all AI-selected videos to complete (with error handling)
             stock_results = []
             completed_results = await asyncio.gather(*tasks, return_exceptions=True)
             
             for i, result in enumerate(completed_results):
                 if isinstance(result, Exception):
-                    print(f"❌ Failed to process video {i+1}/3: {result}")
+                    print(f"❌ Failed to process AI-selected video {i+1}/{len(selected_videos)}: {result}")
                     continue  # Skip failed videos, don't add to results
                 else:
                     stock_results.append(result)
             
             if not stock_results:
-                raise HTTPException(status_code=500, detail="Failed to process any videos")
+                raise HTTPException(status_code=500, detail="Failed to process any AI-selected videos")
             
-            print(f"🎉 Successfully processed {len(stock_results)}/{len(videos_data[:3])} videos with shared HTTP client")
+            print(f"🎉 Successfully processed {len(stock_results)}/{len(selected_videos)} AI-curated videos")
             
             return FetchStockVideoResponse(
                 success=True,
                 query=request.query,
                 videos=stock_results,
-                total_results=len(videos_data)
+                total_results=len(videos_data),
+                ai_curation_explanation=curation_explanation
             )
         
     except HTTPException:
