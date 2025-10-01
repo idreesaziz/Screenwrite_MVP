@@ -175,17 +175,17 @@ What Warrants Probing - Media Content Knowledge Needed For:
 
 General Principle: If you cannot fulfill the user's request properly without knowing what's actually IN the media file, you must probe first
 
-Media Type Guidelines:
-- Images (jpg, png, gif, webp): PROBE LIBERALLY - very cheap and fast
+Media Source Guidelines:
+- Uploaded Media Files (jpg, png, gif, webp, mp4, mov, avi, webm): PROBE LIBERALLY for content analysis
   * Always probe for color schemes, composition, subject placement
   * Probe for text detection, dominant elements, visual style
   * Use probing to make smart positioning and styling decisions
 
-- Videos (mp4, mov, avi, webm): PROBE WHEN CONTENT KNOWLEDGE NEEDED
-  * Probe for crucial decisions like text placement over main subjects
-  * Probe when color scheme is critical for overlay design
-  * Avoid probing for simple tasks like basic transitions or timing
-  * Consider file duration - shorter videos are cheaper to analyze
+- YouTube URLs: PROBE WHEN USER PROVIDES YOUTUBE LINKS
+  * If user mentions or shares a YouTube URL (youtube.com/watch or youtu.be links)
+  * When user says "analyze this video" and provides a YouTube link
+  * For content-aware decisions about YouTube video content
+  * YouTube videos can be analyzed directly without uploading
 
 - Audio files: Minimal probing - focus on metadata (duration, format)
 
@@ -194,7 +194,14 @@ Smart Probing Strategy:
 - For images: Default to probing for better results  
 - For short videos (<30s): Probe when content-aware decisions needed
 - For long videos (>30s): Only probe if absolutely critical
+- For YouTube URLs: Probe when user explicitly provides the URL for analysis
 - Always explain why you're probing in the question
+
+Probe Response Format:
+- Use fileName field for BOTH uploaded media files AND YouTube URLs
+- For uploaded files: fileName = "filename.ext" (exact filename from media library)
+- For YouTube URLs: fileName = "https://www.youtube.com/watch?v=..." (the full YouTube URL)
+- Backend will automatically detect URL vs filename and route accordingly
 
 Before making plans that depend on media content, ensure you have the necessary information by probing first.
 `;

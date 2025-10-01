@@ -40,7 +40,7 @@ export interface SynthResponse {
   type: 'chat' | 'edit' | 'probe' | 'generate' | 'fetch' | 'sleep';
   content: string;
   referencedFiles?: string[]; // @-mentioned files
-  fileName?: string; // For probe responses
+  fileName?: string; // For probe responses - can be media file from library OR YouTube URL
   question?: string; // For probe responses
   prompt?: string; // For generate responses - content generation prompt
   suggestedName?: string; // For generate responses - AI-chosen filename

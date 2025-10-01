@@ -267,6 +267,61 @@ export function ChatBox({
   ): Promise<Message[]> => {
     await logProbeStart(fileName, question);
     console.log("🔍 Executing probe request for:", fileName);
+    
+    // Check if fileName is actually a YouTube URL
+    const isYouTubeURL = fileName.includes('youtube.com') || fileName.includes('youtu.be');
+    
+    if (isYouTubeURL) {
+      console.log("🔍 Detected YouTube URL, analyzing directly:", fileName);
+      
+      try {
+        // Use the same backend endpoint as videos, but pass the YouTube URL directly
+        const response = await fetch(apiUrl('/analyze-video', true), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            file_url: fileName, // fileName contains the YouTube URL
+            question: question
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Backend YouTube analysis failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error_message || 'YouTube video analysis failed');
+        }
+
+        const analysisResult = result.analysis;
+        await logProbeAnalysis(fileName, analysisResult);
+        
+        const responseMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: analysisResult,
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        return [responseMessage];
+      } catch (error: any) {
+        await logProbeError(fileName, error instanceof Error ? error.message : String(error));
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: `Failed to analyze YouTube video: ${error instanceof Error ? error.message : String(error)}`,
+          isUser: false,
+          timestamp: new Date(),
+          isSystemMessage: true,
+        };
+        return [errorMessage];
+      }
+    }
+    
+    // Handle uploaded media files (existing logic)
     console.log("🔍 Available media files:", mediaBinItems.map(item => ({
       name: item.name,
       gemini_file_id: item.gemini_file_id,
