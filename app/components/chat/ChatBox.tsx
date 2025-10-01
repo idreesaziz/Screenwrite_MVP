@@ -428,7 +428,7 @@ export function ChatBox({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            gemini_file_id: mediaFile.gemini_file_id,
+            file_url: mediaFile.gemini_file_id,  // Backend now expects file_url parameter
             question: question
           })
         });
