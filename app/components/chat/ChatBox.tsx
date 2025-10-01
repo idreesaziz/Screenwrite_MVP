@@ -66,6 +66,8 @@ interface Message {
     description: string;
     thumbnailUrl: string;
   }[]; // Video options for selection
+  isWaitingForAnalysis?: boolean; // For messages waiting on analysis result
+  fileName?: string; // Associated file name for analysis
 }
 
 interface ChatBoxProps {
@@ -448,89 +450,22 @@ export function ChatBox({
 
     } catch (error) {
       console.error("Probe analysis failed:", error);
+      await logProbeError(fileName, error instanceof Error ? error.message : 'Unknown error');
       
-      // Handle video still uploading case
-      if (error instanceof Error && (
-          error.message === "VIDEO_STILL_UPLOADING" || 
-          error.message === "VIDEO_PENDING_UPLOAD"
-        )) {
-        await logProbeError(fileName, "Video still uploading to analysis service");
-        
-        // Start auto-retry for pending uploads
-        if (error.message === "VIDEO_PENDING_UPLOAD") {
-          console.log("🔄 Starting auto-retry for pending video upload...");
-          
-          // Schedule auto-retry every 3 seconds
-          const retryInterval = setInterval(async () => {
-            try {
-              // Re-find the media file to get updated status
-              const updatedMediaFile = mediaBinItems.find(item => 
-                item.name === fileName || 
-                (item.title && item.title.toLowerCase().includes(fileName.toLowerCase()))
-              );
-              
-              if (updatedMediaFile && updatedMediaFile.upload_status === "uploaded") {
-                console.log("🎉 Video upload completed, retrying analysis...");
-                clearInterval(retryInterval);
-                
-                // Automatically retry the probe
-                const retryMessages = await handleProbeRequestInternal(fileName, question);
-                onMessagesChange(prev => [...prev, ...retryMessages]);
-              }
-            } catch (retryError) {
-              console.log("🔄 Auto-retry failed:", retryError);
-              // Continue retrying - the interval will keep running
-            }
-          }, 3000);
-          
-          // Stop retrying after 2 minutes
-          setTimeout(() => {
-            clearInterval(retryInterval);
-            console.log("🔄 Auto-retry timeout reached");
-          }, 120000);
-        }
-        
-        const waitingMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `Video is still uploading to AI server for analysis. Once the video is ready, I will automatically continue with the analysis...`,
-          isUser: false,
-          timestamp: new Date(),
-          isSystemMessage: true,
-          hasRetryButton: true,
-          retryData: {
-            originalMessage: `whats in the ${fileName}?` // Simple retry message that will work with current state
-          }
-        };
-        return [waitingMessage];
-      }
-      
-      // Handle videos not uploaded to AI service
-      if (error instanceof Error && error.message === "VIDEO_NOT_UPLOADED") {
-        await logProbeError(fileName, "Video not uploaded to analysis service");
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `This video has not been uploaded to the AI analysis service yet. Analysis is currently only available for uploaded videos.`,
-          isUser: false,
-          timestamp: new Date(),
-          isSystemMessage: true,
-        };
-        return [errorMessage];
-      }
-      
-      // Handle other errors
-      await logProbeError(fileName, error instanceof Error ? error.message : String(error));
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: `Failed to analyze ${fileName}. ${error instanceof Error ? error.message : 'Unknown error'}`,
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
+        hasRetryButton: true,
+        retryData: {
+          originalMessage: `analyze ${fileName}`
+        }
       };
       return [errorMessage];
     }
-  };
-
-  const handleProbeRequest = async (
+  };  const handleProbeRequest = async (
     fileName: string, 
     question: string, 
     originalMessage: string, 
@@ -843,11 +778,11 @@ export function ChatBox({
 
   // Simple internal handler for fetching stock videos (dummy implementation)
   const handleFetchRequestInternal = async (
+    provider: 'pexels' | 'shutterstock',
     query: string,
-    suggestedName: string,
-    description: string
+    count: number
   ): Promise<Message[]> => {
-    console.log("🎬 Executing stock video fetch request:", { query, suggestedName, description });
+    console.log("🎬 Executing stock video fetch request:", { provider, query, count });
     
     try {
       // Debug: log what we're about to send
@@ -1218,9 +1153,9 @@ export function ChatBox({
       onMessagesChange(prev => [...prev, fetchingMessage]);
       
       const fetchResults = await handleFetchRequestInternal(
+        'pexels', // Default to pexels for now
         synthResponse.query!, 
-        synthResponse.suggestedName!, 
-        synthResponse.content
+        parseInt(synthResponse.content, 10) || 1
       );
       
       return fetchResults; // Only return fetch results, no "Fetching..." message
@@ -1883,7 +1818,7 @@ export function ChatBox({
                     onClick={() => setSelectedModel("openai")}
                     className="text-xs"
                   >
-                    GPT-5
+                                       GPT-5
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
