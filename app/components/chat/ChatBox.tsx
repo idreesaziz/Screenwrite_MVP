@@ -268,60 +268,55 @@ export function ChatBox({
     await logProbeStart(fileName, question);
     console.log("🔍 Executing probe request for:", fileName);
     
-    // Check if fileName is actually a YouTube URL
-    const isYouTubeURL = fileName.includes('youtube.com') || fileName.includes('youtu.be');
-    
-    if (isYouTubeURL) {
-      console.log("🔍 Detected YouTube URL, analyzing directly:", fileName);
+    // Try direct backend analysis first (works for both URLs and uploaded files with gemini_file_id)
+    try {
+      console.log("🔍 Attempting direct backend analysis for:", fileName);
       
-      try {
-        // Use the same backend endpoint as videos, but pass the YouTube URL directly
-        const response = await fetch(apiUrl('/analyze-video', true), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            file_url: fileName, // fileName contains the YouTube URL
-            question: question
-          })
-        });
+      const response = await fetch(apiUrl('/analyze-video', true), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_url: fileName, // Could be URL or gemini file ID
+          question: question
+        })
+      });
 
-        if (!response.ok) {
-          throw new Error(`Backend YouTube analysis failed: ${response.status}`);
-        }
-
+      if (response.ok) {
         const result = await response.json();
         
-        if (!result.success) {
-          throw new Error(result.error_message || 'YouTube video analysis failed');
-        }
+        if (result.success) {
+          const analysisResult = result.analysis;
+          await logProbeAnalysis(fileName, analysisResult);
+          
+          const responseMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: analysisResult,
+            isUser: false,
+            timestamp: new Date(),
+            isAnalysisResult: true, // Make it appear in blue collapsible bubble
+          };
 
-        const analysisResult = result.analysis;
-        await logProbeAnalysis(fileName, analysisResult);
-        
-        const responseMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: analysisResult,
-          isUser: false,
-          timestamp: new Date(),
-        };
-        
-        return [responseMessage];
-      } catch (error: any) {
-        await logProbeError(fileName, error instanceof Error ? error.message : String(error));
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `Failed to analyze YouTube video: ${error instanceof Error ? error.message : String(error)}`,
-          isUser: false,
-          timestamp: new Date(),
-          isSystemMessage: true,
-        };
-        return [errorMessage];
+          // Immediately add to collapsed state so it appears collapsed from the start
+          setCollapsedMessages(prev => {
+            const newSet = new Set(prev);
+            newSet.add(responseMessage.id);
+            return newSet;
+          });
+          
+          return [responseMessage];
+        }
       }
+      
+      // If direct backend analysis failed, fall back to file lookup
+      console.log("🔍 Direct backend analysis failed, trying file lookup...");
+      
+    } catch (error) {
+      console.log("🔍 Direct backend analysis error, trying file lookup:", error);
     }
     
-    // Handle uploaded media files (existing logic)
+    // Fallback: treat as filename and look up in media library
     console.log("🔍 Available media files:", mediaBinItems.map(item => ({
       name: item.name,
       gemini_file_id: item.gemini_file_id,
