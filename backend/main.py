@@ -1338,7 +1338,7 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                 print(f"📂 File saved to: {filepath}")
                 print(f"🔗 Will be served at: /media/{file_name}")
                 
-                # Create stock result with local URL only (no Gemini file ID)
+                # Create stock result with local URL and pending upload status
                 stock_result = StockVideoResult(
                     id=video["id"],
                     pexels_url=video.get("url", ""),
@@ -1350,7 +1350,9 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                     file_type=best_file.get("file_type", "video/mp4"),
                     quality=best_file.get("quality", "sd") or "sd",  # Handle None quality
                     photographer=video.get("user", {}).get("name", "Unknown"),
-                    photographer_url=video.get("user", {}).get("url", "")
+                    photographer_url=video.get("user", {}).get("url", ""),
+                    upload_status="pending",  # Mark as pending for frontend upload
+                    gemini_file_id=None  # Will be set by frontend after upload
                 )
                 
                 print(f"✅ Completed AI-selected video {index+1}/{len(selected_videos)}: {file_name} ({best_file['quality']})")

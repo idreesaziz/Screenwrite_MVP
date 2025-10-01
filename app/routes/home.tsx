@@ -353,6 +353,7 @@ export default function TimelineEditor() {
     handleAddMediaToBin,
     handleAddTextToBin,
     handleAddDirectMediaBinItem,
+    handleUpdateMediaItem,
     contextMenu,
     handleContextMenu,
     handleDeleteFromContext,
@@ -839,6 +840,7 @@ export default function TimelineEditor() {
                   onGenerateComposition={handleGenerateComposition} // AI generation function implemented!
                   isGeneratingComposition={isAiGenerating}
                   onAddGeneratedImage={handleAddGeneratedImage}
+                  onUpdateMediaItem={handleUpdateMediaItem}
                 />
               </div>
             </ResizablePanel>

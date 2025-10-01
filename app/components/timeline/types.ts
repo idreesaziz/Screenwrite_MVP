@@ -43,6 +43,9 @@ export interface MediaBinItem extends BaseScrubber {
   uploadProgress: number | null; // 0-100, null when upload complete
   isUploading: boolean; // True while upload is in progress
   
+  // Unified upload status for AI analysis
+  upload_status: "uploaded" | "not_uploaded" | "pending";
+  
   // Gemini file reference for analysis
   gemini_file_id: string | null; // Gemini Files API file ID, null if upload failed
 }

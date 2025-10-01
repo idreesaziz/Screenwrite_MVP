@@ -26,6 +26,7 @@ import { cn } from "~/lib/utils";
 import axios from "axios";
 import { apiUrl, getApiBaseUrl } from "~/utils/api";
 import { generateUUID } from "~/utils/uuid";
+import { useGeminiUpload } from "~/hooks/useGeminiUpload";
 import { 
   logUserMessage, 
   logSynthCall, 
@@ -89,6 +90,8 @@ interface ChatBoxProps {
   // Props for adding generated images to media bin
   onAddMediaToBin?: (file: File) => Promise<void>;
   onAddGeneratedImage?: (item: MediaBinItem) => Promise<void>;
+  // Props for updating media items (for upload status changes)
+  onUpdateMediaItem?: (updatedItem: MediaBinItem) => void;
   // Error handling props
   generationError?: {
     hasError: boolean;
@@ -117,6 +120,7 @@ export function ChatBox({
   currentComposition,
   onAddMediaToBin,
   onAddGeneratedImage,
+  onUpdateMediaItem,
   generationError,
   onRetryFix,
   onClearError,
@@ -134,6 +138,48 @@ export function ChatBox({
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
   const [isInSynthLoop, setIsInSynthLoop] = useState(false); // Track when unified workflow is active
   const [previewVideo, setPreviewVideo] = useState<any>(null); // Track video being previewed
+
+  // Initialize Gemini upload system for stock videos
+  // Use ref instead of state to avoid stale closure issues in callbacks
+  const localMediaItemsRef = useRef<Map<string, MediaBinItem>>(new Map());
+  
+  const { uploadVideoToGemini, getUploadStatus } = useGeminiUpload({
+    onStatusChange: (videoId, status) => {
+      console.log(`🔄 Upload status changed for ${videoId}:`, status);
+      
+      // Update the media bin item upload status when it changes
+      if (status.status === 'uploaded' && status.gemini_file_id && onUpdateMediaItem) {
+        // Look up in local cache first (using ref to avoid stale closure)
+        const mediaItemName = `pexels_${videoId}`;
+        const mediaItem = localMediaItemsRef.current.get(mediaItemName) || 
+          mediaBinItems.find(item => item.name === mediaItemName || item.id === videoId);
+        
+        console.log(`🔍 Looking for media item with name: ${mediaItemName} or id: ${videoId}`);
+        console.log(`🔍 Found in local cache:`, localMediaItemsRef.current.has(mediaItemName));
+        console.log(`🔍 Available media items from props:`, mediaBinItems.map(item => ({ id: item.id, name: item.name })));
+        console.log(`🔍 Local cache items:`, Array.from(localMediaItemsRef.current.keys()));
+        
+        if (mediaItem) {
+          const updatedItem: MediaBinItem = {
+            ...mediaItem,
+            upload_status: "uploaded",
+            gemini_file_id: status.gemini_file_id
+          };
+          
+          // Update local cache (ref mutation is synchronous)
+          localMediaItemsRef.current.set(mediaItemName, updatedItem);
+          
+          // Update parent component
+          onUpdateMediaItem(updatedItem);
+          console.log(`✅ Updated media item ${mediaItem.name} with gemini_file_id: ${status.gemini_file_id}`);
+        } else {
+          console.error(`❌ Could not find media item for video ${videoId}`);
+          console.error(`❌ Searched for name: ${mediaItemName}`);
+          console.error(`❌ Available names:`, Array.from(localMediaItemsRef.current.keys()));
+        }
+      }
+    }
+  });
 
   // Initialize Conversational Synth
   const [synth] = useState(() => new ConversationalSynth("dummy-api-key")); // Will use actual API key later
@@ -404,11 +450,49 @@ export function ChatBox({
       console.error("Probe analysis failed:", error);
       
       // Handle video still uploading case
-      if (error instanceof Error && error.message === "VIDEO_STILL_UPLOADING") {
+      if (error instanceof Error && (
+          error.message === "VIDEO_STILL_UPLOADING" || 
+          error.message === "VIDEO_PENDING_UPLOAD"
+        )) {
         await logProbeError(fileName, "Video still uploading to analysis service");
+        
+        // Start auto-retry for pending uploads
+        if (error.message === "VIDEO_PENDING_UPLOAD") {
+          console.log("🔄 Starting auto-retry for pending video upload...");
+          
+          // Schedule auto-retry every 3 seconds
+          const retryInterval = setInterval(async () => {
+            try {
+              // Re-find the media file to get updated status
+              const updatedMediaFile = mediaBinItems.find(item => 
+                item.name === fileName || 
+                (item.title && item.title.toLowerCase().includes(fileName.toLowerCase()))
+              );
+              
+              if (updatedMediaFile && updatedMediaFile.upload_status === "uploaded") {
+                console.log("🎉 Video upload completed, retrying analysis...");
+                clearInterval(retryInterval);
+                
+                // Automatically retry the probe
+                const retryMessages = await handleProbeRequestInternal(fileName, question);
+                onMessagesChange(prev => [...prev, ...retryMessages]);
+              }
+            } catch (retryError) {
+              console.log("🔄 Auto-retry failed:", retryError);
+              // Continue retrying - the interval will keep running
+            }
+          }, 3000);
+          
+          // Stop retrying after 2 minutes
+          setTimeout(() => {
+            clearInterval(retryInterval);
+            console.log("🔄 Auto-retry timeout reached");
+          }, 120000);
+        }
+        
         const waitingMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: `Video is still being uploaded to the analysis service. Please wait and try again.`,
+          content: `Video is still uploading to AI server for analysis. Once the video is ready, I will automatically continue with the analysis...`,
           isUser: false,
           timestamp: new Date(),
           isSystemMessage: true,
@@ -418,6 +502,19 @@ export function ChatBox({
           }
         };
         return [waitingMessage];
+      }
+      
+      // Handle videos not uploaded to AI service
+      if (error instanceof Error && error.message === "VIDEO_NOT_UPLOADED") {
+        await logProbeError(fileName, "Video not uploaded to analysis service");
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: `This video has not been uploaded to the AI analysis service yet. Analysis is currently only available for uploaded videos.`,
+          isUser: false,
+          timestamp: new Date(),
+          isSystemMessage: true,
+        };
+        return [errorMessage];
       }
       
       // Handle other errors
@@ -451,7 +548,7 @@ export function ChatBox({
 
   const analyzeMediaWithGemini = async (mediaFile: MediaBinItem, question: string): Promise<string> => {
     const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment.");
@@ -468,8 +565,8 @@ export function ChatBox({
     try {
       let requestBody: any;
 
-      if (isVideo && mediaFile.gemini_file_id) {
-        // For videos, use the backend video analysis endpoint
+      if (isVideo && mediaFile.gemini_file_id && mediaFile.upload_status === "uploaded") {
+        // For videos with successful upload, use the backend video analysis endpoint
         console.log("🔍 Using backend video analysis for:", mediaFile.gemini_file_id);
         
         const response = await fetch(apiUrl('/analyze-video', true), {
@@ -494,8 +591,14 @@ export function ChatBox({
         }
 
         return result.analysis;
+      } else if (isVideo && mediaFile.upload_status === "pending") {
+        // Video is currently uploading to AI service
+        throw new Error("VIDEO_PENDING_UPLOAD");
+      } else if (isVideo && mediaFile.upload_status === "not_uploaded") {
+        // Video was not uploaded to AI service
+        throw new Error("VIDEO_NOT_UPLOADED");
       } else if (isVideo && !mediaFile.gemini_file_id) {
-        // Video without Gemini file ID - video is still uploading
+        // Fallback for backward compatibility
         throw new Error("VIDEO_STILL_UPLOADING");
       } else {
         // For images, use base64 inline data
@@ -701,6 +804,7 @@ export function ChatBox({
         text: null,
         isUploading: false,
         uploadProgress: null,
+        upload_status: "not_uploaded", // Generated content doesn't need upload initially
         left_transition_id: null,
         right_transition_id: null,
         gemini_file_id: null, // Generated content doesn't need Gemini analysis initially
@@ -793,14 +897,25 @@ export function ChatBox({
         // Get FastAPI base URL for media files
         const fastApiBaseUrl = getApiBaseUrl(true); // true for FastAPI
         
+        // First, add all media items to the bin
+        const mediaItemsToUpload: Array<{mediaItem: MediaBinItem, video: any, videoUrl: string}> = [];
+        
         for (let index = 0; index < result.videos.length; index++) {
           const video = result.videos[index];
+          console.log(`🎬 [VIDEO ${index}] Processing video:`, {
+            id: video.id,
+            idType: typeof video.id,
+            photographer: video.photographer,
+            quality: video.quality,
+            download_url: video.download_url
+          });
+          
           // Create the full URL for the video
           const videoUrl = video.download_url.startsWith('http') 
             ? video.download_url 
             : `${fastApiBaseUrl}${video.download_url}`;
             
-          console.log(`🎬 Video URL: ${video.download_url} -> ${videoUrl}`);
+          console.log(`🎬 [VIDEO ${index}] Video URL: ${video.download_url} -> ${videoUrl}`);
 
           // Create descriptive title: "Query by Photographer - Option N"
           const videoTitle = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${video.photographer} - Option ${index + 1}`;
@@ -819,14 +934,59 @@ export function ChatBox({
             text: null,
             isUploading: false,
             uploadProgress: null,
+            upload_status: video.upload_status || "not_uploaded", // Set from backend response
             left_transition_id: null,
             right_transition_id: null,
             gemini_file_id: video.gemini_file_id, // ✅ Now set from backend!
           };
 
-          console.log("🎬 Adding stock video to media library:", mediaItem);
+          console.log(`🎬 [VIDEO ${index}] Created MediaBinItem:`, {
+            mediaItemId: mediaItem.id,
+            mediaItemName: mediaItem.name,
+            videoId: video.id,
+            uploadStatus: mediaItem.upload_status
+          });
+          
+          // Store in local cache for reliable lookup later (ref mutation is synchronous)
+          localMediaItemsRef.current.set(mediaItem.name, mediaItem);
+          console.log(`📝 Added to local cache: ${mediaItem.name}, cache size: ${localMediaItemsRef.current.size}`);
+          
           await onAddGeneratedImage(mediaItem);
+          
+          // Store for later upload
+          if (video.upload_status === "pending") {
+            mediaItemsToUpload.push({ mediaItem, video, videoUrl });
+          }
         }
+        
+        // Wait a bit for React state to update, then start uploads
+        setTimeout(() => {
+          console.log(`📤 Starting uploads for ${mediaItemsToUpload.length} videos after state update...`);
+          
+          mediaItemsToUpload.forEach(({mediaItem, video, videoUrl}, index) => {
+            const videoIdString = video.id.toString();
+            console.log(`📤 [DELAYED VIDEO ${index}] Starting upload:`, {
+              videoId: video.id,
+              videoIdString: videoIdString,
+              mediaItemName: mediaItem.name,
+              mediaItemId: mediaItem.id
+            });
+            
+            // Generate filename for upload
+            const filename = `pexels_${video.id}_${Date.now()}.mp4`;
+            
+            // Start upload (non-blocking)
+            uploadVideoToGemini(videoUrl, videoIdString, filename).then(geminiFileId => {
+              if (geminiFileId) {
+                console.log(`✅ [DELAYED VIDEO ${index}] Upload completed for video ${video.id}: ${geminiFileId}`);
+              } else {
+                console.error(`❌ [DELAYED VIDEO ${index}] Upload failed for video ${video.id}`);
+              }
+            }).catch(error => {
+              console.error(`❌ [DELAYED VIDEO ${index}] Upload error for video ${video.id}:`, error);
+            });
+          });
+        }, 100); // Small delay to ensure React state is updated
       }
 
       // Create the selection message with real video thumbnails

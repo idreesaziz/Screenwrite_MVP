@@ -13,6 +13,9 @@ export interface MediaBinItem {
   uploadProgress: number | null;
   isUploading: boolean;
   
+  // Unified upload status for AI analysis
+  upload_status: "uploaded" | "not_uploaded" | "pending";
+  
   // Gemini file reference for analysis
   gemini_file_id: string | null;
   

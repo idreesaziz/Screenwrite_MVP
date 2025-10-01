@@ -25,6 +25,7 @@ class BaseScrubber(BaseModel):
 class MediaBinItem(BaseScrubber):
     name: str = Field(description="Display name for the media item")
     durationInSeconds: float = Field(description="Duration of the media in seconds")
+    upload_status: Literal["uploaded", "not_uploaded", "pending"] = Field(description="Upload status for AI analysis", default="not_uploaded")
     gemini_file_id: Optional[str] = Field(description="Gemini Files API file ID for analysis", default=None)
 
 
@@ -151,6 +152,8 @@ class StockVideoResult(BaseModel):
     quality: str = Field(description="Video quality (hd, sd)", default="sd")
     photographer: str = Field(description="Photographer/videographer name")
     photographer_url: str = Field(description="Photographer's Pexels profile URL")
+    upload_status: Literal["uploaded", "not_uploaded", "pending"] = Field(description="Upload status for AI analysis", default="not_uploaded")
+    gemini_file_id: Optional[str] = Field(description="Gemini Files API file ID for analysis", default=None)
 
 
 class FetchStockVideoResponse(BaseModel):

@@ -177,6 +177,7 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
         text: null,
         isUploading: true,
         uploadProgress: 0,
+        upload_status: "pending", // New unified status field
         left_transition_id: null,
         right_transition_id: null,
         gemini_file_id: null, // Will be set after Gemini upload
@@ -253,6 +254,7 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
               mediaUrlRemote: uploadResult.fullUrl,
               isUploading: false,
               uploadProgress: null,
+              upload_status: "uploaded", // Mark as successfully uploaded
               gemini_file_id: geminiFileId
             }
             : item
@@ -312,6 +314,7 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
       durationInSeconds: 0,
       isUploading: false,
       uploadProgress: null,
+      upload_status: "not_uploaded", // Text items don't need upload
       left_transition_id: null,
       right_transition_id: null,
       gemini_file_id: null, // Text items don't need Gemini upload
@@ -414,6 +417,7 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
         text: null,
         isUploading: false,
         uploadProgress: null,
+        upload_status: "not_uploaded", // Audio files don't need upload for now
         left_transition_id: null,
         right_transition_id: null,
         gemini_file_id: null, // TODO: Audio could also be uploaded to Gemini for analysis
@@ -453,6 +457,14 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
   }, [contextMenu, handleSplitAudio]);
 
   // Close context menu when clicking outside
+  const handleUpdateMediaItem = useCallback((updatedItem: MediaBinItem) => {
+    setMediaBinItems(prev => 
+      prev.map(item => 
+        item.id === updatedItem.id ? updatedItem : item
+      )
+    );
+  }, []);
+
   const handleCloseContextMenu = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -462,6 +474,7 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
     handleAddMediaToBin,
     handleAddTextToBin,
     handleAddDirectMediaBinItem,
+    handleUpdateMediaItem,
     handleDeleteMedia,
     handleSplitAudio,
     contextMenu,
