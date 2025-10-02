@@ -469,36 +469,37 @@ Dependency Management:
 - Ensure aesthetic consistency between different media sources
 `;
 
-// Intent announcement guidelines for complex workflows
-export const INTENT_ANNOUNCEMENT_GUIDELINES = `
-INTENT ANNOUNCEMENT PROTOCOL:
+// Natural language requirement - strict prohibition of technical terms
+export const NATURAL_LANGUAGE_REQUIREMENT = `
+NATURAL LANGUAGE MANDATE - CRITICAL RULES:
 
-When executing MULTI-STEP PLANS (not atomic tasks), announce your execution intent before EACH STEP:
-Use the response type "chat" to inform the user of your next action before performing it.
+Your edit instructions MUST be in pure natural language. The implementer is an expert who knows how to translate your creative vision into technical execution.
 
-Format: "I will now [CURRENT_STEP] for [PURPOSE]."
+STRICTLY PROHIBITED TERMS AND CONCEPTS:
+- Never use: "blueprint", "script", "code", "function", "component", "element", "JSX", "TSX", "React", "DOM"
+- Never use: "array", "object", "property", "attribute", "parameter", "variable", "class", "method"
+- Never use: "SW.interp", "interpolation", "keyframe", "transform", "CSS property", "style object"
+- Never reference technical implementation details or data structures
 
-Atomic Task Examples (DO NOT ANNOUNCE):
-- "Add text at 5 seconds" → Execute directly, no announcement
-- "Make the logo bigger" → Execute directly, no announcement  
-- "Change background color to blue" → Execute directly, no announcement
-- "Remove the third clip" → Execute directly, no announcement
+ALLOWED DESCRIPTIVE TERMS:
+- Clip references: "the clip with ID 'welcome-text'", "clip 'logo-animation'", "the background clip"
+- Track references: "on track 0", "the background layer", "the text layer"
+- Color names and values: "red", "blue", "#FF5733", "rgba(255, 0, 0, 0.5)", "gradient from blue to purple"
+- Timing references: "at 5 seconds", "from 0:10 to 0:25", "for 3.5 seconds", "lasting 8 seconds", "starting at", "ending at"
+- Positioning: "top-left", "center", "bottom-right", "20% from top", "middle of screen"
+- Size descriptions: "large", "small", "50% width", "full screen", "compact"
+- Basic effects: "fade in", "fade out", "slide from left", "zoom in", "rotate"
 
-Announcement Triggers:
-- Plans involving distinct steps
-- Plans requiring multiple media generations
-- Plans requiring multiple video fetches
-- If the its best to show what and why you're doing something for refference
+HOW TO COMMUNICATE EDITS:
+Use clear, descriptive language that tells WHAT to do, not HOW to technically implement it.
 
+Examples of natural edit instructions:
+- "Update the welcome text clip to start at 2 seconds with a fade-in effect"
+- "Add a background that shifts from dark blue to purple over 5 seconds"
+- "Make the logo grow from small to full size between 1 and 2 seconds"
+- "Place the ocean waves video as the background layer from start to 10 seconds"
 
-No Announcement Needed:
-- Single edit operations
-- Simple property changes
-- Basic additions or deletions
-- Quick adjustments or tweaks
-- Direct user commands with obvious execution
-
-The announcement should be conversational and help users understand the planned workflow before execution begins.
+The key principle: Think like you're directing a skilled video editor, not writing code. Describe your creative vision and what you want to happen, not the technical implementation details or programming syntax.
 `;
 
 // Sleep response guidelines
