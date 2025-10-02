@@ -561,7 +561,7 @@ Guidelines:
 Videos to evaluate (extracted from URL slugs):
 {chr(10).join(video_descriptions)}
 
-Return JSON with selected video indices (0-based) and brief explanation."""
+Return JSON with only the selected video indices (0-based)."""
 
         # Configure for speed
         generation_config = types.GenerateContentConfig(
@@ -573,10 +573,9 @@ Return JSON with selected video indices (0-based) and brief explanation."""
                     "selected": types.Schema(
                         type=types.Type.ARRAY,
                         items=types.Schema(type=types.Type.INTEGER)
-                    ),
-                    "explanation": types.Schema(type=types.Type.STRING)
+                    )
                 },
-                required=["selected", "explanation"]
+                required=["selected"]
             )
         )
         
@@ -590,7 +589,6 @@ Return JSON with selected video indices (0-based) and brief explanation."""
         # Parse response
         result = json.loads(response.text)
         selected_indices = result.get("selected", [])
-        explanation = result.get("explanation", "AI selected videos based on relevance")
         
         # Validate indices
         valid_indices = [i for i in selected_indices if 0 <= i < len(videos)]
@@ -599,11 +597,10 @@ Return JSON with selected video indices (0-based) and brief explanation."""
         final_indices = valid_indices[:max_count]
         
         print(f"🤖 AI Curation: Selected {len(final_indices)} videos from {len(videos)} for '{query}'")
-        print(f"🤖 Explanation: {explanation}")
         
         return {
             "selected": final_indices,
-            "explanation": explanation
+            "explanation": ""
         }
         
     except Exception as e:
@@ -895,7 +892,7 @@ Fix the error and return the corrected code."""
 
         # Use the same AI call pattern as other endpoints
         response = gemini_api.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-flash-latest",
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.1,  # Low temperature for precise fixes
@@ -942,7 +939,7 @@ async def analyze_video(request: VideoAnalysisRequest) -> VideoAnalysisResponse:
             
             # For YouTube URLs, use Gemini's direct URL support with correct structure
             response = gemini_api.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-flash-latest",
                 contents=types.Content(
                     parts=[
                         types.Part(
@@ -957,7 +954,7 @@ async def analyze_video(request: VideoAnalysisRequest) -> VideoAnalysisResponse:
             # For Vertex AI, the file_url is actually a Cloud Storage URI
             # Use a simpler approach - pass the file URI directly in contents
             response = gemini_api.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-flash-latest",
                 contents=[request.file_url, request.question],
                 config=types.GenerateContentConfig(temperature=0.1)
             )
@@ -972,7 +969,7 @@ async def analyze_video(request: VideoAnalysisRequest) -> VideoAnalysisResponse:
                 raise Exception(f"Video file is not ready for analysis yet (state: {file_obj.state}). Please wait a moment and try again.")
             
             response = gemini_api.models.generate_content(
-                model="gemini-2.5-flash", 
+                model="gemini-flash-latest", 
                 contents=[file_obj, request.question],
                 config=types.GenerateContentConfig(temperature=0.1)
             )
