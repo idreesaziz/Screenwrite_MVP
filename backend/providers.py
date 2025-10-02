@@ -77,7 +77,7 @@ class GeminiProvider(AIProvider):
         }
         
         response = self.api_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-flash-latest",
             contents=user_prompt,
             config={
                 "system_instruction": system_instruction,
@@ -199,7 +199,7 @@ class OpenAIProvider(AIProvider):
         }
         
         response = self.client.chat.completions.create(
-            model="gpt-5",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_prompt}
@@ -211,7 +211,7 @@ class OpenAIProvider(AIProvider):
                     "schema": schema
                 }
             },
-            temperature=1  # GPT-5 only supports default temperature of 1
+            temperature=1  # GPT-4.1 default temperature
         )
         
         # Extract the tracks array from the structured response

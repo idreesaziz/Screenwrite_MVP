@@ -1803,7 +1803,7 @@ export function ChatBox({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-6 text-xs">
-                    {selectedModel === "gemini" ? "Gemini 2.5 Flash" : selectedModel === "openai" ? "GPT-5" : selectedModel}
+                    {selectedModel === "gemini" ? "Gemini 2.5 Flash" : selectedModel === "openai" ? "GPT-4.1" : selectedModel}
                     <ChevronDown className="w-3 h-3 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1818,7 +1818,7 @@ export function ChatBox({
                     onClick={() => setSelectedModel("openai")}
                     className="text-xs"
                   >
-                                       GPT-5
+                    GPT-4.1
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
