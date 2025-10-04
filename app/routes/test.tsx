@@ -318,6 +318,42 @@ const defaultBlueprintExample = `[
             }
           ]
         }
+      },
+      {
+        "id": "glitch-test",
+        "startTimeInSeconds": 28,
+        "endTimeInSeconds": 34,
+        "element": {
+          "name": "div",
+          "props": {
+            "backgroundColor": "#060010",
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%"
+          },
+          "children": [
+            {
+              "name": "GlitchText",
+              "props": {
+                "text": "GLITCH",
+                "speed": 1.5,
+                "enableShadows": true,
+                "shadowColors": {
+                  "red": "#ff0000",
+                  "cyan": "#00ffff"
+                },
+                "glitchIntensity": 10,
+                "delay": 0.3,
+                "fontSize": "128px",
+                "fontWeight": "900",
+                "color": "#ffffff",
+                "backgroundColor": "#060010"
+              }
+            }
+          ]
+        }
       }
     ]
   }

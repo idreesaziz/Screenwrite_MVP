@@ -11,3 +11,5 @@ export { DecryptedText } from './DecryptedText';
 export type { DecryptedTextProps } from './DecryptedText';
 export { TrueFocus } from './TrueFocus';
 export type { TrueFocusProps } from './TrueFocus';
+export { GlitchText } from './GlitchText';
+export type { GlitchTextProps } from './GlitchText';
