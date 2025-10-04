@@ -9,7 +9,7 @@
 import type { ComponentSchema } from './BlueprintTypes';
 import * as Remotion from 'remotion';
 import React from 'react';
-import { SplitText, BlurText } from './text-animations';
+import { SplitText, BlurText, TypewriterText, Shuffle } from './text-animations';
 
 export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   // Standard HTML elements - all props go to style
@@ -86,6 +86,16 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
     componentProps: ['text', 'animateBy', 'direction', 'delay', 'duration'],
     styleProps: '*'
   },
+  'TypewriterText': {
+    type: 'component',
+    componentProps: ['text', 'typingSpeed', 'initialDelay', 'pauseDuration', 'deletingSpeed', 'loop', 'showCursor', 'cursorCharacter', 'cursorBlinkSpeed'],
+    styleProps: '*'
+  },
+  'Shuffle': {
+    type: 'component',
+    componentProps: ['text', 'shuffleDirection', 'duration', 'delay', 'stagger', 'shuffleTimes', 'animationMode', 'scrambleCharset', 'colorFrom', 'colorTo'],
+    styleProps: '*'
+  },
 };
 
 /**
@@ -111,6 +121,12 @@ export function getComponent(componentName: string): any {
   }
   if (componentName === 'BlurText') {
     return BlurText;
+  }
+  if (componentName === 'TypewriterText') {
+    return TypewriterText;
+  }
+  if (componentName === 'Shuffle') {
+    return Shuffle;
   }
   
   // Check Remotion namespace

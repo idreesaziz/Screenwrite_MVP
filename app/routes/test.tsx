@@ -107,6 +107,91 @@ const defaultBlueprintExample = `[
             }
           ]
         }
+      },
+      {
+        "id": "typewriter-test",
+        "startTimeInSeconds": 6,
+        "endTimeInSeconds": 10,
+        "element": {
+          "name": "div",
+          "props": {
+            "backgroundColor": "#1a1a2e",
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%"
+          },
+          "children": [
+            {
+              "name": "TypewriterText",
+              "props": {
+                "text": "Typewriter Effect...",
+                "typingSpeed": 15,
+                "initialDelay": 0.5,
+                "showCursor": true,
+                "cursorCharacter": "|",
+                "fontSize": "48px",
+                "color": "#00ff88",
+                "fontFamily": "monospace",
+                "marginBottom": "30px"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "shuffle-test",
+        "startTimeInSeconds": 10,
+        "endTimeInSeconds": 14,
+        "element": {
+          "name": "div",
+          "props": {
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%",
+            "gap": "40px"
+          },
+          "children": [
+            {
+              "name": "Shuffle",
+              "props": {
+                "text": "SHUFFLE FROM RIGHT",
+                "shuffleDirection": "right",
+                "duration": 1.2,
+                "delay": 0.5,
+                "stagger": 0.04,
+                "shuffleTimes": 4,
+                "animationMode": "evenodd",
+                "scrambleCharset": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*",
+                "colorFrom": "#ff0066",
+                "colorTo": "#00ffff",
+                "fontSize": "48px",
+                "fontWeight": "bold",
+                "fontFamily": "monospace"
+              }
+            },
+            {
+              "name": "Shuffle",
+              "props": {
+                "text": "shuffle from left",
+                "shuffleDirection": "left",
+                "duration": 1.0,
+                "delay": 1.8,
+                "stagger": 0.03,
+                "shuffleTimes": 3,
+                "animationMode": "sequential",
+                "fontSize": "36px",
+                "color": "#ffff00",
+                "fontFamily": "sans-serif"
+              }
+            }
+          ]
+        }
       }
     ]
   }
