@@ -34,11 +34,32 @@ export interface TransitionConfig {
   perspective?: number; // For flip transitions (default: 1000)
 }
 
+// Animated property: can be constant or timeline-based
+export type AnimatedProperty<T> = T | {
+  timestamps: number[];  // GLOBAL composition timestamps in seconds (NOT clip-relative)
+  values: T[];          // Corresponding values at each timestamp
+  // easing is ALWAYS 'inOut' - hardcoded in renderer
+};
+
+// Element object structure - unified flat prop structure
+export interface ElementObject {
+  name: string;  // Component name: "div", "Video", "Img", "AbsoluteFill", etc.
+  props?: Record<string, AnimatedProperty<any>>;  // All props in flat structure
+  children?: (ElementObject | string)[];  // Recursive children: can be nested elements OR text strings
+}
+
+// Component schema - defines how to handle props for each component type
+export interface ComponentSchema {
+  type: 'html' | 'component';
+  componentProps?: string[] | '*';  // Props passed directly to component, '*' means all props
+  styleProps: '*' | string[];  // '*' means all other props go to style, [] means no style support
+}
+
 export interface Clip {
   id: string;
   startTimeInSeconds: number;
   endTimeInSeconds: number;
-  element: string; // The string of code to be executed for the visual content
+  element: ElementObject; // Changed from string to ElementObject
   transitionToNext?: TransitionConfig;
   transitionFromPrevious?: TransitionConfig;
 }
@@ -54,7 +75,7 @@ export type RenderingMode = 'blueprint' | 'string';
 
 export interface BlueprintExecutionContext {
   // Helper functions available to clip code
-  interp: (startTime: number, endTime: number, fromValue: number, toValue: number, easing?: 'linear' | 'in' | 'out' | 'inOut') => number;
+  interp: (timestamps: number[], values: number[], easing?: 'linear' | 'in' | 'out' | 'inOut') => number;
   inSeconds: (seconds: number) => number;
   // Sequence timing context for proper interp calculations
   sequenceStartTime: number; // Start time of the current sequence in seconds

@@ -13,16 +13,95 @@ const defaultBlueprintExample = `[
   {
     "clips": [
       {
-        "id": "text-1",
+        "id": "nested-test",
         "startTimeInSeconds": 0,
-        "endTimeInSeconds": 3,
-        "element": "return React.createElement('div', { style: { color: 'white', fontSize: '48px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' } }, 'Hello World!');"
-      },
-      {
-        "id": "text-2", 
-        "startTimeInSeconds": 3,
-        "endTimeInSeconds": 6,
-        "element": "return React.createElement('div', { style: { color: '#ff6b6b', fontSize: '36px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)' } }, 'Blueprint Test!');"
+        "endTimeInSeconds": 5,
+        "element": {
+          "name": "AbsoluteFill",
+          "props": {
+            "backgroundColor": "#1a1a2e"
+          },
+          "children": [
+            {
+              "name": "div",
+              "props": {
+                "position": "absolute",
+                "top": "50%",
+                "left": "50%",
+                "transform": "translate(-50%, -50%)",
+                "width": "80%",
+                "textAlign": "center"
+              },
+              "children": [
+                {
+                  "name": "h1",
+                  "props": {
+                    "color": "#00d4ff",
+                    "fontSize": "48px",
+                    "margin": "0 0 20px 0",
+                    "fontFamily": "Arial, sans-serif",
+                    "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)"
+                  },
+                  "children": ["Nested Elements Test"]
+                },
+                {
+                  "name": "p",
+                  "props": {
+                    "color": "#ffffff",
+                    "fontSize": "24px",
+                    "margin": "0",
+                    "fontFamily": "Arial, sans-serif"
+                  },
+                  "children": ["This demonstrates nested children rendering"]
+                },
+                {
+                  "name": "div",
+                  "props": {
+                    "marginTop": "30px",
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "gap": "20px"
+                  },
+                  "children": [
+                    {
+                      "name": "span",
+                      "props": {
+                        "padding": "10px 20px",
+                        "backgroundColor": "#ff6b6b",
+                        "color": "white",
+                        "borderRadius": "8px",
+                        "fontSize": "18px"
+                      },
+                      "children": ["Level 1"]
+                    },
+                    {
+                      "name": "span",
+                      "props": {
+                        "padding": "10px 20px",
+                        "backgroundColor": "#4ecdc4",
+                        "color": "white",
+                        "borderRadius": "8px",
+                        "fontSize": "18px"
+                      },
+                      "children": ["Level 2"]
+                    },
+                    {
+                      "name": "span",
+                      "props": {
+                        "padding": "10px 20px",
+                        "backgroundColor": "#95e1d3",
+                        "color": "white",
+                        "borderRadius": "8px",
+                        "fontSize": "18px"
+                      },
+                      "children": ["Level 3"]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

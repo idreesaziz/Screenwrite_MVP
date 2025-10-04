@@ -31,34 +31,14 @@ export function BlueprintComposition({ blueprint }: BlueprintCompositionProps) {
   // Create base execution context with helper functions
   const createExecutionContext = (clipStartTime: number): BlueprintExecutionContext => ({
     interp: (
-      startTimeOrTimePoints: number | number[], 
-      endTimeOrValues?: number | number[], 
-      fromValueOrEasing?: number | 'in' | 'out' | 'inOut' | 'linear', 
-      toValue?: number, 
+      timestamps: number[], 
+      values: number[], 
       easing?: 'in' | 'out' | 'inOut' | 'linear'
     ) => {
-      // Handle keyframe syntax: interp([0, 2, 3, 4], [0, 1, 1, 0], 'linear')
-      if (Array.isArray(startTimeOrTimePoints)) {
-        const globalTimePoints = startTimeOrTimePoints;
-        const values = endTimeOrValues as number[];
-        const easingType = fromValueOrEasing as 'in' | 'out' | 'inOut' | 'linear';
-        
-        // Convert global timing to clip-relative timing
-        const localTimePoints = globalTimePoints.map(t => t - clipStartTime);
-        
-        return interp(localTimePoints, values, easingType);
-      }
-      
-      // Handle simple syntax: interp(0, 2, 0, 1, 'linear')
-      const globalStartTime = startTimeOrTimePoints as number;
-      const globalEndTime = endTimeOrValues as number;
-      const fromValue = fromValueOrEasing as number;
-      
       // Convert global timing to clip-relative timing
-      const localStartTime = globalStartTime - clipStartTime;
-      const localEndTime = globalEndTime - clipStartTime;
+      const localTimePoints = timestamps.map(t => t - clipStartTime);
       
-      return interp(localStartTime, localEndTime, fromValue, toValue!, easing as 'in' | 'out' | 'inOut' | 'linear');
+      return interp(localTimePoints, values, easing || 'inOut');
     },
     inSeconds: (seconds: number): number => Math.round(seconds * fps),
     sequenceStartTime: clipStartTime,
@@ -613,35 +593,8 @@ function ClipContentWithFreeze({
   freezeAfterFrames: number;
   totalSequenceDuration: number;
 }) {
-  const frame = useCurrentFrame();
-  
-  // Simplest approach: extend the video duration from the start to avoid any jumps
-  if (clip.element.includes('Video')) {
-    const endAtMatch = clip.element.match(/endAtSeconds:\s*([0-9.]+)/);
-    
-    if (endAtMatch) {
-      const originalEndTime = parseFloat(endAtMatch[1]);
-      const fps = 30; // Assuming 30fps - should match your project settings
-      const originalEndFrame = originalEndTime * fps;
-      
-      // If we need to extend beyond the original video duration, just repeat the last frame
-      if (totalSequenceDuration > freezeAfterFrames) {
-        const extensionFrames = totalSequenceDuration - freezeAfterFrames;
-        const extensionSeconds = extensionFrames / fps;
-        const newEndTime = originalEndTime + extensionSeconds;
-        
-        const extendedElement = clip.element.replace(
-          /endAtSeconds:\s*[0-9.]+/,
-          `endAtSeconds: ${newEndTime}`
-        );
-        
-        console.log(`🎬 ClipContentWithFreeze: Extending ${clip.id} from ${originalEndTime}s to ${newEndTime}s (extension: ${extensionSeconds}s)`);
-        return executeClipElement(extendedElement, executionContext);
-      }
-    }
-  }
-  
-  // Normal rendering for non-video or no extension needed
+  // TODO: Implement video extension logic for ElementObject format if needed
+  // For now, render as-is
   return executeClipElement(clip.element, executionContext);
 }
 
