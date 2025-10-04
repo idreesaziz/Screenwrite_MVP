@@ -192,6 +192,132 @@ const defaultBlueprintExample = `[
             }
           ]
         }
+      },
+      {
+        "id": "gradient-test",
+        "startTimeInSeconds": 14,
+        "endTimeInSeconds": 18,
+        "element": {
+          "name": "div",
+          "props": {
+            "backgroundColor": "#1a1a2e",
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%",
+            "gap": "40px"
+          },
+          "children": [
+            {
+              "name": "GradientText",
+              "props": {
+                "text": "ANIMATED GRADIENT",
+                "colors": ["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"],
+                "animationSpeed": 3,
+                "showBorder": false,
+                "fontSize": "56px",
+                "fontWeight": "bold",
+                "fontFamily": "Arial, sans-serif"
+              }
+            },
+            {
+              "name": "GradientText",
+              "props": {
+                "text": "with border glow",
+                "colors": ["#ff6b6b", "#feca57", "#48dbfb", "#ff9ff3"],
+                "animationSpeed": 4,
+                "showBorder": true,
+                "fontSize": "36px",
+                "fontWeight": "600",
+                "fontFamily": "Arial, sans-serif"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "decrypted-test",
+        "startTimeInSeconds": 18,
+        "endTimeInSeconds": 22,
+        "element": {
+          "name": "div",
+          "props": {
+            "backgroundColor": "#1a1a2e",
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%",
+            "gap": "40px"
+          },
+          "children": [
+            {
+              "name": "DecryptedText",
+              "props": {
+                "text": "DECRYPTING MESSAGE",
+                "speed": 8,
+                "sequential": true,
+                "revealDirection": "start",
+                "delay": 0.5,
+                "fontSize": "56px",
+                "fontWeight": "bold",
+                "fontFamily": "monospace",
+                "color": "#00ff88"
+              }
+            },
+            {
+              "name": "DecryptedText",
+              "props": {
+                "text": "CENTER REVEAL",
+                "speed": 6,
+                "sequential": true,
+                "revealDirection": "center",
+                "delay": 2,
+                "fontSize": "42px",
+                "fontWeight": "600",
+                "fontFamily": "monospace",
+                "color": "#4079ff"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "truefocus-test",
+        "startTimeInSeconds": 22,
+        "endTimeInSeconds": 28,
+        "element": {
+          "name": "div",
+          "props": {
+            "backgroundColor": "#0a0a0a",
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%"
+          },
+          "children": [
+            {
+              "name": "TrueFocus",
+              "props": {
+                "text": "TRUE FOCUS ANIMATION EFFECT",
+                "blurAmount": 8,
+                "borderColor": "#00ff00",
+                "glowColor": "rgba(0, 255, 0, 0.6)",
+                "animationDuration": 0.6,
+                "pauseBetweenAnimations": 0.8,
+                "delay": 0.5,
+                "fontSize": "48px",
+                "fontWeight": "bold",
+                "fontFamily": "monospace",
+                "color": "#ffffff"
+              }
+            }
+          ]
+        }
       }
     ]
   }
