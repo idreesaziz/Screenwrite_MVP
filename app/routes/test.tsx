@@ -13,7 +13,7 @@ const defaultBlueprintExample = `[
   {
     "clips": [
       {
-        "id": "nested-test",
+        "id": "animation-test",
         "startTimeInSeconds": 0,
         "endTimeInSeconds": 5,
         "element": {
@@ -31,13 +31,27 @@ const defaultBlueprintExample = `[
             {
               "name": "h1",
               "props": {
-                "color": "#00d4ff",
-                "fontSize": "48px",
+                "color": {
+                  "timestamps": [0, 2, 4],
+                  "values": ["#00d4ff", "#ff00ff", "#00d4ff"]
+                },
+                "fontSize": {
+                  "timestamps": [0, 1, 2],
+                  "values": ["24px", "56px", "48px"]
+                },
                 "margin": "0 0 20px 0",
                 "fontFamily": "Arial, sans-serif",
-                "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)"
+                "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)",
+                "opacity": {
+                  "timestamps": [0, 1],
+                  "values": [0, 1]
+                },
+                "transform": {
+                  "timestamps": [0, 1, 3],
+                  "values": ["translateY(50px) scale(0.8)", "translateY(0px) scale(1)", "translateY(0px) scale(1.1)"]
+                }
               },
-              "children": ["Nested Elements Test"]
+              "children": ["Universal Interpolation"]
             },
             {
               "name": "p",
@@ -45,9 +59,13 @@ const defaultBlueprintExample = `[
                 "color": "#ffffff",
                 "fontSize": "24px",
                 "margin": "0 0 30px 0",
-                "fontFamily": "Arial, sans-serif"
+                "fontFamily": "Arial, sans-serif",
+                "opacity": {
+                  "timestamps": [0.5, 1.5],
+                  "values": [0, 1]
+                }
               },
-              "children": ["This demonstrates nested children rendering"]
+              "children": ["Numbers, colors, and complex CSS strings!"]
             },
             {
               "name": "div",
@@ -61,34 +79,67 @@ const defaultBlueprintExample = `[
                   "name": "span",
                   "props": {
                     "padding": "10px 20px",
-                    "backgroundColor": "#ff6b6b",
+                    "backgroundColor": {
+                      "timestamps": [1, 3],
+                      "values": ["#ff6b6b", "#6bff6b"]
+                    },
                     "color": "white",
                     "borderRadius": "8px",
-                    "fontSize": "18px"
+                    "fontSize": "18px",
+                    "opacity": {
+                      "timestamps": [1, 2],
+                      "values": [0, 1]
+                    },
+                    "transform": {
+                      "timestamps": [1, 2],
+                      "values": ["translateY(30px) scale(0.5)", "translateY(0px) scale(1)"]
+                    }
                   },
-                  "children": ["Level 1"]
+                  "children": ["Badge 1"]
                 },
                 {
                   "name": "span",
                   "props": {
                     "padding": "10px 20px",
-                    "backgroundColor": "#4ecdc4",
+                    "backgroundColor": {
+                      "timestamps": [1.5, 3.5],
+                      "values": ["#4ecdc4", "#c44ecd"]
+                    },
                     "color": "white",
                     "borderRadius": "8px",
-                    "fontSize": "18px"
+                    "fontSize": "18px",
+                    "opacity": {
+                      "timestamps": [1.5, 2.5],
+                      "values": [0, 1]
+                    },
+                    "transform": {
+                      "timestamps": [1.5, 2.5],
+                      "values": ["translateY(30px) scale(0.5)", "translateY(0px) scale(1)"]
+                    }
                   },
-                  "children": ["Level 2"]
+                  "children": ["Badge 2"]
                 },
                 {
                   "name": "span",
                   "props": {
                     "padding": "10px 20px",
-                    "backgroundColor": "#95e1d3",
+                    "backgroundColor": {
+                      "timestamps": [2, 4],
+                      "values": ["#95e1d3", "#e195d3"]
+                    },
                     "color": "white",
                     "borderRadius": "8px",
-                    "fontSize": "18px"
+                    "fontSize": "18px",
+                    "opacity": {
+                      "timestamps": [2, 3],
+                      "values": [0, 1]
+                    },
+                    "transform": {
+                      "timestamps": [2, 3],
+                      "values": ["translateY(30px) scale(0.5)", "translateY(0px) scale(1)"]
+                    }
                   },
-                  "children": ["Level 3"]
+                  "children": ["Badge 3"]
                 }
               ]
             }

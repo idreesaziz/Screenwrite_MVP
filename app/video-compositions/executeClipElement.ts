@@ -8,7 +8,80 @@ import {
 } from "./componentRegistry";
 
 /**
+ * Parse a hex color to RGB components
+ */
+function parseHexColor(hex: string): [number, number, number] {
+  const cleaned = hex.replace('#', '');
+  const r = parseInt(cleaned.substring(0, 2), 16);
+  const g = parseInt(cleaned.substring(2, 4), 16);
+  const b = parseInt(cleaned.substring(4, 6), 16);
+  return [r, g, b];
+}
+
+/**
+ * Convert RGB components to hex color
+ */
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (n: number) => {
+    const clamped = Math.round(Math.max(0, Math.min(255, n)));
+    return clamped.toString(16).padStart(2, '0');
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
+ * Extract all numbers with their units from a CSS string
+ * Returns array of {value, unit, startIndex, endIndex}
+ */
+function extractNumbersWithUnits(str: string): Array<{value: number, unit: string, startIndex: number, endIndex: number}> {
+  // Match numbers (including decimals and negatives) followed by optional units
+  const regex = /(-?\d+\.?\d*)(px|%|em|rem|vw|vh|vmin|vmax|deg|rad|turn|s|ms)?/g;
+  const matches: Array<{value: number, unit: string, startIndex: number, endIndex: number}> = [];
+  
+  let match;
+  while ((match = regex.exec(str)) !== null) {
+    // Skip empty matches or matches that are just the unit
+    if (match[1] && match[1].length > 0) {
+      matches.push({
+        value: parseFloat(match[1]),
+        unit: match[2] || '',
+        startIndex: match.index,
+        endIndex: match.index + match[0].length
+      });
+    }
+  }
+  
+  return matches;
+}
+
+/**
+ * Reconstruct a string by replacing numbers at specific positions
+ */
+function reconstructString(original: string, interpolatedMatches: Array<{value: number, unit: string, startIndex: number, endIndex: number}>): string {
+  let result = '';
+  let lastIndex = 0;
+  
+  for (const match of interpolatedMatches) {
+    // Add the part before this number
+    result += original.substring(lastIndex, match.startIndex);
+    // Add the interpolated number with its unit
+    result += match.value.toString() + match.unit;
+    lastIndex = match.endIndex;
+  }
+  
+  // Add any remaining part of the string
+  result += original.substring(lastIndex);
+  
+  return result;
+}
+
+/**
  * Resolve an animated property at render time using context.interp
+ * Supports:
+ * - Numbers (unitless)
+ * - Strings with number+unit (e.g., "100px", "50%")
+ * - Hex colors (e.g., "#ff0000")
+ * - Complex CSS strings (e.g., "translateX(100px) scale(1.5)", "blur(5px) brightness(150%)")
  * All animations use 'inOut' easing (hardcoded)
  */
 function resolveAnimatedProperty<T>(
@@ -25,14 +98,58 @@ function resolveAnimatedProperty<T>(
     Array.isArray((prop as any).values)
   ) {
     const animatedProp = prop as { timestamps: number[]; values: T[] };
+    const { timestamps, values } = animatedProp;
     
-    // Use context.interp with hardcoded 'inOut' easing
-    // context.interp handles conversion from global timestamps to frame-relative
-    return context.interp(
-      animatedProp.timestamps,
-      animatedProp.values as any,
-      'inOut'
-    ) as T;
+    // If all values are numbers, interpolate directly
+    if (values.every(v => typeof v === 'number')) {
+      return context.interp(timestamps, values as any, 'inOut') as T;
+    }
+    
+    // If all values are strings, handle different string formats
+    if (values.every(v => typeof v === 'string')) {
+      const stringValues = values as unknown as string[];
+      
+      // Check if all values are hex colors
+      if (stringValues.every(v => /^#[0-9a-fA-F]{6}$/.test(v))) {
+        // Interpolate RGB components separately
+        const rgbValues = stringValues.map(parseHexColor);
+        const r = context.interp(timestamps, rgbValues.map(rgb => rgb[0]), 'inOut');
+        const g = context.interp(timestamps, rgbValues.map(rgb => rgb[1]), 'inOut');
+        const b = context.interp(timestamps, rgbValues.map(rgb => rgb[2]), 'inOut');
+        return rgbToHex(r, g, b) as T;
+      }
+      
+      // For other strings, extract all numbers with units and interpolate each
+      const firstValue = stringValues[0];
+      const parsedValues = stringValues.map(extractNumbersWithUnits);
+      
+      // Verify all values have the same structure (same number of numeric values)
+      const numCount = parsedValues[0].length;
+      if (!parsedValues.every(p => p.length === numCount)) {
+        console.warn('Animated property values have inconsistent structure:', stringValues);
+        return firstValue as T;
+      }
+      
+      // Interpolate each numeric component
+      const interpolatedMatches = parsedValues[0].map((match, index) => {
+        const numericValues = parsedValues.map(p => p[index].value);
+        const interpolatedValue = context.interp(timestamps, numericValues, 'inOut');
+        
+        return {
+          value: interpolatedValue,
+          unit: match.unit,
+          startIndex: match.startIndex,
+          endIndex: match.endIndex
+        };
+      });
+      
+      // Reconstruct the string with interpolated values
+      return reconstructString(firstValue, interpolatedMatches) as T;
+    }
+    
+    // Fallback: return first value if types are mixed or unsupported
+    console.warn('Unsupported animated property type:', values);
+    return values[0];
   }
   
   // Return constant value as-is
