@@ -131,12 +131,22 @@ export function renderElementObject(
 
 /**
  * Main entry point for executing/rendering a clip element
- * Replaces the old string-based executeClipElement
+ * Automatically wraps non-AbsoluteFill root elements in AbsoluteFill
  */
 export function executeClipElement(
   element: ElementObject,
   context: BlueprintExecutionContext
 ): React.ReactElement {
+  // If root element is not AbsoluteFill, wrap it automatically
+  if (element.name !== 'AbsoluteFill') {
+    const wrappedElement: ElementObject = {
+      name: 'AbsoluteFill',
+      props: {},
+      children: [element]
+    };
+    return renderElementObject(wrappedElement, context);
+  }
+  
   return renderElementObject(element, context);
 }
 

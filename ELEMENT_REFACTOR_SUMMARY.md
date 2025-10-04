@@ -58,6 +58,8 @@ Completely replaced string execution with structured rendering:
 
 - **`executeClipElement(element, context)`**:
   - Main entry point, calls `renderElementObject`
+  - **Automatically wraps non-AbsoluteFill root elements in AbsoluteFill**
+  - AI doesn't need to explicitly wrap elements in AbsoluteFill
   - No backward compatibility - only supports ElementObject
 
 **Removed:**
@@ -117,21 +119,16 @@ Need to update backend code generator to output ElementObject instead of string 
 **Example Output Format:**
 ```json
 {
-  "name": "AbsoluteFill",
-  "props": {},
-  "children": [
-    {
-      "name": "Video",
-      "props": {
-        "src": "http://127.0.0.1:8001/media/video.mp4",
-        "width": "100%",
-        "height": "100%",
-        "objectFit": "cover"
-      }
-    }
-  ]
+  "name": "Video",
+  "props": {
+    "src": "http://127.0.0.1:8001/media/video.mp4",
+    "width": "100%",
+    "height": "100%",
+    "objectFit": "cover"
+  }
 }
 ```
+Note: No need to wrap in AbsoluteFill - it's done automatically!
 
 **With Animations:**
 ```json

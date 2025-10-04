@@ -17,86 +17,78 @@ const defaultBlueprintExample = `[
         "startTimeInSeconds": 0,
         "endTimeInSeconds": 5,
         "element": {
-          "name": "AbsoluteFill",
+          "name": "div",
           "props": {
-            "backgroundColor": "#1a1a2e"
+            "backgroundColor": "#1a1a2e",
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%"
           },
           "children": [
             {
+              "name": "h1",
+              "props": {
+                "color": "#00d4ff",
+                "fontSize": "48px",
+                "margin": "0 0 20px 0",
+                "fontFamily": "Arial, sans-serif",
+                "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)"
+              },
+              "children": ["Nested Elements Test"]
+            },
+            {
+              "name": "p",
+              "props": {
+                "color": "#ffffff",
+                "fontSize": "24px",
+                "margin": "0 0 30px 0",
+                "fontFamily": "Arial, sans-serif"
+              },
+              "children": ["This demonstrates nested children rendering"]
+            },
+            {
               "name": "div",
               "props": {
-                "position": "absolute",
-                "top": "50%",
-                "left": "50%",
-                "transform": "translate(-50%, -50%)",
-                "width": "80%",
-                "textAlign": "center"
+                "display": "flex",
+                "justifyContent": "center",
+                "gap": "20px"
               },
               "children": [
                 {
-                  "name": "h1",
+                  "name": "span",
                   "props": {
-                    "color": "#00d4ff",
-                    "fontSize": "48px",
-                    "margin": "0 0 20px 0",
-                    "fontFamily": "Arial, sans-serif",
-                    "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)"
+                    "padding": "10px 20px",
+                    "backgroundColor": "#ff6b6b",
+                    "color": "white",
+                    "borderRadius": "8px",
+                    "fontSize": "18px"
                   },
-                  "children": ["Nested Elements Test"]
+                  "children": ["Level 1"]
                 },
                 {
-                  "name": "p",
+                  "name": "span",
                   "props": {
-                    "color": "#ffffff",
-                    "fontSize": "24px",
-                    "margin": "0",
-                    "fontFamily": "Arial, sans-serif"
+                    "padding": "10px 20px",
+                    "backgroundColor": "#4ecdc4",
+                    "color": "white",
+                    "borderRadius": "8px",
+                    "fontSize": "18px"
                   },
-                  "children": ["This demonstrates nested children rendering"]
+                  "children": ["Level 2"]
                 },
                 {
-                  "name": "div",
+                  "name": "span",
                   "props": {
-                    "marginTop": "30px",
-                    "display": "flex",
-                    "justifyContent": "center",
-                    "gap": "20px"
+                    "padding": "10px 20px",
+                    "backgroundColor": "#95e1d3",
+                    "color": "white",
+                    "borderRadius": "8px",
+                    "fontSize": "18px"
                   },
-                  "children": [
-                    {
-                      "name": "span",
-                      "props": {
-                        "padding": "10px 20px",
-                        "backgroundColor": "#ff6b6b",
-                        "color": "white",
-                        "borderRadius": "8px",
-                        "fontSize": "18px"
-                      },
-                      "children": ["Level 1"]
-                    },
-                    {
-                      "name": "span",
-                      "props": {
-                        "padding": "10px 20px",
-                        "backgroundColor": "#4ecdc4",
-                        "color": "white",
-                        "borderRadius": "8px",
-                        "fontSize": "18px"
-                      },
-                      "children": ["Level 2"]
-                    },
-                    {
-                      "name": "span",
-                      "props": {
-                        "padding": "10px 20px",
-                        "backgroundColor": "#95e1d3",
-                        "color": "white",
-                        "borderRadius": "8px",
-                        "fontSize": "18px"
-                      },
-                      "children": ["Level 3"]
-                    }
-                  ]
+                  "children": ["Level 3"]
                 }
               ]
             }
