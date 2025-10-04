@@ -72,36 +72,36 @@ export const Shuffle: React.FC<ShuffleProps> = ({
   return (
     <span className={className} style={{ display: 'inline-block', whiteSpace: 'pre-wrap', ...style }}>
       {chars.map((ch, i) => {
-        // stagger calc
+        // Two-phase animation:
+        // Phase 1: Even-indexed letters shuffle (first half)
+        // Phase 2: Odd-indexed letters shuffle (second half)
+        
+        const isEven = i % 2 === 0;
+        const halfDuration = duration / 2;
+        
         let charDelay = baseDelayFrames;
-        if (animationMode === 'evenodd') {
-          const odd = i % 2 === 1;
-          const pos = Math.floor(i / 2);
-          if (odd) {
-            charDelay += pos * stagger * fps;
-          } else {
-            const oddCount = Math.ceil(chars.length / 2);
-            const oddDuration = duration * fps + Math.max(0, oddCount - 1) * stagger * fps;
-            charDelay += oddDuration * 0.7 + pos * stagger * fps;
-          }
+        if (isEven) {
+          // Even letters animate in first half
+          charDelay += (i / 2) * stagger * fps;
         } else {
-          charDelay += i * stagger * fps;
+          // Odd letters animate in second half
+          charDelay += halfDuration * fps + ((i - 1) / 2) * stagger * fps;
         }
 
         const localFrame = frame - charDelay;
-        const prog = interpolate(localFrame, [0, duration * fps], [0, 1], {
+        const prog = interpolate(localFrame, [0, halfDuration * fps], [0, 1], {
           extrapolateLeft: 'clamp',
           extrapolateRight: 'clamp',
           easing: power3Out,
         });
 
-        // Simple slide animation - character stays the same (F -> F)
+        // Character always visible, just slides in place
         const glyph = ch;
         const color = colorForProgress(prog);
         
-        // Simple horizontal slide effect - slides in place
-        const slideDistance = 30; // pixels to slide
-        const translateX = interpolate(prog, [0, 0.5, 1], [slideDistance, 0, 0], {
+        // Slide horizontally in place - starts at position, slides out and back
+        const slideDistance = 30;
+        const translateX = interpolate(prog, [0, 0.5, 1], [0, slideDistance, 0], {
           extrapolateLeft: 'clamp',
           extrapolateRight: 'clamp',
         });
