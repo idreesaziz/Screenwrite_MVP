@@ -13,9 +13,9 @@ const defaultBlueprintExample = `[
   {
     "clips": [
       {
-        "id": "animation-test",
+        "id": "splittext-test",
         "startTimeInSeconds": 0,
-        "endTimeInSeconds": 5,
+        "endTimeInSeconds": 3,
         "element": {
           "name": "div",
           "props": {
@@ -29,119 +29,81 @@ const defaultBlueprintExample = `[
           },
           "children": [
             {
-              "name": "h1",
+              "name": "SplitText",
               "props": {
-                "color": {
-                  "timestamps": [0, 2, 4],
-                  "values": ["#00d4ff", "#ff00ff", "#00d4ff"]
-                },
-                "fontSize": {
-                  "timestamps": [0, 1, 2],
-                  "values": ["24px", "56px", "48px"]
-                },
-                "margin": "0 0 20px 0",
+                "text": "Split Text Animation",
+                "animateBy": "letters",
+                "direction": "top",
+                "delay": 0.05,
+                "duration": 0.5,
+                "fontSize": "56px",
+                "color": "#00d4ff",
                 "fontFamily": "Arial, sans-serif",
+                "fontWeight": "bold",
                 "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)",
-                "opacity": {
-                  "timestamps": [0, 1],
-                  "values": [0, 1]
-                },
-                "transform": {
-                  "timestamps": [0, 1, 3],
-                  "values": ["translateY(50px) scale(0.8)", "translateY(0px) scale(1)", "translateY(0px) scale(1.1)"]
-                }
-              },
-              "children": ["Universal Interpolation"]
+                "marginBottom": "30px"
+              }
             },
             {
-              "name": "p",
+              "name": "SplitText",
               "props": {
+                "text": "Each letter animates in",
+                "animateBy": "words",
+                "direction": "bottom",
+                "delay": 0.15,
+                "duration": 0.6,
+                "fontSize": "32px",
                 "color": "#ffffff",
-                "fontSize": "24px",
-                "margin": "0 0 30px 0",
+                "fontFamily": "Arial, sans-serif"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "blurtext-test",
+        "startTimeInSeconds": 3,
+        "endTimeInSeconds": 6,
+        "element": {
+          "name": "div",
+          "props": {
+            "backgroundColor": "#1a1a2e",
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%",
+            "height": "100%"
+          },
+          "children": [
+            {
+              "name": "BlurText",
+              "props": {
+                "text": "Blur Text Effect",
+                "animateBy": "letters",
+                "direction": "top",
+                "delay": 0.08,
+                "duration": 0.9,
+                "fontSize": "56px",
+                "color": "#ff6b6b",
                 "fontFamily": "Arial, sans-serif",
-                "opacity": {
-                  "timestamps": [0.5, 1.5],
-                  "values": [0, 1]
-                }
-              },
-              "children": ["Numbers, colors, and complex CSS strings!"]
+                "fontWeight": "bold",
+                "textShadow": "0 0 20px rgba(255, 107, 107, 0.5)",
+                "marginBottom": "30px"
+              }
             },
             {
-              "name": "div",
+              "name": "BlurText",
               "props": {
-                "display": "flex",
-                "justifyContent": "center",
-                "gap": "20px"
-              },
-              "children": [
-                {
-                  "name": "span",
-                  "props": {
-                    "padding": "10px 20px",
-                    "backgroundColor": {
-                      "timestamps": [1, 3],
-                      "values": ["#ff6b6b", "#6bff6b"]
-                    },
-                    "color": "white",
-                    "borderRadius": "8px",
-                    "fontSize": "18px",
-                    "opacity": {
-                      "timestamps": [1, 2],
-                      "values": [0, 1]
-                    },
-                    "transform": {
-                      "timestamps": [1, 2],
-                      "values": ["translateY(30px) scale(0.5)", "translateY(0px) scale(1)"]
-                    }
-                  },
-                  "children": ["Badge 1"]
-                },
-                {
-                  "name": "span",
-                  "props": {
-                    "padding": "10px 20px",
-                    "backgroundColor": {
-                      "timestamps": [1.5, 3.5],
-                      "values": ["#4ecdc4", "#c44ecd"]
-                    },
-                    "color": "white",
-                    "borderRadius": "8px",
-                    "fontSize": "18px",
-                    "opacity": {
-                      "timestamps": [1.5, 2.5],
-                      "values": [0, 1]
-                    },
-                    "transform": {
-                      "timestamps": [1.5, 2.5],
-                      "values": ["translateY(30px) scale(0.5)", "translateY(0px) scale(1)"]
-                    }
-                  },
-                  "children": ["Badge 2"]
-                },
-                {
-                  "name": "span",
-                  "props": {
-                    "padding": "10px 20px",
-                    "backgroundColor": {
-                      "timestamps": [2, 4],
-                      "values": ["#95e1d3", "#e195d3"]
-                    },
-                    "color": "white",
-                    "borderRadius": "8px",
-                    "fontSize": "18px",
-                    "opacity": {
-                      "timestamps": [2, 3],
-                      "values": [0, 1]
-                    },
-                    "transform": {
-                      "timestamps": [2, 3],
-                      "values": ["translateY(30px) scale(0.5)", "translateY(0px) scale(1)"]
-                    }
-                  },
-                  "children": ["Badge 3"]
-                }
-              ]
+                "text": "Gradual unblur animation",
+                "animateBy": "words",
+                "direction": "bottom",
+                "delay": 0.2,
+                "duration": 0.9,
+                "fontSize": "32px",
+                "color": "#ffffff",
+                "fontFamily": "Arial, sans-serif"
+              }
             }
           ]
         }

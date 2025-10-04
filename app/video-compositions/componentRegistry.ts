@@ -9,6 +9,7 @@
 import type { ComponentSchema } from './BlueprintTypes';
 import * as Remotion from 'remotion';
 import React from 'react';
+import { SplitText, BlurText } from './text-animations';
 
 export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   // Standard HTML elements - all props go to style
@@ -73,6 +74,18 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
     componentProps: ['src', 'allow', 'allowFullScreen', 'sandbox'],
     styleProps: '*'
   },
+  
+  // Text Animation Components
+  'SplitText': {
+    type: 'component',
+    componentProps: ['text', 'animateBy', 'direction', 'delay', 'duration'],
+    styleProps: '*'
+  },
+  'BlurText': {
+    type: 'component',
+    componentProps: ['text', 'animateBy', 'direction', 'delay', 'duration'],
+    styleProps: '*'
+  },
 };
 
 /**
@@ -92,6 +105,14 @@ export function getComponentSchema(componentName: string): ComponentSchema {
  * Get the actual component reference for rendering
  */
 export function getComponent(componentName: string): any {
+  // Check text animation components first
+  if (componentName === 'SplitText') {
+    return SplitText;
+  }
+  if (componentName === 'BlurText') {
+    return BlurText;
+  }
+  
   // Check Remotion namespace
   if (componentName in Remotion) {
     return (Remotion as any)[componentName];
