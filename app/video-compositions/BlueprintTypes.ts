@@ -41,7 +41,21 @@ export type AnimatedProperty<T> = T | {
   // easing is ALWAYS 'inOut' - hardcoded in renderer
 };
 
-// Element object structure - unified flat prop structure
+// Flat element structure from backend - uses parentId references
+export interface FlatElement {
+  id: string;  // Unique identifier
+  name: string;  // Component name: "div", "Video", "Img", "AbsoluteFill", etc.
+  parentId: string | null;  // ID of parent element, null for root
+  props?: Record<string, AnimatedProperty<any>>;  // All props in flat structure
+  text?: string;  // Text content for this element (if any)
+}
+
+// Container for flat element list
+export interface FlatElementContainer {
+  elements: FlatElement[];
+}
+
+// Nested element structure for rendering - built from flat elements
 export interface ElementObject {
   name: string;  // Component name: "div", "Video", "Img", "AbsoluteFill", etc.
   props?: Record<string, AnimatedProperty<any>>;  // All props in flat structure
@@ -59,7 +73,7 @@ export interface Clip {
   id: string;
   startTimeInSeconds: number;
   endTimeInSeconds: number;
-  element: ElementObject; // Changed from string to ElementObject
+  element: FlatElementContainer; // Flat structure only with elements array
   transitionToNext?: TransitionConfig;
   transitionFromPrevious?: TransitionConfig;
 }

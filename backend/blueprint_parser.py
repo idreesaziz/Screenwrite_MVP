@@ -30,6 +30,19 @@ def parse_structured_blueprint_response(response_text: str) -> Tuple[float, str]
         
     except json.JSONDecodeError as e:
         print(f"❌ JSON parsing error: {e}")
+        # Save malformed output for debugging
+        import os
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        malformed_path = f"logs/malformed_output_{timestamp}.txt"
+        os.makedirs("logs", exist_ok=True)
+        with open(malformed_path, "w") as f:
+            f.write(f"=== MALFORMED JSON OUTPUT ===\n")
+            f.write(f"Error: {e}\n")
+            f.write(f"Length: {len(response_text)} characters\n")
+            f.write(f"\n=== RAW OUTPUT ===\n")
+            f.write(response_text)
+        print(f"💾 Saved malformed output to: {malformed_path}")
         return 5.0, "[]"
     except Exception as e:
         print(f"❌ Error parsing structured response: {e}")

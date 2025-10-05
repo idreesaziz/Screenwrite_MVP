@@ -1,11 +1,12 @@
 import React from "react";
-import type { BlueprintExecutionContext, ElementObject, AnimatedProperty } from "./BlueprintTypes";
+import type { BlueprintExecutionContext, ElementObject, AnimatedProperty, FlatElementContainer } from "./BlueprintTypes";
 import { 
   getComponentSchema, 
   getComponent, 
   shouldBeComponentProp, 
   shouldBeStyleProp 
 } from "./componentRegistry";
+import { convertFlatToNested } from "./flatElementConverter";
 
 /**
  * Parse a hex color to RGB components
@@ -248,23 +249,27 @@ export function renderElementObject(
 
 /**
  * Main entry point for executing/rendering a clip element
+ * Converts flat element structure to nested tree and renders it
  * Automatically wraps non-AbsoluteFill root elements in AbsoluteFill
  */
 export function executeClipElement(
-  element: ElementObject,
+  element: FlatElementContainer,
   context: BlueprintExecutionContext
 ): React.ReactElement {
+  // Convert flat element structure to nested tree
+  const nestedElement = convertFlatToNested(element);
+  
   // If root element is not AbsoluteFill, wrap it automatically
-  if (element.name !== 'AbsoluteFill') {
+  if (nestedElement.name !== 'AbsoluteFill') {
     const wrappedElement: ElementObject = {
       name: 'AbsoluteFill',
       props: {},
-      children: [element]
+      children: [nestedElement]
     };
     return renderElementObject(wrappedElement, context);
   }
   
-  return renderElementObject(element, context);
+  return renderElementObject(nestedElement, context);
 }
 
 /**

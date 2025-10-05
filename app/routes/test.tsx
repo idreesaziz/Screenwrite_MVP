@@ -13,344 +13,108 @@ const defaultBlueprintExample = `[
   {
     "clips": [
       {
-        "id": "splittext-test",
+        "id": "clip-1",
         "startTimeInSeconds": 0,
         "endTimeInSeconds": 3,
         "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#1a1a2e",
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%"
-          },
-          "children": [
+          "elements": [
             {
-              "name": "SplitText",
+              "id": "root",
+              "name": "AbsoluteFill",
+              "parentId": null,
               "props": {
-                "text": "Split Text Animation",
-                "animateBy": "letters",
-                "direction": "top",
-                "delay": 0.05,
-                "duration": 0.5,
-                "fontSize": "56px",
+                "backgroundColor": "#1a1a2e",
+                "display": "flex",
+                "justifyContent": "center",
+                "alignItems": "center"
+              }
+            },
+            {
+              "id": "title",
+              "name": "h1",
+              "parentId": "root",
+              "props": {
+                "fontSize": "64px",
                 "color": "#00d4ff",
                 "fontFamily": "Arial, sans-serif",
                 "fontWeight": "bold",
-                "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)",
-                "marginBottom": "30px"
-              }
-            },
-            {
-              "name": "SplitText",
-              "props": {
-                "text": "Each letter animates in",
-                "animateBy": "words",
-                "direction": "bottom",
-                "delay": 0.15,
-                "duration": 0.6,
-                "fontSize": "32px",
-                "color": "#ffffff",
-                "fontFamily": "Arial, sans-serif"
-              }
+                "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)"
+              },
+              "text": "Flat Structure Test"
             }
           ]
         }
       },
       {
-        "id": "blurtext-test",
+        "id": "clip-2",
         "startTimeInSeconds": 3,
         "endTimeInSeconds": 6,
         "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#1a1a2e",
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%"
-          },
-          "children": [
+          "elements": [
             {
-              "name": "BlurText",
+              "id": "root2",
+              "name": "AbsoluteFill",
+              "parentId": null,
               "props": {
-                "text": "Blur Text Effect",
-                "animateBy": "letters",
-                "direction": "top",
-                "delay": 0.08,
-                "duration": 0.9,
-                "fontSize": "56px",
+                "backgroundColor": "#2e1a1a",
+                "display": "flex",
+                "flexDirection": "column",
+                "justifyContent": "center",
+                "alignItems": "center"
+              }
+            },
+            {
+              "id": "text1",
+              "name": "h2",
+              "parentId": "root2",
+              "props": {
+                "fontSize": "48px",
                 "color": "#ff6b6b",
-                "fontFamily": "Arial, sans-serif",
                 "fontWeight": "bold",
-                "textShadow": "0 0 20px rgba(255, 107, 107, 0.5)",
-                "marginBottom": "30px"
-              }
+                "marginBottom": "20px"
+              },
+              "text": "Second Clip"
             },
             {
-              "name": "BlurText",
+              "id": "text2",
+              "name": "p",
+              "parentId": "root2",
               "props": {
-                "text": "Gradual unblur animation",
-                "animateBy": "words",
-                "direction": "bottom",
-                "delay": 0.2,
-                "duration": 0.9,
-                "fontSize": "32px",
-                "color": "#ffffff",
-                "fontFamily": "Arial, sans-serif"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "id": "typewriter-test",
-        "startTimeInSeconds": 6,
-        "endTimeInSeconds": 10,
-        "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#1a1a2e",
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%"
-          },
-          "children": [
-            {
-              "name": "TypewriterText",
-              "props": {
-                "text": "Typewriter Effect...",
-                "typingSpeed": 15,
-                "initialDelay": 0.5,
-                "showCursor": true,
-                "cursorCharacter": "|",
-                "fontSize": "48px",
-                "color": "#00ff88",
-                "fontFamily": "monospace",
-                "marginBottom": "30px"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "id": "shuffle-test",
-        "startTimeInSeconds": 10,
-        "endTimeInSeconds": 14,
-        "element": {
-          "name": "div",
-          "props": {
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%",
-            "gap": "40px"
-          },
-          "children": [
-            {
-              "name": "Shuffle",
-              "props": {
-                "text": "SHUFFLE FROM RIGHT",
-                "shuffleDirection": "right",
-                "duration": 1.2,
-                "delay": 0.5,
-                "stagger": 0.04,
-                "shuffleTimes": 4,
-                "animationMode": "evenodd",
-                "scrambleCharset": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*",
-                "colorFrom": "#ff0066",
-                "colorTo": "#00ffff",
-                "fontSize": "48px",
-                "fontWeight": "bold",
-                "fontFamily": "monospace"
-              }
-            },
-            {
-              "name": "Shuffle",
-              "props": {
-                "text": "shuffle from left",
-                "shuffleDirection": "left",
-                "duration": 1.0,
-                "delay": 1.8,
-                "stagger": 0.03,
-                "shuffleTimes": 3,
-                "animationMode": "sequential",
-                "fontSize": "36px",
-                "color": "#ffff00",
-                "fontFamily": "sans-serif"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "id": "gradient-test",
-        "startTimeInSeconds": 14,
-        "endTimeInSeconds": 18,
-        "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#1a1a2e",
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%",
-            "gap": "40px"
-          },
-          "children": [
-            {
-              "name": "GradientText",
-              "props": {
-                "text": "ANIMATED GRADIENT",
-                "colors": ["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"],
-                "animationSpeed": 3,
-                "showBorder": false,
-                "fontSize": "56px",
-                "fontWeight": "bold",
-                "fontFamily": "Arial, sans-serif"
-              }
-            },
-            {
-              "name": "GradientText",
-              "props": {
-                "text": "with border glow",
-                "colors": ["#ff6b6b", "#feca57", "#48dbfb", "#ff9ff3"],
-                "animationSpeed": 4,
-                "showBorder": true,
-                "fontSize": "36px",
-                "fontWeight": "600",
-                "fontFamily": "Arial, sans-serif"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "id": "decrypted-test",
-        "startTimeInSeconds": 18,
-        "endTimeInSeconds": 22,
-        "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#1a1a2e",
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%",
-            "gap": "40px"
-          },
-          "children": [
-            {
-              "name": "DecryptedText",
-              "props": {
-                "text": "DECRYPTING MESSAGE",
-                "speed": 8,
-                "sequential": true,
-                "revealDirection": "start",
-                "delay": 0.5,
-                "fontSize": "56px",
-                "fontWeight": "bold",
-                "fontFamily": "monospace",
-                "color": "#00ff88"
-              }
-            },
-            {
-              "name": "DecryptedText",
-              "props": {
-                "text": "CENTER REVEAL",
-                "speed": 6,
-                "sequential": true,
-                "revealDirection": "center",
-                "delay": 2,
-                "fontSize": "42px",
-                "fontWeight": "600",
-                "fontFamily": "monospace",
-                "color": "#4079ff"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "id": "truefocus-test",
-        "startTimeInSeconds": 22,
-        "endTimeInSeconds": 28,
-        "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#0a0a0a",
-            "display": "flex",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%"
-          },
-          "children": [
-            {
-              "name": "TrueFocus",
-              "props": {
-                "text": "TRUE FOCUS ANIMATION EFFECT",
-                "blurAmount": 8,
-                "borderColor": "#00ff00",
-                "glowColor": "rgba(0, 255, 0, 0.6)",
-                "animationDuration": 0.6,
-                "pauseBetweenAnimations": 0.8,
-                "delay": 0.5,
-                "fontSize": "48px",
-                "fontWeight": "bold",
-                "fontFamily": "monospace",
+                "fontSize": "24px",
                 "color": "#ffffff"
-              }
+              },
+              "text": "With parentId references"
             }
           ]
         }
       },
       {
-        "id": "glitch-test",
-        "startTimeInSeconds": 28,
-        "endTimeInSeconds": 34,
+        "id": "clip-3",
+        "startTimeInSeconds": 6,
+        "endTimeInSeconds": 9,
         "element": {
-          "name": "div",
-          "props": {
-            "backgroundColor": "#060010",
-            "display": "flex",
-            "justifyContent": "center",
-            "alignItems": "center",
-            "width": "100%",
-            "height": "100%"
-          },
-          "children": [
+          "elements": [
             {
-              "name": "GlitchText",
+              "id": "root3",
+              "name": "AbsoluteFill",
+              "parentId": null,
               "props": {
-                "text": "GLITCH",
-                "speed": 1.5,
-                "enableShadows": true,
-                "shadowColors": {
-                  "red": "#ff0000",
-                  "cyan": "#00ffff"
-                },
-                "glitchIntensity": 10,
-                "delay": 0.3,
-                "fontSize": "128px",
-                "fontWeight": "900",
-                "color": "#ffffff",
-                "backgroundColor": "#060010"
+                "backgroundColor": "#1a2e1a",
+                "display": "flex",
+                "justifyContent": "center",
+                "alignItems": "center"
               }
+            },
+            {
+              "id": "msg3",
+              "name": "h1",
+              "parentId": "root3",
+              "props": {
+                "fontSize": "52px",
+                "color": "#00ff88",
+                "fontWeight": "bold"
+              },
+              "text": "Third Clip"
             }
           ]
         }

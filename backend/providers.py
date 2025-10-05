@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 import anthropic
 import openai
+from element_schemas import build_simple_element_schema
 
 
 class AIProvider:
@@ -29,12 +30,19 @@ class GeminiProvider(AIProvider):
             api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
             if not api_key:
                 raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required")
-            self.api_client = genai.Client(api_key=api_key)
+            self.api_client = genai.Client(
+                vertexai=True,
+                api_key=api_key
+            )
         else:
             self.api_client = api_client
     
     def generate_content(self, system_instruction: str, user_prompt: str) -> str:
-        # Define the schema using Gemini's Schema format directly
+        """Generate structured output with Gemini using JSON schema."""
+        # Get flattened 3-level element schema (no $ref recursion)
+        element_object_schema = build_simple_element_schema()
+
+        # Define the schema for the blueprint
         schema = {
             "type": "array",
             "items": {
@@ -48,7 +56,7 @@ class GeminiProvider(AIProvider):
                                 "id": {"type": "string"},
                                 "startTimeInSeconds": {"type": "number"},
                                 "endTimeInSeconds": {"type": "number"},
-                                "element": {"type": "string"},
+                                "element": element_object_schema,
                                 "transitionFromPrevious": {
                                     "type": "object",
                                     "properties": {
@@ -83,7 +91,9 @@ class GeminiProvider(AIProvider):
                 "system_instruction": system_instruction,
                 "temperature": 0.1,
                 "response_mime_type": "application/json",
-                "response_schema": schema
+                "response_schema": schema,
+                "thinking_config": types.ThinkingConfig(thinking_budget=0),
+                "max_output_tokens": 8192
             }
         )
         return response.text.strip()
@@ -150,6 +160,10 @@ class OpenAIProvider(AIProvider):
         self.client = openai.OpenAI(api_key=openai_api_key)
     
     def generate_content(self, system_instruction: str, user_prompt: str) -> str:
+        """Generate structured output with OpenAI using JSON schema."""
+        # Get flattened 3-level element schema (no $ref recursion)
+        element_object_schema = build_simple_element_schema()
+        
         # Define the schema using OpenAI's JSON schema format - must be an object at root level
         schema = {
             "type": "object",
@@ -167,7 +181,7 @@ class OpenAIProvider(AIProvider):
                                         "id": {"type": "string"},
                                         "startTimeInSeconds": {"type": "number"},
                                         "endTimeInSeconds": {"type": "number"},
-                                        "element": {"type": "string"},
+                                        "element": element_object_schema,
                                         "transitionFromPrevious": {
                                             "type": "object",
                                             "properties": {
@@ -199,7 +213,7 @@ class OpenAIProvider(AIProvider):
         }
         
         response = self.client.chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_prompt}
