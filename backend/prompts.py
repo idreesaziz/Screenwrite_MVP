@@ -16,8 +16,8 @@ Return a JSON array of tracks. Each track contains clips with timing and element
         "endTimeInSeconds": 5,
         "element": {
           "elements": [
-            {"id": "root", "name": "AbsoluteFill", "parentId": null, "props": {"style": {"backgroundColor": "#000"}}},
-            {"id": "text1", "name": "span", "parentId": "root", "props": {"style": {"color": "#fff", "fontSize": "48px"}}, "text": "Hello"}
+            "AbsoluteFill;id:root;parent:null;backgroundColor:#000;display:flex;justifyContent:center;alignItems:center",
+            "h1;id:title;parent:root;fontSize:48px;color:#fff;fontWeight:700;text:Hello World"
           ]
         }
       }
@@ -25,28 +25,52 @@ Return a JSON array of tracks. Each track contains clips with timing and element
   }
 ]
 
-**ELEMENT STRUCTURE (CRITICAL)**
+**ELEMENT FORMAT (CRITICAL)**
 
-Each element in the "elements" array must have:
-- id: unique identifier (required)
-- name: component type - "AbsoluteFill", "Video", "Audio", "Img", "div", "span", "h1", "p" (required)
-- parentId: ID of parent element, or null for root (required)
-- props: object with properties (optional)
-  - style: object with CSS properties like {backgroundColor: "#000", fontSize: "48px"}
-  - src: URL for Video/Audio/Img components  
-  - volume, startFrom, endAt: for media components
-- text: text content for this element (optional)
+Each element is a semicolon-separated string in format:
+ComponentName;id:uniqueId;parent:parentId;property:value;property:value;text:content
 
-DO NOT use nested "children" arrays. Build tree using parentId references.
+REQUIRED FIELDS:
+- id: Unique identifier (must be unique across all elements)
+- parent: Parent element id (use "null" for root element)
+
+FORMAT RULES:
+- Semicolons separate all properties
+- Format: property:value
+- Use camelCase for property names (fontSize not font-size)
+- No quotes around values
+- Text content: text:Your text here (can contain spaces)
+- Arrays: colors:[#ff0000,#00ff00,#0000ff] (square brackets, no spaces between items)
+
+COMPONENTS:
+- AbsoluteFill: Full-screen container (use as root)
+- Video, Audio, Img: Media elements (require src property with exact URL)
+- div, span, h1, h2, h3, p: Text and container elements
+- BlurText, TypewriterText, GradientText: Text animations
+
+KEY PROPERTIES:
+- Layout: display, position, top, left, right, bottom, width, height
+- Flexbox: flexDirection, justifyContent, alignItems, gap
+- Typography: fontSize, fontWeight, fontFamily, color, textAlign
+- Styling: backgroundColor, background, opacity, transform, borderRadius
+- Media: src (exact URL), volume, startFrom, endAt, muted
+- Animation: text, delay, duration, direction, animateBy
+
+EXAMPLES:
+"AbsoluteFill;id:root;parent:null;backgroundColor:#000;display:flex;justifyContent:center;alignItems:center"
+"Video;id:bg;parent:root;src:/exact-url.mp4;volume:0.5;width:100%;height:100%"
+"h1;id:title;parent:root;fontSize:48px;color:#fff;fontWeight:700;text:Hello World"
+"div;id:box;parent:root;background:linear-gradient(to right, #ff0000, #0000ff);padding:20px;borderRadius:8px"
+"BlurText;id:blur1;parent:root;text:Fade In;fontSize:32px;delay:0.5;duration:1;direction:up;color:#fff"
 
 **RULES**
 
-1. Root element must have "parentId": null
-2. Other elements reference parent via "parentId"
-3. Use "text" field for text content, not children
-4. CSS properties go in props.style object, in camelCase (backgroundColor not background-color)
-5. Clips on same track cannot overlap in time
-6. Use exact media URLs provided, never generic filenames
+1. Root element MUST have parent:null
+2. All other elements MUST reference valid parent via parent:parentId
+3. Use exact media URLs provided - never use generic filenames
+4. Clips on same track cannot overlap in time
+5. Complex CSS values work (rgba(255,0,0,0.5), translate(-50%, -50%), etc)
+6. Always include id and parent fields for every element
 
 Return valid JSON matching the structure above.
 """
@@ -100,9 +124,9 @@ def build_media_section(media_library: list) -> str:
     return media_section
 
 
-def build_composition_context(current_composition: list | None) -> str:
+def build_composition_context(current_composition: list) -> str:
     """Build context section for incremental editing"""
-    if not current_composition:
+    if not current_composition or len(current_composition) == 0:
         return ""
     
     composition_context = f"\nEXISTING COMPOSITION: {len(current_composition)} tracks, "

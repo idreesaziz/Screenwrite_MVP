@@ -77,8 +77,10 @@ async def generate_composition_with_validation(
             f.write(f"// User Request: {request.get('user_request', '')}\n")
             f.write(f"// AI Provider: {provider.__class__.__name__}\n")
             f.write(f"// Calculated Duration: {duration} seconds\n")
-            f.write(f"// Current Composition Tracks: {len(request.get('current_composition', []))}\n")
-            f.write(f"// Media Library Items: {len(request.get('media_library', []))}\n")
+            current_composition = request.get('current_composition') or []
+            media_library = request.get('media_library') or []
+            f.write(f"// Current Composition Tracks: {len(current_composition)}\n")
+            f.write(f"// Media Library Items: {len(media_library)}\n")
             f.write(f"// CompositionBlueprint JSON\n")
             f.write(f"// ======================================\n\n")
             f.write(blueprint_json)
