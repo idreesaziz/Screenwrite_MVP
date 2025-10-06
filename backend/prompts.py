@@ -100,9 +100,9 @@ def build_media_section(media_library: list) -> str:
     return media_section
 
 
-def build_composition_context(current_composition: list) -> str:
+def build_composition_context(current_composition: list | None) -> str:
     """Build context section for incremental editing"""
-    if not current_composition or len(current_composition) == 0:
+    if not current_composition:
         return ""
     
     composition_context = f"\nEXISTING COMPOSITION: {len(current_composition)} tracks, "
