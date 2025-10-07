@@ -50,10 +50,18 @@ export interface FlatElement {
   text?: string;  // Text content for this element (if any)
 }
 
-// Container for flat element list
+// Container for flat element list (internal use only after parsing)
 export interface FlatElementContainer {
   elements: FlatElement[];
 }
+
+// Container for string element list (required format from AI)
+export interface StringElementContainer {
+  elements: string[];
+}
+
+// Only string format is accepted
+export type ElementContainer = StringElementContainer;
 
 // Nested element structure for rendering - built from flat elements
 export interface ElementObject {
@@ -73,7 +81,7 @@ export interface Clip {
   id: string;
   startTimeInSeconds: number;
   endTimeInSeconds: number;
-  element: FlatElementContainer; // Flat structure only with elements array
+  element: ElementContainer; // Supports both string[] and FlatElement[] formats
   transitionToNext?: TransitionConfig;
   transitionFromPrevious?: TransitionConfig;
 }

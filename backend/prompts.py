@@ -84,17 +84,7 @@ EXAMPLE - Two-Layer Video:
 ]
 
 This creates: Background video (0-10s) with title overlay on top (0-5s)
-
-WHEN TO USE MULTIPLE TRACKS:
-- Layering video with text overlays
-- Picture-in-picture effects
-- Multiple simultaneous visual elements
-- Animations that need to appear over background content
-
-WHEN TO USE SINGLE TRACK:
-- Simple sequential scenes
-- One thing after another with transitions
-- No overlapping content needed"""
+"""
 
 TRANSITIONS_SYSTEM = """**TRANSITION SYSTEM**
 

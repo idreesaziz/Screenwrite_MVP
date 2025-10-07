@@ -18,30 +18,10 @@ const defaultBlueprintExample = `[
         "endTimeInSeconds": 3,
         "element": {
           "elements": [
-            {
-              "id": "root",
-              "name": "AbsoluteFill",
-              "parentId": null,
-              "props": {
-                "backgroundColor": "#1a1a2e",
-                "display": "flex",
-                "justifyContent": "center",
-                "alignItems": "center"
-              }
-            },
-            {
-              "id": "title",
-              "name": "h1",
-              "parentId": "root",
-              "props": {
-                "fontSize": "64px",
-                "color": "#00d4ff",
-                "fontFamily": "Arial, sans-serif",
-                "fontWeight": "bold",
-                "textShadow": "0 0 20px rgba(0, 212, 255, 0.5)"
-              },
-              "text": "Flat Structure Test"
-            }
+            "AbsoluteFill;id:root;parent:null;backgroundColor:#1a1a2e",
+            "div;id:container;parent:root;display:flex;flexDirection:column;justifyContent:center;alignItems:center;width:100%;height:100%",
+            "h1;id:title;parent:container;text:String Element Format;fontSize:56px;color:#00d4ff;fontFamily:Arial, sans-serif;fontWeight:bold;textShadow:0 0 20px rgba(0, 212, 255, 0.5);marginBottom:30px",
+            "p;id:subtitle;parent:container;text:Using semicolon-separated string format;fontSize:32px;color:#ffffff;fontFamily:Arial, sans-serif"
           ]
         }
       },
@@ -51,40 +31,10 @@ const defaultBlueprintExample = `[
         "endTimeInSeconds": 6,
         "element": {
           "elements": [
-            {
-              "id": "root2",
-              "name": "AbsoluteFill",
-              "parentId": null,
-              "props": {
-                "backgroundColor": "#2e1a1a",
-                "display": "flex",
-                "flexDirection": "column",
-                "justifyContent": "center",
-                "alignItems": "center"
-              }
-            },
-            {
-              "id": "text1",
-              "name": "h2",
-              "parentId": "root2",
-              "props": {
-                "fontSize": "48px",
-                "color": "#ff6b6b",
-                "fontWeight": "bold",
-                "marginBottom": "20px"
-              },
-              "text": "Second Clip"
-            },
-            {
-              "id": "text2",
-              "name": "p",
-              "parentId": "root2",
-              "props": {
-                "fontSize": "24px",
-                "color": "#ffffff"
-              },
-              "text": "With parentId references"
-            }
+            "AbsoluteFill;id:root2;parent:null;backgroundColor:#2e1a1a",
+            "div;id:box;parent:root2;display:flex;justifyContent:center;alignItems:center;width:100%;height:100%",
+            "h2;id:message;parent:box;text:Second Clip with Animations!;fontSize:48px;color:#ff6b6b;fontWeight:bold",
+            "div;id:animated-box;parent:box;width:100px;height:100px;backgroundColor:#4ecdc4;marginTop:30px;opacity:@animate[3,4,5,6]:[0,1,1,0];transform:@animate[3,4,5,6]:[translateY(50px),translateY(0px),translateY(0px),translateY(-50px)]"
           ]
         }
       },
@@ -94,28 +44,10 @@ const defaultBlueprintExample = `[
         "endTimeInSeconds": 9,
         "element": {
           "elements": [
-            {
-              "id": "root3",
-              "name": "AbsoluteFill",
-              "parentId": null,
-              "props": {
-                "backgroundColor": "#1a2e1a",
-                "display": "flex",
-                "justifyContent": "center",
-                "alignItems": "center"
-              }
-            },
-            {
-              "id": "msg3",
-              "name": "h1",
-              "parentId": "root3",
-              "props": {
-                "fontSize": "52px",
-                "color": "#00ff88",
-                "fontWeight": "bold"
-              },
-              "text": "Third Clip"
-            }
+            "AbsoluteFill;id:root3;parent:null;backgroundColor:#1a2e1a",
+            "div;id:center;parent:root3;display:flex;justifyContent:center;alignItems:center;flexDirection:column;width:100%;height:100%",
+            "SplitText;id:split1;parent:center;text:Animated Text Components;animateBy:letters;direction:top;delay:0.05;duration:0.3;fontSize:48px;color:#7bed9f;fontWeight:bold",
+            "BlurText;id:blur1;parent:center;text:With blur effects;animateBy:words;direction:bottom;delay:0.1;duration:0.5;fontSize:32px;color:#ffffff;marginTop:20px"
           ]
         }
       }
@@ -167,9 +99,9 @@ export default function TestPage() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Blueprint Test Player</h1>
+          <h1 className="text-3xl font-bold mb-2">String Element Parser Test</h1>
           <p className="text-muted-foreground">
-            Paste your composition blueprint JSON and preview it instantly
+            Testing new semicolon-separated string format with @animate syntax
           </p>
         </div>
 
@@ -177,9 +109,9 @@ export default function TestPage() {
           {/* Blueprint Input */}
           <Card>
             <CardHeader>
-              <CardTitle>Composition Blueprint</CardTitle>
+              <CardTitle>Blueprint JSON (String Format)</CardTitle>
               <CardDescription>
-                Paste your blueprint JSON here and click "Load Blueprint" to preview
+                Elements as semicolon-separated strings with @animate syntax for animations
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

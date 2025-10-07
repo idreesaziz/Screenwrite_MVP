@@ -1,5 +1,10 @@
 import React from "react";
-import type { BlueprintExecutionContext, ElementObject, AnimatedProperty, FlatElementContainer } from "./BlueprintTypes";
+import type { 
+  BlueprintExecutionContext, 
+  ElementObject, 
+  AnimatedProperty, 
+  ElementContainer 
+} from "./BlueprintTypes";
 import { 
   getComponentSchema, 
   getComponent, 
@@ -7,6 +12,10 @@ import {
   shouldBeStyleProp 
 } from "./componentRegistry";
 import { convertFlatToNested } from "./flatElementConverter";
+import { 
+  convertStringElementsToFlat, 
+  hasStringElements
+} from "./stringElementParser";
 
 /**
  * Parse a hex color to RGB components
@@ -249,15 +258,24 @@ export function renderElementObject(
 
 /**
  * Main entry point for executing/rendering a clip element
- * Converts flat element structure to nested tree and renders it
+ * Converts string element structure to nested tree and renders it
  * Automatically wraps non-AbsoluteFill root elements in AbsoluteFill
  */
 export function executeClipElement(
-  element: FlatElementContainer,
+  element: ElementContainer,
   context: BlueprintExecutionContext
 ): React.ReactElement {
+  // Only accept string format - convert to flat elements first
+  if (!hasStringElements(element)) {
+    throw new Error('Invalid element container: must have string[] elements in format "ComponentName;id:value;parent:value;prop:value"');
+  }
+  
+  // Parse string elements to flat element objects
+  const flatElements = convertStringElementsToFlat(element.elements);
+  const flatElementContainer = { elements: flatElements };
+  
   // Convert flat element structure to nested tree
-  const nestedElement = convertFlatToNested(element);
+  const nestedElement = convertFlatToNested(flatElementContainer);
   
   // If root element is not AbsoluteFill, wrap it automatically
   if (nestedElement.name !== 'AbsoluteFill') {
