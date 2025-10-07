@@ -215,6 +215,61 @@ FORMAT RULES:
 - Booleans: muted:true or showCursor:false
 - Numbers: volume:0.8 or delay:2"""
 
+ANIMATIONS = """**ANIMATIONS**
+
+Animate any CSS property using @animate syntax:
+property:@animate[timestamp1,timestamp2,...]:[value1,value2,...]
+
+ANIMATION RULES:
+- Timestamps are GLOBAL composition time in seconds (NOT clip-relative)
+- Must have at least 2 keyframes (2 timestamps, 2 values)
+- Number of timestamps must equal number of values
+- All animations use 'inOut' easing (smooth acceleration/deceleration)
+
+SUPPORTED ANIMATION TYPES:
+
+1. NUMERIC VALUES (opacity, numbers):
+   opacity:@animate[0,1,2]:[0,1,0]
+   - Animates opacity from 0 to 1 to 0 over 2 seconds
+
+2. VALUES WITH UNITS (fontSize, width, height, margins, padding):
+   fontSize:@animate[0,1,2]:[16px,48px,16px]
+   width:@animate[0,2]:[100px,500px]
+   marginTop:@animate[1,3]:[-50px,0px]
+
+3. COLORS (hex format):
+   color:@animate[0,1,2]:[#ff0000,#00ff00,#0000ff]
+   backgroundColor:@animate[0,2]:[#000000,#ffffff]
+
+4. TRANSFORMS (translateX, translateY, rotate, scale):
+   transform:@animate[0,2]:[translateX(0px),translateX(100px)]
+   transform:@animate[0,1,2]:[rotate(0deg),rotate(180deg),rotate(360deg)]
+   transform:@animate[0,1]:[scale(1),scale(1.5)]
+   - Can combine: transform:@animate[0,2]:[translateX(0px) scale(1),translateX(100px) scale(1.5)]
+
+5. COMPLEX CSS (filters, shadows):
+   filter:@animate[0,1]:[blur(0px),blur(10px)]
+   boxShadow:@animate[0,1]:[0px 0px 0px rgba(0,0,0,0),0px 4px 20px rgba(0,0,0,0.5)]
+
+TIMING EXAMPLES:
+- Clip from 0-3s, animate 0-3s: opacity:@animate[0,1,2,3]:[0,1,1,0]
+- Clip from 5-8s, animate 5-8s: opacity:@animate[5,6,7,8]:[0,1,1,0]
+- Fade in over 1s: opacity:@animate[0,1]:[0,1]
+- Slide right: transform:@animate[0,2]:[translateX(-100px),translateX(0px)]
+
+COMMON PATTERNS:
+- Fade in: opacity:@animate[startTime,startTime+1]:[0,1]
+- Fade out: opacity:@animate[endTime-1,endTime]:[1,0]
+- Slide from left: transform:@animate[startTime,startTime+0.5]:[translateX(-100px),translateX(0px)]
+- Scale bounce: transform:@animate[0,0.3,0.6]:[scale(0),scale(1.1),scale(1)]
+- Color pulse: color:@animate[0,0.5,1]:[#ffffff,#ff0000,#ffffff]
+
+IMPORTANT NOTES:
+- Use GLOBAL timestamps (clip's actual time in composition, not 0-based)
+- Don't animate props that components control internally (like text animation component delays)
+- Can combine multiple animated props on same element
+- Static and animated props can coexist on same element"""
+
 COMPONENTS_CATALOG = """**COMPONENTS**
 
 MEDIA COMPONENTS (require src property):
@@ -436,6 +491,7 @@ def build_system_instruction() -> str:
         LAYERING_SYSTEM,
         TRANSITIONS_SYSTEM,
         ELEMENT_FORMAT,
+        ANIMATIONS,
         COMPONENTS_CATALOG,
         PROPERTIES_CATALOG,
         EXAMPLES,
