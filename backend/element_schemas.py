@@ -20,8 +20,9 @@ def build_simple_element_schema():
                 "description": """Array of element definitions. Each element is a semicolon-separated string in format:
 ComponentName;id:uniqueId;parent:parentId;property:value;property:value;text:content
 
-COMPONENTS (21 types for video composition):
-- AbsoluteFill: Full-screen positioned container (use as root)
+IMPLICIT ROOT: Every clip has an implicit AbsoluteFill root element. Use parent:root for top-level elements.
+
+COMPONENTS (20 types for video composition - AbsoluteFill is implicit):
 - Video: Video element (props: src, volume, startFrom, endAt, muted, playbackRate)
 - Audio: Audio element (props: src, volume, startFrom, endAt, muted)
 - Img: Image element (props: src)
@@ -105,9 +106,15 @@ Animation Properties:
 - colors: Array notation for GradientText - colors:[#ff0000,#00ff00,#0000ff]
 - animationSpeed: Speed for DecryptedText
 
-REQUIRED FIELDS:
-- id: Unique identifier (must be unique across all elements)
-- parent: Parent element id (use "null" for root element)
+REQUIRED FIELDS FOR ALL ELEMENTS:
+- id: Unique identifier for this element
+- parent: Parent element id (use "root" for top-level elements - root AbsoluteFill is implicit)
+- Standard CSS properties: display, position, width, height, top, left, right, bottom, padding, margin, color, backgroundColor, fontSize, fontWeight, zIndex, etc.
+
+EXAMPLE (with animations using @animate syntax):
+h1;id:title;parent:root;text:Hello World;fontSize:48px;color:white;top:@animate[0,30]:[50%,20%]
+div;id:container;parent:root;width:80%;height:400px;left:10%;top:30%;backgroundColor:rgba(255,255,255,0.1)
+p;id:desc;parent:container;text:Description text;fontSize:24px;color:#ccc;opacity:@animate[30,60]:[0,1]
 
 FORMAT RULES:
 - Semicolons separate all properties

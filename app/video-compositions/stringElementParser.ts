@@ -81,10 +81,9 @@ export function parseStringElement(elementString: string): FlatElement {
     throw new Error(`Missing required "id" property in element "${name}"`);
   }
   
-  // Note: parentId can be null for root elements, so we don't validate it
-  // But we should validate that "parent" was specified
+  // Validate that "parent" was specified (implicit root system requires this)
   if (!parts.some(p => p.trim().startsWith('parent:'))) {
-    throw new Error(`Missing required "parent" property in element "${name}" (id: ${element.id})`);
+    throw new Error(`Missing required "parent" property in element "${name}" (id: ${element.id}). Use parent:root for top-level elements.`);
   }
   
   return element;
@@ -236,9 +235,10 @@ function parseSimpleValue(value: string): any {
 
 /**
  * Convert an array of string elements to FlatElement array
+ * Automatically adds implicit AbsoluteFill root element
  */
 export function convertStringElementsToFlat(stringElements: string[]): FlatElement[] {
-  return stringElements.map((elementString, index) => {
+  const parsedElements = stringElements.map((elementString, index) => {
     try {
       return parseStringElement(elementString);
     } catch (error) {
@@ -248,6 +248,16 @@ export function convertStringElementsToFlat(stringElements: string[]): FlatEleme
       );
     }
   });
+  
+  // Automatically prepend implicit AbsoluteFill root element
+  const implicitRoot: FlatElement = {
+    id: 'root',
+    name: 'AbsoluteFill',
+    parentId: null,
+    props: {}
+  };
+  
+  return [implicitRoot, ...parsedElements];
 }
 
 /**

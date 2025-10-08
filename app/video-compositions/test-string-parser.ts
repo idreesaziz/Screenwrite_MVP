@@ -7,10 +7,10 @@ import { parseStringElement, convertStringElementsToFlat } from './stringElement
 
 console.log('=== STRING ELEMENT PARSER TESTS ===\n');
 
-// Test 1: Simple element
-console.log('Test 1: Simple element');
+// Test 1: Simple element with parent:root (implicit root system)
+console.log('Test 1: Simple element with parent:root');
 try {
-  const result = parseStringElement('AbsoluteFill;id:root;parent:null;backgroundColor:#000');
+  const result = parseStringElement('div;id:container;parent:root;backgroundColor:#000;width:100%;height:100%');
   console.log('✅ Result:', JSON.stringify(result, null, 2));
 } catch (error) {
   console.log('❌ Error:', error);
@@ -97,16 +97,16 @@ try {
   console.log('❌ Error:', error);
 }
 
-// Test 11: Convert multiple string elements
-console.log('\nTest 11: Convert multiple string elements');
+// Test 11: Convert multiple string elements (implicit root)
+console.log('\nTest 11: Convert multiple string elements with implicit root');
 try {
   const stringElements = [
-    'AbsoluteFill;id:root;parent:null;backgroundColor:#000',
     'div;id:box1;parent:root;width:100px;height:100px;backgroundColor:#f00',
     'h1;id:title1;parent:box1;text:Hello;fontSize:32px;color:#fff'
   ];
   const result = convertStringElementsToFlat(stringElements);
-  console.log('✅ Result:', JSON.stringify(result, null, 2));
+  console.log('✅ Result (should have implicit AbsoluteFill root prepended):', JSON.stringify(result, null, 2));
+  console.log('✅ Root element:', result[0].name === 'AbsoluteFill' && result[0].id === 'root' ? 'CORRECT' : 'WRONG');
 } catch (error) {
   console.log('❌ Error:', error);
 }

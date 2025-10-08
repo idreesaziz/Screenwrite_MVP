@@ -271,22 +271,14 @@ export function executeClipElement(
   }
   
   // Parse string elements to flat element objects
+  // Note: convertStringElementsToFlat automatically adds implicit AbsoluteFill root
   const flatElements = convertStringElementsToFlat(element.elements);
   const flatElementContainer = { elements: flatElements };
   
   // Convert flat element structure to nested tree
   const nestedElement = convertFlatToNested(flatElementContainer);
   
-  // If root element is not AbsoluteFill, wrap it automatically
-  if (nestedElement.name !== 'AbsoluteFill') {
-    const wrappedElement: ElementObject = {
-      name: 'AbsoluteFill',
-      props: {},
-      children: [nestedElement]
-    };
-    return renderElementObject(wrappedElement, context);
-  }
-  
+  // Root is always AbsoluteFill now (implicit root), no wrapping needed
   return renderElementObject(nestedElement, context);
 }
 

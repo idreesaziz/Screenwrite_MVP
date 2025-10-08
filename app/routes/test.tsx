@@ -18,10 +18,9 @@ const defaultBlueprintExample = `[
         "endTimeInSeconds": 3,
         "element": {
           "elements": [
-            "AbsoluteFill;id:root;parent:null;backgroundColor:#1a1a2e",
-            "div;id:container;parent:root;display:flex;flexDirection:column;justifyContent:center;alignItems:center;width:100%;height:100%",
-            "h1;id:title;parent:container;text:String Element Format;fontSize:56px;color:#00d4ff;fontFamily:Arial, sans-serif;fontWeight:bold;textShadow:0 0 20px rgba(0, 212, 255, 0.5);marginBottom:30px",
-            "p;id:subtitle;parent:container;text:Using semicolon-separated string format;fontSize:32px;color:#ffffff;fontFamily:Arial, sans-serif"
+            "div;id:container;parent:root;display:flex;flexDirection:column;justifyContent:center;alignItems:center;width:100%;height:100%;backgroundColor:#1a1a2e",
+            "h1;id:title;parent:container;text:Implicit Root System;fontSize:56px;color:#00d4ff;fontFamily:Arial, sans-serif;fontWeight:bold;textShadow:0 0 20px rgba(0, 212, 255, 0.5);marginBottom:30px",
+            "p;id:subtitle;parent:container;text:AbsoluteFill root is automatic;fontSize:32px;color:#ffffff;fontFamily:Arial, sans-serif"
           ]
         }
       },
@@ -31,8 +30,7 @@ const defaultBlueprintExample = `[
         "endTimeInSeconds": 6,
         "element": {
           "elements": [
-            "AbsoluteFill;id:root2;parent:null;backgroundColor:#2e1a1a",
-            "div;id:box;parent:root2;display:flex;justifyContent:center;alignItems:center;width:100%;height:100%",
+            "div;id:box;parent:root;display:flex;justifyContent:center;alignItems:center;width:100%;height:100%;backgroundColor:#2e1a1a",
             "h2;id:message;parent:box;text:Second Clip with Animations!;fontSize:48px;color:#ff6b6b;fontWeight:bold",
             "div;id:animated-box;parent:box;width:100px;height:100px;backgroundColor:#4ecdc4;marginTop:30px;opacity:@animate[3,4,5,6]:[0,1,1,0];transform:@animate[3,4,5,6]:[translateY(50px),translateY(0px),translateY(0px),translateY(-50px)]"
           ]
@@ -44,8 +42,7 @@ const defaultBlueprintExample = `[
         "endTimeInSeconds": 9,
         "element": {
           "elements": [
-            "AbsoluteFill;id:root3;parent:null;backgroundColor:#1a2e1a",
-            "div;id:center;parent:root3;display:flex;justifyContent:center;alignItems:center;flexDirection:column;width:100%;height:100%",
+            "div;id:center;parent:root;display:flex;justifyContent:center;alignItems:center;flexDirection:column;width:100%;height:100%;backgroundColor:#1a2e1a",
             "SplitText;id:split1;parent:center;text:Animated Text Components;animateBy:letters;direction:top;delay:0.05;duration:0.3;fontSize:48px;color:#7bed9f;fontWeight:bold",
             "BlurText;id:blur1;parent:center;text:With blur effects;animateBy:words;direction:bottom;delay:0.1;duration:0.5;fontSize:32px;color:#ffffff;marginTop:20px"
           ]
