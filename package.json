@@ -30,6 +30,7 @@
     "@remotion/renderer": "4.0.340",
     "@remotion/transitions": "4.0.340",
     "@remotion/zod-types": "4.0.340",
+    "@supabase/supabase-js": "^2.74.0",
     "@types/cors": "^2.8.19",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",

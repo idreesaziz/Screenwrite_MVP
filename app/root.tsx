@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./components/ui/ThemeProvider";
+import { AuthProvider } from "./components/auth/AuthProvider";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.png" },
@@ -37,10 +38,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <ThemeProvider>
-          <main className="h-screen w-full overflow-hidden">{children}</main>
-          <Toaster position="top-right" expand={false} richColors closeButton />
-          <ScrollRestoration />
-          <Scripts />
+          <AuthProvider>
+            <main className="h-screen w-full overflow-hidden">{children}</main>
+            <Toaster position="top-right" expand={false} richColors closeButton />
+            <ScrollRestoration />
+            <Scripts />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

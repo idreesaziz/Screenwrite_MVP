@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   Undo2,
   Redo2,
+  LogOut,
 } from "lucide-react";
 
 import { useTheme } from "next-themes";
@@ -37,6 +38,7 @@ import { toast } from "sonner";
 import { useMediaBin } from "~/hooks/useMediaBin";
 import { useRenderer } from "~/hooks/useRenderer";
 import { useUndoRedo, useUndoRedoShortcuts } from "~/hooks/useUndoRedo";
+import { useAuth } from "~/hooks/useAuth";
 
 
 // Types and constants
@@ -60,6 +62,7 @@ export default function TimelineEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { theme, setTheme } = useTheme();
+  const { signOut, user } = useAuth();
 
   const navigate = useNavigate();
 
@@ -606,6 +609,24 @@ export default function TimelineEditor() {
         </div>
 
         <div className="flex items-center gap-1">
+          {/* User Info */}
+          {user && (
+            <span className="text-xs text-muted-foreground px-2">
+              {user.email}
+            </span>
+          )}
+          
+          {/* Sign Out */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => signOut()}
+            className="h-7 w-7 p-0 hover:bg-muted"
+            title="Sign Out"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </Button>
+          
           {/* Theme Toggle */}
           <Button
             variant="ghost"
