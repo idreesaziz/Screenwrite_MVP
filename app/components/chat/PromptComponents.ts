@@ -158,6 +158,75 @@ Best Practices:
 - Consider visual flow and pacing in suggestions
 `;
 
+// Custom text animation components
+export const CUSTOM_TEXT_COMPONENTS = `
+CUSTOM TEXT ANIMATION COMPONENTS - PREFER THESE OVER MANUAL ANIMATIONS:
+
+**IMPORTANT: These components handle ENTRANCE animations only. For exit effects, use separate fade-out animations or transitions.**
+
+Available Components:
+
+1. **SplitText** - Letter-by-letter or word-by-word slide-in reveal
+   Visual Effect: Text appears one letter/word at a time, sliding in from top or bottom
+   Use When: You want dynamic, attention-grabbing text introductions
+   Note: Only animates IN - for fade out, add separate opacity animation
+   Best For: Titles, headlines, emphasis text
+
+2. **BlurText** - Letter-by-letter or word-by-word blur fade-in
+   Visual Effect: Text fades in with blur effect, each letter/word appears progressively
+   Use When: You want smooth, elegant text reveals with depth
+   Note: Only animates IN - combine with fade-out for complete effect
+   Best For: Subtitles, captions, elegant intros
+
+3. **TypewriterText** - Typing effect with optional blinking cursor
+   Visual Effect: Text types out character-by-character like a typewriter
+   Use When: You want retro, nostalgic, or tech-themed text
+   Note: Can loop through multiple texts, animates typing IN only
+   Best For: Code snippets, terminal-style text, typewriter aesthetics
+
+4. **GradientText** - Animated moving gradient text
+   Visual Effect: Gradient colors flow smoothly across text continuously
+   Use When: You want vibrant, eye-catching, colorful text
+   Note: Loops continuously throughout clip duration
+   Best For: Flashy titles, modern aesthetics, brand colors
+
+5. **Shuffle** - Scramble-to-reveal effect with color transition
+   Visual Effect: Random characters shuffle and resolve to final text
+   Use When: You want glitchy, hacker-style, or mysterious reveals
+   Note: One-time reveal animation at start
+   Best For: Tech content, cyberpunk aesthetic, dramatic reveals
+
+6. **DecryptedText** - Matrix-style character randomization reveal
+   Visual Effect: Characters cycle through random values before settling
+   Use When: You want matrix/hacker/decryption style text
+   Note: Sequential or simultaneous character revelation
+   Best For: Tech themes, sci-fi content, code-breaking aesthetics
+
+7. **TrueFocus** - Sequential word highlighting with blur
+   Visual Effect: Words blur out except one in focus, cycling through
+   Use When: You want to emphasize different words in sequence
+   Note: Loops through all words continuously
+   Best For: Highlighting key phrases, spoken word emphasis
+
+8. **GlitchText** - RGB split distortion glitch effect
+   Visual Effect: Text glitches with RGB channel separation and clip-path
+   Use When: You want intense glitch/error/distortion effects
+   Note: Continuous glitching throughout duration
+   Best For: Error messages, glitch art, intense tech aesthetics
+
+**USAGE PHILOSOPHY:**
+- PREFER these components over manual animations - they're professionally designed
+- Use them for ALL text that needs visual flair
+- Combine multiple components on different text elements for variety
+- Remember: Most only animate IN - plan separate exit animations if needed
+- Don't reinvent the wheel - these provide instant professional polish
+
+**PLANNING WITH CUSTOM COMPONENTS:**
+When user wants animated text, DEFAULT to suggesting one of these components first.
+Example: "I'll use SplitText to make it appear letter-by-letter, then fade it out smoothly"
+NOT: "I'll manually animate the opacity and position" (unless user specifically requests custom animation)
+`;
+
 // Media analysis guidelines for probe decisions
 export const PROBE_GUIDELINES = `
 MEDIA ANALYSIS GUIDELINES:
