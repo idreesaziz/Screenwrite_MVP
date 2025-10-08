@@ -673,6 +673,32 @@ class GeminiUploadResponse(BaseModel):
     error_message: Optional[str] = None
 
 
+class AgentMessage(BaseModel):
+    id: str
+    content: str
+    isUser: bool
+    timestamp: str
+
+
+class AgentRequest(BaseModel):
+    messages: List[AgentMessage]
+    currentComposition: Optional[List[Dict[str, Any]]] = None
+    mediaLibrary: Optional[List[Dict[str, Any]]] = []
+    compositionDuration: Optional[float] = None
+
+
+class AgentResponse(BaseModel):
+    type: str  # "chat" | "edit" | "probe" | "generate" | "fetch" | "sleep"
+    content: str
+    fileName: Optional[str] = None
+    question: Optional[str] = None
+    prompt: Optional[str] = None
+    suggestedName: Optional[str] = None
+    content_type: Optional[str] = None
+    seedImageFileName: Optional[str] = None
+    query: Optional[str] = None
+
+
 def is_youtube_url(url: str) -> bool:
     """Check if the URL is a YouTube URL."""
     youtube_domains = [
@@ -845,6 +871,119 @@ async def generate_composition(request: CompositionRequest) -> CompositionRespon
         success=result["success"],
         error_message=result.get("error_message")
     )
+
+
+@app.post("/ai/agent")
+async def agent(request: AgentRequest) -> AgentResponse:
+    """Conversational AI agent for chat and video editing guidance."""
+    
+    print(f"🤖 Agent: Processing conversation with {len(request.messages)} messages")
+    
+    try:
+        # Import agent prompts
+        from agent_prompts import build_agent_system_prompt
+        
+        # Build system prompt
+        system_prompt = build_agent_system_prompt()
+        
+        # Build context text
+        context_parts = []
+        
+        # Add current composition if exists
+        if request.currentComposition:
+            context_parts.append(f"Current Timeline Blueprint JSON:\n{json.dumps(request.currentComposition, indent=2)}")
+        
+        # Add media library if exists
+        if request.mediaLibrary:
+            media_list = []
+            for item in request.mediaLibrary:
+                media_info = f"- {item.get('name', 'unnamed')} (type: {item.get('type', 'unknown')})"
+                if 'duration' in item:
+                    media_info += f" - duration: {item['duration']}s"
+                media_list.append(media_info)
+            context_parts.append(f"Available Media Library:\n" + "\n".join(media_list))
+        
+        # Add composition duration if exists
+        if request.compositionDuration:
+            context_parts.append(f"Current composition duration: {request.compositionDuration} seconds")
+        
+        context_text = "\n\n".join(context_parts) if context_parts else "No current composition or media available."
+        
+        # Build conversation history
+        conversation_history = []
+        for msg in request.messages:
+            role = "User" if msg.isUser else "Assistant"
+            conversation_history.append(f"{role}: {msg.content}")
+        
+        conversation_text = "\n".join(conversation_history)
+        
+        # Build final prompt
+        user_prompt = f"""CONTEXT:
+{context_text}
+
+BLUEPRINT UNDERSTANDING:
+- The "Current Timeline Blueprint JSON" shows the exact structure of what's currently on the timeline
+- Each track contains clips with startTime, endTime, and element (React code)
+- Use this to understand existing content, timing, and make informed edit suggestions
+- When proposing edits, reference specific clips by their IDs
+
+Recent conversation:
+{conversation_text}
+
+Your job is to generate the next appropriate response based on the conversation up to now."""
+        
+        print(f"🧠 Agent: Calling Gemini API with system prompt ({len(system_prompt)} chars) and user prompt ({len(user_prompt)} chars)")
+        
+        # Call Gemini API
+        response = gemini_api.models.generate_content(
+            model="gemini-2.0-flash-exp",
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.7,
+                response_mime_type="application/json"
+            )
+        )
+        
+        # Parse response
+        response_text = response.text.strip()
+        print(f"📝 Agent: Received response ({len(response_text)} chars)")
+        
+        # Parse JSON response
+        response_data = json.loads(response_text)
+        
+        # Build response
+        agent_response = AgentResponse(
+            type=response_data.get("type", "chat"),
+            content=response_data.get("content", ""),
+            fileName=response_data.get("fileName"),
+            question=response_data.get("question"),
+            prompt=response_data.get("prompt"),
+            suggestedName=response_data.get("suggestedName"),
+            content_type=response_data.get("content_type"),
+            seedImageFileName=response_data.get("seedImageFileName"),
+            query=response_data.get("query")
+        )
+        
+        print(f"✅ Agent: Response type: {agent_response.type}")
+        
+        return agent_response
+        
+    except json.JSONDecodeError as e:
+        print(f"❌ Agent: JSON parsing error: {e}")
+        print(f"Raw response: {response_text[:500]}")
+        return AgentResponse(
+            type="sleep",
+            content="I had trouble processing that request. Could you please rephrase?"
+        )
+    except Exception as e:
+        print(f"❌ Agent: Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return AgentResponse(
+            type="sleep",
+            content="Something went wrong. Please try again."
+        )
 
 
 @app.post("/ai/fix-code")
