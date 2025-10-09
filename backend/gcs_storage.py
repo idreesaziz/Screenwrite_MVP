@@ -11,36 +11,45 @@ This module provides utilities for:
 import os
 import uuid
 import logging
+import time
 from typing import Optional, BinaryIO
 from google.cloud import storage
 from google.cloud.exceptions import NotFound, Conflict
 import requests
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-# Environment variables
+# Load environment variables
+load_dotenv()
+
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "screenwrite-media")
 GCS_LOCATION = os.getenv("GCS_LOCATION", "us-central1")
+
+# Global cached client and bucket (initialized on first use)
+_gcs_client = None
+_gcs_bucket = None
 
 
 def get_gcs_client() -> storage.Client:
     """
-    Initialize and return a GCS client.
-    
-    Uses Application Default Credentials (ADC) which can be set via:
-    - GOOGLE_APPLICATION_CREDENTIALS environment variable pointing to service account JSON
-    - gcloud auth application-default login for local development
+    Initialize and return a GCS client using Application Default Credentials.
+    Uses a cached client after first initialization for better performance.
     
     Returns:
-        storage.Client: Initialized GCS client
+        storage.Client: Authenticated GCS client
     """
-    try:
-        client = storage.Client()
-        logger.info("GCS client initialized successfully")
-        return client
-    except Exception as e:
-        logger.error(f"Failed to initialize GCS client: {e}")
-        raise
+    global _gcs_client
+    
+    if _gcs_client is None:
+        try:
+            _gcs_client = storage.Client()
+            logger.info("GCS client initialized successfully (cached for reuse)")
+        except Exception as e:
+            logger.error(f"Failed to initialize GCS client: {e}")
+            raise
+    
+    return _gcs_client
 
 
 def get_or_create_bucket(
@@ -49,6 +58,7 @@ def get_or_create_bucket(
 ) -> storage.Bucket:
     """
     Get an existing bucket or create a new one with uniform bucket-level access.
+    Uses a cached bucket after first initialization for better performance.
     
     Args:
         bucket_name: Name of the GCS bucket
@@ -57,11 +67,18 @@ def get_or_create_bucket(
     Returns:
         storage.Bucket: The GCS bucket object
     """
+    global _gcs_bucket
+    
+    # Return cached bucket if it matches the requested bucket name
+    if _gcs_bucket is not None and _gcs_bucket.name == bucket_name:
+        return _gcs_bucket
+    
     client = get_gcs_client()
     
     try:
         bucket = client.get_bucket(bucket_name)
-        logger.info(f"Bucket '{bucket_name}' already exists")
+        logger.info(f"Bucket '{bucket_name}' already exists (cached for reuse)")
+        _gcs_bucket = bucket
         return bucket
     except NotFound:
         logger.info(f"Bucket '{bucket_name}' not found, creating...")
@@ -74,11 +91,13 @@ def get_or_create_bucket(
             bucket.iam_configuration.uniform_bucket_level_access_enabled = True
             bucket.patch()
             logger.info(f"Bucket '{bucket_name}' created with uniform access in {location}")
+            _gcs_bucket = bucket
             return bucket
         except Conflict:
             # Race condition: bucket was created between check and create
             bucket = client.get_bucket(bucket_name)
             logger.info(f"Bucket '{bucket_name}' created by another process")
+            _gcs_bucket = bucket
             return bucket
         except Exception as e:
             logger.error(f"Failed to create bucket '{bucket_name}': {e}")
@@ -167,10 +186,7 @@ def upload_url_to_gcs(
         Exception: If download or upload fails
     """
     try:
-        # Download file from URL
-        logger.info(f"Downloading file from URL: {url}")
-        response = requests.get(url, stream=True, timeout=30)
-        response.raise_for_status()
+        start_time = time.time()
         
         # Extract filename from URL if not provided
         if not filename:
@@ -178,27 +194,67 @@ def upload_url_to_gcs(
             if not filename:
                 filename = f"downloaded_{uuid.uuid4()}"
         
-        # Get content type from response headers
-        content_type = response.headers.get('Content-Type')
-        
-        # Upload to GCS
+        # Setup GCS upload
+        setup_start = time.time()
         bucket = get_or_create_bucket(bucket_name)
         file_uuid = str(uuid.uuid4())
         blob_path = f"{user_id}/{session_id}/{file_uuid}_{filename}"
-        
         blob = bucket.blob(blob_path)
-        if content_type:
-            blob.content_type = content_type
+        setup_time = time.time() - setup_start
         
-        # Upload from response stream
-        blob.upload_from_file(response.raw, rewind=False)
+        print(f"\n{'='*60}")
+        print(f"⏱️  BENCHMARK: GCS setup: {setup_time:.2f}s")
+        print(f"{'='*60}\n")
+        logger.info(f"⏱️  GCS setup: {setup_time:.2f}s")
+        logger.info(f"Streaming from URL to GCS: {url} -> {blob_path}")
         
-        logger.info(f"URL content uploaded successfully to: {blob_path}")
+        # Stream directly from URL to GCS using requests with chunked transfer
+        download_start = time.time()
+        with requests.get(url, stream=True, timeout=60) as response:
+            response.raise_for_status()
+            download_time = time.time() - download_start
+            
+            # Set content type from response headers
+            content_type = response.headers.get('Content-Type')
+            if content_type:
+                blob.content_type = content_type
+            
+            # Get content length for progress tracking (optional)
+            content_length = response.headers.get('Content-Length')
+            content_length_int = None
+            file_size_mb = 0
+            if content_length:
+                content_length_int = int(content_length)
+                file_size_mb = content_length_int / 1024 / 1024
+                print(f"📦 File size: {file_size_mb:.2f} MB")
+                print(f"⏱️  Connect to source: {download_time:.2f}s")
+                logger.info(f"📦 File size: {file_size_mb:.2f} MB")
+                logger.info(f"⏱️  Connect to source: {download_time:.2f}s")
+            
+            # Upload directly from stream in chunks (no intermediate storage)
+            # This streams directly from Pexels to GCS without loading into memory
+            upload_start = time.time()
+            print(f"🚀 Starting GCS upload...")
+            blob.upload_from_file(response.raw, rewind=False, size=content_length_int)
+            upload_time = time.time() - upload_start
+        
+        total_time = time.time() - start_time
+        
+        print(f"⏱️  Upload to GCS: {upload_time:.2f}s")
+        print(f"⏱️  Total time: {total_time:.2f}s")
+        logger.info(f"⏱️  Upload to GCS: {upload_time:.2f}s")
+        logger.info(f"⏱️  Total time: {total_time:.2f}s")
+        if file_size_mb > 0:
+            speed_mbps = (file_size_mb / total_time) if total_time > 0 else 0
+            print(f"📊 Speed: {speed_mbps:.2f} MB/s")
+            logger.info(f"📊 Speed: {speed_mbps:.2f} MB/s")
+        print(f"{'='*60}\n")
+        logger.info(f"✅ URL content streamed successfully to GCS: {blob_path}")
         
         return blob.public_url
         
     except Exception as e:
-        logger.error(f"Failed to upload URL to GCS: {e}")
+        logger.error(f"Failed to stream URL to GCS: {e}")
         raise
 
 
