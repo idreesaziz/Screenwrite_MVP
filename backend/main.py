@@ -778,10 +778,17 @@ class VideoAnalysisResponse(BaseModel):
 
 
 @app.post("/ai/generate-composition")
-async def generate_composition(request: CompositionRequest) -> CompositionResponse:
-    """Generate a new Remotion composition blueprint using AI."""
+async def generate_composition(
+    request: CompositionRequest,
+    user: dict = Depends(get_current_user)
+) -> CompositionResponse:
+    """Generate a new Remotion composition blueprint using AI with JWT auth."""
     
-    print(f"🎬 Main: Processing request: '{request.user_request}'")
+    user_id = user.get("user_id")
+    session_id = user.get("session_id")
+    
+    print(f"🎬 Main: Processing request for user {user_id}, session {session_id}")
+    print(f"📝 Request: '{request.user_request}'")
     print(f"📝 Main: Current composition has {len(request.current_composition or [])} tracks")
     
     # AI Blueprint Generation (NEW SYSTEM)
@@ -813,90 +820,20 @@ async def generate_composition(request: CompositionRequest) -> CompositionRespon
     )
 
 
-@app.post("/ai/fix-code")
-async def fix_code(request: CodeFixRequest) -> CodeFixResponse:
-    """Fix broken AI-generated code based on real runtime errors from the frontend."""
-    
-    print(f"🔧 Fix: Processing error correction")
-    print(f"🔧 Fix: Error message: {request.error_message}")
-    
-    try:
-        # System instruction for code fixing
-        system_instruction = """You are a world-class Remotion developer and code fixing specialist. Your job is to fix broken React/TypeScript code that failed during execution.
-
-⚠️ **CRITICAL**: Only fix the specific error - do not redesign, rewrite, or improve the code. Make the minimal possible change to resolve the error.
-
-
-**CRITICAL: EXECUTION CONTEXT:**
-- Code executes in React.createElement environment with Function() constructor
-- Use React.createElement syntax, not JSX
-- Use 'div' elements for text (no Text component in Remotion)
-
-RESPONSE FORMAT - You must respond with EXACTLY this structure:
-DURATION: [number in seconds based on composition content and timing]
-CODE:
-[raw JavaScript code using React.createElement - no markdown blocks, no import statements]
-
-Fix ONLY the error and return the corrected code that will execute properly."""
-
-        # User prompt with just the error and broken code
-        user_prompt = f"""Fix this broken code:
-
-ERROR MESSAGE:
-{request.error_message}
-
-BROKEN CODE:
-{request.broken_code}
-
-Fix the error and return the corrected code."""
-
-        # Create thinking config for code fixes
-        thinking_config = types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=2000  # Default thinking budget for fixes
-        )
-
-        # Use the same AI call pattern as other endpoints
-        response = gemini_api.models.generate_content(
-            model="gemini-flash-latest",
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.1,  # Low temperature for precise fixes
-                max_output_tokens=4000,
-                thinking_config=thinking_config
-            ),
-            contents=user_prompt
-        )
-        
-        duration, corrected_code = code_generator.parse_ai_response(response.text)
-        
-        print(f"✅ Fix: Generated corrected code (duration: {duration}s)")
-        
-        return CodeFixResponse(
-            corrected_code=corrected_code,
-            explanation=f"Fixed error: {request.error_message[:100]}...",
-            duration=duration,
-            success=True
-        )
-        
-    except Exception as e:
-        print(f"❌ Fix: Error correction failed - {str(e)}")
-        
-        return CodeFixResponse(
-            corrected_code=request.broken_code,  # Return original as fallback
-            explanation=f"Error correction failed: {str(e)}",
-            duration=10.0,
-            success=False,
-            error_message=str(e)
-        )
+# NOTE: /ai/fix-code endpoint removed - not needed with improved composition generation
 
 
 @app.post("/analyze-video")
-async def analyze_video(request: VideoAnalysisRequest) -> VideoAnalysisResponse:
-    """Analyze a video file using Gemini - supports both YouTube URLs and uploaded file IDs."""
+async def analyze_video(
+    request: VideoAnalysisRequest,
+    user: dict = Depends(get_current_user)
+) -> VideoAnalysisResponse:
+    """Analyze a video file using Gemini with JWT auth - supports both YouTube URLs and uploaded file IDs."""
+    
+    user_id = user.get("user_id")
     
     try:
-        print(f"🎬 Video Analysis: Analyzing {request.file_url}")
+        print(f"🎬 Video Analysis for user {user_id}: Analyzing {request.file_url}")
         print(f"🔍 Question: {request.question}")
         
         # Check if it's a YouTube URL
@@ -1427,8 +1364,13 @@ class ChatLogRequest(BaseModel):
     log_entry: Dict[str, Any]
 
 @app.post("/chat/log")
-async def save_chat_log(request: ChatLogRequest):
-    """Save chat workflow log entries to files"""
+async def save_chat_log(
+    request: ChatLogRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Save chat workflow log entries to files with JWT auth"""
+    user_id = user.get("user_id")
+    
     try:
         logs_dir = "logs"
         os.makedirs(logs_dir, exist_ok=True)
