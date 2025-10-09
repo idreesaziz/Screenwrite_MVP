@@ -24,6 +24,12 @@ test_env/
 .env.test.local
 .env.production.local
 
+# Google Cloud credentials
+*.json
+!package.json
+!tsconfig.json
+!components.json
+
 # Build outputs
 /build/
 /dist/

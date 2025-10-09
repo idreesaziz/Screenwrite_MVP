@@ -34,6 +34,7 @@ from schema import (
 from providers import ContentGenerationProvider
 from auth import get_current_user
 from fastapi import Depends
+from gcs_storage import upload_file_to_gcs, upload_url_to_gcs
 
 load_dotenv()
 
@@ -90,6 +91,67 @@ async def test_auth(user: dict = Depends(get_current_user)):
         "role": user.get("role"),
         "user": user  # Full user object for debugging
     }
+
+
+# Unified media upload endpoint with JWT authentication
+@app.post("/upload-media")
+async def upload_media(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Unified endpoint for uploading media files to GCS.
+    All uploads are isolated by user_id and session_id from JWT.
+    
+    Accepts: images, videos, audio files
+    Returns: GCS public URL
+    """
+    try:
+        # Extract user info from JWT
+        user_id = user.get("user_id")
+        session_id = user.get("session_id")
+        
+        if not user_id or not session_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid JWT: missing user_id or session_id"
+            )
+        
+        # Validate file
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No filename provided")
+        
+        # Get content type
+        content_type = file.content_type or "application/octet-stream"
+        
+        print(f"📤 Uploading {file.filename} for user {user_id}, session {session_id}")
+        
+        # Upload to GCS
+        gcs_url = upload_file_to_gcs(
+            file_data=file.file,
+            user_id=user_id,
+            session_id=session_id,
+            filename=file.filename,
+            content_type=content_type
+        )
+        
+        print(f"✅ Upload successful: {gcs_url}")
+        
+        return {
+            "success": True,
+            "url": gcs_url,
+            "filename": file.filename,
+            "content_type": content_type,
+            "user_id": user_id,
+            "session_id": session_id
+        }
+        
+    except Exception as e:
+        print(f"❌ Upload failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Upload failed: {str(e)}"
+        )
 
 
 # Pexels API Helper Functions
