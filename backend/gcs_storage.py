@@ -25,6 +25,7 @@ load_dotenv()
 
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "screenwrite-media")
 GCS_LOCATION = os.getenv("GCS_LOCATION", "us-central1")
+GCS_SIGNED_URL_EXPIRATION_DAYS = int(os.getenv("GCS_SIGNED_URL_EXPIRATION_DAYS", "7"))
 
 # Global cached client and bucket (initialized on first use)
 _gcs_client = None
@@ -149,9 +150,15 @@ def upload_file_to_gcs(
         
         logger.info(f"File uploaded successfully to: {blob_path}")
         
-        # Return public URL
-        public_url = blob.public_url
-        return public_url
+        # Generate signed URL with 7-day expiration
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=GCS_SIGNED_URL_EXPIRATION_DAYS * 24 * 60 * 60,  # Days to seconds
+            method="GET"
+        )
+        
+        logger.info(f"Generated signed URL (expires in {GCS_SIGNED_URL_EXPIRATION_DAYS} days)")
+        return signed_url
         
     except Exception as e:
         logger.error(f"Failed to upload file to GCS: {e}")
@@ -202,10 +209,7 @@ def upload_url_to_gcs(
         blob = bucket.blob(blob_path)
         setup_time = time.time() - setup_start
         
-        print(f"\n{'='*60}")
-        print(f"⏱️  BENCHMARK: GCS setup: {setup_time:.2f}s")
-        print(f"{'='*60}\n")
-        logger.info(f"⏱️  GCS setup: {setup_time:.2f}s")
+        logger.info(f"GCS setup: {setup_time:.2f}s")
         logger.info(f"Streaming from URL to GCS: {url} -> {blob_path}")
         
         # Stream directly from URL to GCS using requests with chunked transfer
@@ -226,32 +230,33 @@ def upload_url_to_gcs(
             if content_length:
                 content_length_int = int(content_length)
                 file_size_mb = content_length_int / 1024 / 1024
-                print(f"📦 File size: {file_size_mb:.2f} MB")
-                print(f"⏱️  Connect to source: {download_time:.2f}s")
-                logger.info(f"📦 File size: {file_size_mb:.2f} MB")
-                logger.info(f"⏱️  Connect to source: {download_time:.2f}s")
+                logger.info(f"File size: {file_size_mb:.2f} MB")
+                logger.info(f"Connect to source: {download_time:.2f}s")
             
             # Upload directly from stream in chunks (no intermediate storage)
             # This streams directly from Pexels to GCS without loading into memory
             upload_start = time.time()
-            print(f"🚀 Starting GCS upload...")
             blob.upload_from_file(response.raw, rewind=False, size=content_length_int)
             upload_time = time.time() - upload_start
         
         total_time = time.time() - start_time
         
-        print(f"⏱️  Upload to GCS: {upload_time:.2f}s")
-        print(f"⏱️  Total time: {total_time:.2f}s")
-        logger.info(f"⏱️  Upload to GCS: {upload_time:.2f}s")
-        logger.info(f"⏱️  Total time: {total_time:.2f}s")
+        logger.info(f"Upload to GCS: {upload_time:.2f}s")
+        logger.info(f"Total time: {total_time:.2f}s")
         if file_size_mb > 0:
             speed_mbps = (file_size_mb / total_time) if total_time > 0 else 0
-            print(f"📊 Speed: {speed_mbps:.2f} MB/s")
-            logger.info(f"📊 Speed: {speed_mbps:.2f} MB/s")
-        print(f"{'='*60}\n")
-        logger.info(f"✅ URL content streamed successfully to GCS: {blob_path}")
+            logger.info(f"Speed: {speed_mbps:.2f} MB/s")
+        logger.info(f"URL content streamed successfully to GCS: {blob_path}")
         
-        return blob.public_url
+        # Generate signed URL with 7-day expiration
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=GCS_SIGNED_URL_EXPIRATION_DAYS * 24 * 60 * 60,  # Days to seconds
+            method="GET"
+        )
+        
+        logger.info(f"Generated signed URL (expires in {GCS_SIGNED_URL_EXPIRATION_DAYS} days)")
+        return signed_url
         
     except Exception as e:
         logger.error(f"Failed to stream URL to GCS: {e}")
@@ -293,18 +298,18 @@ def delete_file_from_gcs(
 
 def get_signed_url(
     blob_path: str,
-    expiration_minutes: int = 60,
+    expiration_days: int = None,
     bucket_name: str = GCS_BUCKET_NAME
 ) -> str:
     """
     Generate a signed URL for temporary access to a GCS file.
     
-    Optional feature for providing time-limited access to files.
-    Requires service account credentials with signing permissions.
+    Note: All upload functions now return signed URLs by default.
+    This function is for generating new signed URLs for existing files.
     
     Args:
         blob_path: Full path to the blob
-        expiration_minutes: How long the URL should be valid (default: 60 minutes)
+        expiration_days: How long the URL should be valid (default: from env or 7 days)
         bucket_name: GCS bucket name
     
     Returns:
@@ -314,17 +319,20 @@ def get_signed_url(
         Exception: If signing fails
     """
     try:
+        if expiration_days is None:
+            expiration_days = GCS_SIGNED_URL_EXPIRATION_DAYS
+        
         bucket = get_or_create_bucket(bucket_name)
         blob = bucket.blob(blob_path)
         
         # Generate signed URL
         signed_url = blob.generate_signed_url(
             version="v4",
-            expiration=expiration_minutes * 60,  # Convert to seconds
+            expiration=expiration_days * 24 * 60 * 60,  # Days to seconds
             method="GET"
         )
         
-        logger.info(f"Signed URL generated for: {blob_path}")
+        logger.info(f"Signed URL generated for: {blob_path} (expires in {expiration_days} days)")
         return signed_url
         
     except Exception as e:

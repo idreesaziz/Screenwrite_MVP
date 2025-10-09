@@ -772,122 +772,9 @@ class VideoAnalysisResponse(BaseModel):
     error_message: Optional[str] = None
 
 
-@app.post("/upload-to-gemini")
-async def upload_to_gemini(file: UploadFile = File(...)) -> GeminiUploadResponse:
-    """Upload a file to Gemini Files API or Cloud Storage for later analysis."""
-    
-    try:
-        print(f"📤 Gemini Upload: Uploading {file.filename} ({file.content_type})")
-        
-        # Read file content
-        file_content = await file.read()
-        
-        if USE_VERTEX_AI:
-            # Vertex AI: Upload to Cloud Storage
-            try:
-                # Import and initialize Cloud Storage client when needed
-                from google.cloud import storage
-                storage_client = storage.Client(project=os.getenv("VERTEX_PROJECT_ID"))
-                
-                # Create bucket if it doesn't exist
-                bucket = storage_client.bucket(storage_bucket_name)
-                try:
-                    bucket.reload()
-                except Exception:
-                    # Bucket doesn't exist, create it
-                    bucket = storage_client.create_bucket(storage_bucket_name, location=os.getenv("VERTEX_LOCATION", "europe-west1"))
-                    print(f"📦 Created storage bucket: {storage_bucket_name}")
-                
-                # Generate unique filename
-                file_id = str(uuid.uuid4())
-                file_extension = os.path.splitext(file.filename)[1] if file.filename else ""
-                blob_name = f"uploads/{file_id}{file_extension}"
-                
-                # Upload to Cloud Storage
-                blob = bucket.blob(blob_name)
-                blob.upload_from_string(file_content, content_type=file.content_type)
-                
-                # Generate Cloud Storage URI
-                gs_uri = f"gs://{storage_bucket_name}/{blob_name}"
-                
-                print(f"✅ Vertex AI Upload: Success - Cloud Storage URI: {gs_uri}")
-                
-                return GeminiUploadResponse(
-                    success=True,
-                    gemini_file_id=gs_uri,  # Return Cloud Storage URI instead of file ID
-                    file_name=file.filename,
-                    mime_type=file.content_type
-                )
-                
-            except Exception as e:
-                print(f"❌ Cloud Storage Upload Failed: {str(e)}")
-                raise e
-                
-        else:
-            # Standard Gemini API: Use Files API
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp_file:
-                tmp_file.write(file_content)
-                tmp_file.flush()
-                
-                # Upload to Gemini Files API
-                uploaded_file = gemini_api.files.upload(file=tmp_file.name)
-                
-                # Clean up temporary file
-                os.unlink(tmp_file.name)
-                
-                # Wait for file to be ready for analysis (max 30 seconds)
-                import time
-                max_wait_time = 30
-                wait_interval = 2
-                elapsed_time = 0
-                
-                while elapsed_time < max_wait_time:
-                    try:
-                        file_status = gemini_api.files.get(name=uploaded_file.name)
-                        if hasattr(file_status, 'state') and file_status.state == 'ACTIVE':
-                            print(f"✅ File is ACTIVE and ready for analysis: {uploaded_file.name}")
-                            break
-                        else:
-                            print(f"⏳ File not ready yet, state: {getattr(file_status, 'state', 'UNKNOWN')}, waiting...")
-                            time.sleep(wait_interval)
-                            elapsed_time += wait_interval
-                    except Exception as e:
-                        print(f"⚠️ Error checking file state: {e}, continuing...")
-                        time.sleep(wait_interval)
-                        elapsed_time += wait_interval
-                
-                if elapsed_time >= max_wait_time:
-                    print(f"⚠️ File upload completed but may not be fully ready for analysis yet: {uploaded_file.name}")
-            
-            print(f"✅ Gemini Upload: Success - File ID: {uploaded_file.name}")
-            
-            return GeminiUploadResponse(
-                success=True,
-                gemini_file_id=uploaded_file.name,
-                file_name=file.filename,
-                mime_type=file.content_type
-            )
-        
-    except Exception as e:
-        print(f"❌ Gemini Upload: Failed - {str(e)}")
-        
-        # Provide user-friendly error messages
-        error_msg = str(e)
-        if "API key" in error_msg.lower():
-            user_error = "AI service authentication failed. Please check server configuration."
-        elif "network" in error_msg.lower() or "connection" in error_msg.lower():
-            user_error = "Network connection error. Please check your internet connection and try again."
-        elif "quota" in error_msg.lower() or "limit" in error_msg.lower():
-            user_error = "AI service quota exceeded. Please try again later."
-        elif "only supported in the Gemini Developer client" in error_msg:
-            user_error = "File upload configuration error. Please contact support."
-        else:
-            user_error = "AI analysis service is temporarily unavailable. Please try again later."
-        
-        return GeminiUploadResponse(
-            success=False,
-            error_message=user_error
-        )
+# NOTE: /upload-to-gemini endpoint removed - replaced by unified /upload-media endpoint
+# Gemini can now access files directly from GCS using signed URLs
+# Use /upload-media for all file uploads (supports JWT auth and user/session isolation)
 
 
 @app.post("/ai/generate-composition")
@@ -1340,17 +1227,23 @@ async def check_generation_status(request: CheckGenerationStatusRequest):
 
 
 @app.post("/fetch-stock-video", response_model=FetchStockVideoResponse)
-async def fetch_stock_video(request: FetchStockVideoRequest):
+async def fetch_stock_video(
+    request: FetchStockVideoRequest,
+    user: dict = Depends(get_current_user)
+):
     """
-    AI-Enhanced stock video fetch endpoint with intelligent curation:
-    1. Search Pexels for 20 landscape videos (balanced for API limits)
+    AI-Enhanced stock video fetch endpoint with intelligent curation and GCS storage:
+    1. Search Pexels for 50 landscape videos (balanced for API limits)
     2. Use AI to curate and select 0-4 most relevant videos
-    3. Download HIGH quality for frontend timeline use (only selected videos)
-    4. Stream LOW quality directly to Gemini for fast AI analysis (only selected videos)
-    5. Use single HTTP client for all operations (connection reuse)
-    6. Return only the AI-curated videos with both local URLs and gemini_file_id
+    3. Upload selected videos directly to GCS with user/session isolation
+    4. Return GCS URLs for frontend use
+    5. No local storage - everything goes to cloud
     """
+    user_id = user.get("user_id")
+    session_id = user.get("session_id")
+    
     print(f"🔍 Fetching stock videos for query: '{request.query}' with AI curation")
+    print(f"👤 User: {user_id}, Session: {session_id}")
     
     try:
         # Step 1: Search Pexels for 50 videos (more variety for better AI curation)
@@ -1386,12 +1279,12 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
         timeout = httpx.Timeout(60.0)
         async with httpx.AsyncClient(timeout=timeout) as shared_client:
             
-            # Step 4: Process AI-selected videos in parallel - download only (no Gemini upload)
+            # Step 4: Process AI-selected videos in parallel - upload directly to GCS
             async def process_video(video, index):
-                """Process a single video: download HD quality for frontend"""
+                """Process a single video: upload HD quality to GCS"""
                 video_files = video.get("video_files", [])
                 
-                # Select HIGH quality for frontend/local download
+                # Select HIGH quality for frontend use
                 best_file = select_best_video_file(video_files)
                 
                 if not best_file:
@@ -1402,23 +1295,31 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                 file_name = f"stock_video_{asset_id}.mp4"
                 
                 print(f"📥 Processing AI-selected video {index+1}/{len(selected_videos)}:")
-                print(f"  Download: {best_file['quality']} {best_file.get('width')}x{best_file.get('height')} - {best_file['link']}")
+                print(f"  Quality: {best_file['quality']} {best_file.get('width')}x{best_file.get('height')}")
+                print(f"  Source: {best_file['link']}")
                 
-                # Download video file with retry mechanism
-                filepath = await download_video_file_with_retry(best_file["link"], file_name, client=shared_client)
+                # Upload directly to GCS from Pexels URL (run in thread pool)
+                try:
+                    # Run sync GCS function in thread pool to avoid blocking
+                    loop = asyncio.get_event_loop()
+                    gcs_url = await loop.run_in_executor(
+                        None,
+                        upload_url_to_gcs,
+                        best_file["link"],
+                        user_id,
+                        session_id,
+                        file_name
+                    )
+                    print(f"☁️  Uploaded to GCS: {gcs_url}")
+                except Exception as e:
+                    print(f"❌ GCS upload failed: {e}")
+                    raise Exception(f"Failed to upload to GCS: {e}")
                 
-                # Verify the downloaded file exists
-                if not os.path.exists(filepath):
-                    raise Exception(f"Downloaded file does not exist: {filepath}")
-                
-                print(f"📂 File saved to: {filepath}")
-                print(f"🔗 Will be served at: /media/{file_name}")
-                
-                # Create stock result with local URL and pending upload status
+                # Create stock result with GCS URL
                 stock_result = StockVideoResult(
                     id=video["id"],
                     pexels_url=video.get("url", ""),
-                    download_url=f"/media/{file_name}",
+                    download_url=gcs_url,
                     preview_image=video.get("image", ""),
                     duration=video.get("duration", 0),
                     width=best_file.get("width", video.get("width", 0)),
@@ -1427,11 +1328,11 @@ async def fetch_stock_video(request: FetchStockVideoRequest):
                     quality=best_file.get("quality", "sd") or "sd",  # Handle None quality
                     photographer=video.get("user", {}).get("name", "Unknown"),
                     photographer_url=video.get("user", {}).get("url", ""),
-                    upload_status="pending",  # Mark as pending for frontend upload
-                    gemini_file_id=None  # Will be set by frontend after upload
+                    upload_status="uploaded",  # Already uploaded to GCS
+                    gemini_file_id=None  # Gemini can access GCS URLs directly
                 )
                 
-                print(f"✅ Completed AI-selected video {index+1}/{len(selected_videos)}: {file_name} ({best_file['quality']})")
+                print(f"✅ Completed AI-selected video {index+1}/{len(selected_videos)}: {file_name} → GCS")
                 return stock_result
             
             # Process all AI-selected videos in parallel with shared client
