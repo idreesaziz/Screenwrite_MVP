@@ -982,10 +982,17 @@ active_operations = {}
 
 
 @app.post("/generate-content", response_model=GenerateContentResponse)
-async def generate_content(request: GenerateContentRequest):
-    """Generate video or image content using Gemini AI"""
+async def generate_content(
+    request: GenerateContentRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Generate video or image content using Gemini AI with GCS storage"""
+    user_id = user.get("user_id")
+    session_id = user.get("session_id")
+    
     try:
-        print(f"🎨 Generating {request.content_type} with prompt: '{request.prompt[:100]}...'")
+        print(f"🎨 Generating {request.content_type} for user {user_id}, session {session_id}")
+        print(f"📝 Prompt: '{request.prompt[:100]}...'")
         
         if request.content_type == "video":
             # Handle reference image if provided
@@ -1026,24 +1033,37 @@ async def generate_content(request: GenerateContentRequest):
                 # Create unique filename
                 asset_id = str(uuid.uuid4())
                 file_name = f"generated_video_{asset_id}.mp4"
-                file_path = os.path.join("out", file_name)
                 
-                # Ensure output directory exists
-                os.makedirs("out", exist_ok=True)
+                # Download to temporary file
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
+                    content_generator.api_client.files.download(file=generated_video.video)
+                    generated_video.video.save(tmp_file.name)
+                    
+                    # Upload to GCS
+                    with open(tmp_file.name, 'rb') as video_file:
+                        gcs_url = upload_file_to_gcs(
+                            file_data=video_file,
+                            user_id=user_id,
+                            session_id=session_id,
+                            filename=file_name,
+                            content_type="video/mp4"
+                        )
+                    
+                    # Get file size before cleanup
+                    file_size = os.path.getsize(tmp_file.name)
+                    
+                    # Cleanup temp file
+                    os.unlink(tmp_file.name)
                 
-                # Download the generated video.
-                content_generator.api_client.files.download(file=generated_video.video)
-                generated_video.video.save(file_path)
+                print(f"☁️  Generated video uploaded to GCS: {gcs_url}")
                 
-                # Get file size (video dimensions would need separate analysis)
-                file_size = os.path.getsize(file_path)
-                
-                # Create asset response
+                # Create asset response with GCS URL
                 generated_asset = GeneratedAsset(
                     asset_id=asset_id,
                     content_type="video",
-                    file_path=file_path,
-                    file_url=f"/media/{file_name}",
+                    file_path=f"{user_id}/{session_id}/{file_name}",  # GCS path
+                    file_url=gcs_url,  # GCS signed URL
                     prompt=request.prompt,
                     duration_seconds=8.0,  # Veo generates 8-second videos
                     width=1280 if request.resolution == "720p" else 1920,
@@ -1086,10 +1106,6 @@ async def generate_content(request: GenerateContentRequest):
             # Save generated image
             asset_id = str(uuid.uuid4())
             file_name = f"generated_image_{asset_id}.png"
-            file_path = os.path.join("out", file_name)
-            
-            # Ensure output directory exists
-            os.makedirs("out", exist_ok=True)
             
             # Extract and save image from Imagen response
             if response.generated_images and len(response.generated_images) > 0:
@@ -1100,22 +1116,37 @@ async def generate_content(request: GenerateContentRequest):
                 pil_image = generated_image.image._pil_image
                 print(f"📸 PIL image size: {pil_image.size}")
                 
-                # Save the PIL Image object to file
-                print(f"💾 Saving to: {file_path}")
-                pil_image.save(file_path)
-                print(f"✅ File saved successfully")
+                # Save to temporary file then upload to GCS
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+                    pil_image.save(tmp_file.name)
+                    
+                    # Upload to GCS
+                    with open(tmp_file.name, 'rb') as image_file:
+                        gcs_url = upload_file_to_gcs(
+                            file_data=image_file,
+                            user_id=user_id,
+                            session_id=session_id,
+                            filename=file_name,
+                            content_type="image/png"
+                        )
+                    
+                    # Get file info before cleanup
+                    width, height = pil_image.size
+                    file_size = os.path.getsize(tmp_file.name)
+                    
+                    # Cleanup temp file
+                    os.unlink(tmp_file.name)
                 
-                # Get dimensions from the image
-                width, height = pil_image.size
-                file_size = os.path.getsize(file_path)
+                print(f"☁️  Generated image uploaded to GCS: {gcs_url}")
                 print(f"📏 Image dimensions: {width}x{height}, file size: {file_size} bytes")
                 
-                # Create asset response
+                # Create asset response with GCS URL
                 generated_asset = GeneratedAsset(
                     asset_id=asset_id,
                     content_type="image",
-                    file_path=file_path,
-                    file_url=f"/media/{file_name}",
+                    file_path=f"{user_id}/{session_id}/{file_name}",  # GCS path
+                    file_url=gcs_url,  # GCS signed URL
                     prompt=request.prompt,
                     width=width,
                     height=height,
@@ -1143,8 +1174,14 @@ async def generate_content(request: GenerateContentRequest):
 
 
 @app.post("/check-generation-status", response_model=CheckGenerationStatusResponse)
-async def check_generation_status(request: CheckGenerationStatusRequest):
-    """Check status of video generation operation"""
+async def check_generation_status(
+    request: CheckGenerationStatusRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Check status of video generation operation with GCS storage"""
+    user_id = user.get("user_id")
+    session_id = user.get("session_id")
+    
     try:
         operation_id = request.operation_id
         
@@ -1168,24 +1205,37 @@ async def check_generation_status(request: CheckGenerationStatusRequest):
                 # Create unique filename
                 asset_id = str(uuid.uuid4())
                 file_name = f"generated_video_{asset_id}.mp4"
-                file_path = os.path.join("out", file_name)
                 
-                # Ensure output directory exists
-                os.makedirs("out", exist_ok=True)
+                # Download to temporary file
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
+                    content_generator.api_client.files.download(file=generated_video.video)
+                    generated_video.video.save(tmp_file.name)
+                    
+                    # Upload to GCS
+                    with open(tmp_file.name, 'rb') as video_file:
+                        gcs_url = upload_file_to_gcs(
+                            file_data=video_file,
+                            user_id=user_id,
+                            session_id=session_id,
+                            filename=file_name,
+                            content_type="video/mp4"
+                        )
+                    
+                    # Get file size before cleanup
+                    file_size = os.path.getsize(tmp_file.name)
+                    
+                    # Cleanup temp file
+                    os.unlink(tmp_file.name)
                 
-                # Download the generated video.
-                content_generator.api_client.files.download(file=generated_video.video)
-                generated_video.video.save(file_path)
+                print(f"☁️  Generated video uploaded to GCS: {gcs_url}")
                 
-                # Get file size (video dimensions would need separate analysis)
-                file_size = os.path.getsize(file_path)
-                
-                # Create asset response
+                # Create asset response with GCS URL
                 generated_asset = GeneratedAsset(
                     asset_id=asset_id,
                     content_type="video",
-                    file_path=file_path,
-                    file_url=f"/media/{file_name}",
+                    file_path=f"{user_id}/{session_id}/{file_name}",  # GCS path
+                    file_url=gcs_url,  # GCS signed URL
                     prompt=stored_prompt,  # Use stored prompt
                     duration_seconds=8.0,  # Veo generates 8-second videos
                     width=1280 if stored_resolution == "720p" else 1920,  # Use stored resolution
