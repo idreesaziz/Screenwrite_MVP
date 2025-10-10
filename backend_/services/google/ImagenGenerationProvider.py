@@ -20,7 +20,7 @@ from services.base.ImageGenerationProvider import (
 logger = logging.getLogger(__name__)
 
 
-class ImagenProvider(ImageGenerationProvider):
+class ImagenGenerationProvider(ImageGenerationProvider):
     """Imagen implementation using Vertex AI (Google Cloud Platform).
     
     Supports Imagen 4.0, 3.0, and 2.0 models for image generation and upscaling.
