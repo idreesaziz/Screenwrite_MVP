@@ -60,7 +60,6 @@ class ChatProvider(ABC):
         model_name: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
-        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> ChatResponse:
         """
@@ -71,7 +70,6 @@ class ChatProvider(ABC):
             model_name: Override default model (None = use provider's default)
             temperature: Controls randomness (0.0 = deterministic, 1.0 = creative)
             max_tokens: Maximum tokens in the response (None = provider default)
-            thinking_budget: Token budget for model thinking (None = provider default, -1 = unlimited)
             **kwargs: Provider-specific parameters
             
         Returns:
@@ -90,7 +88,6 @@ class ChatProvider(ABC):
         model_name: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
-        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> AsyncIterator[str]:
         """
@@ -101,7 +98,6 @@ class ChatProvider(ABC):
             model_name: Override default model (None = use provider's default)
             temperature: Controls randomness (0.0 = deterministic, 1.0 = creative)
             max_tokens: Maximum tokens in the response (None = provider default)
-            thinking_budget: Token budget for model thinking (None = provider default, -1 = unlimited)
             **kwargs: Provider-specific parameters
             
         Yields:
@@ -120,7 +116,6 @@ class ChatProvider(ABC):
         response_schema: Dict[str, Any],
         model_name: Optional[str] = None,
         temperature: float = 0.7,
-        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -134,7 +129,6 @@ class ChatProvider(ABC):
             response_schema: JSON schema defining the expected response structure
             model_name: Override default model (None = use provider's default)
             temperature: Controls randomness (0.0 = deterministic, 1.0 = creative)
-            thinking_budget: Token budget for model thinking (None = provider default, -1 = unlimited)
             **kwargs: Provider-specific parameters
             
         Returns:

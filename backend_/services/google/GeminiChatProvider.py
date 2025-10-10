@@ -1,11 +1,4 @@
-"""Google Gemini implem    def __init__(
-        self,
-        project_id: Optional[str] = None,
-        location: str = "us-central1",
-        default_model_name: str = "gemini-flash-latest",
-        default_temperature: float = 1.0,
-        default_thinking_budget: int = -1
-    ): using Vertex AI."""
+"""Google Gemini implementation using Vertex AI."""
 
 import json
 import logging
@@ -13,7 +6,6 @@ import os
 from typing import List, Dict, Any, AsyncIterator, Optional
 from google import genai
 from google.genai import types
-from google.cloud import aiplatform
 
 from services.base.ChatProvider import ChatProvider, ChatMessage, ChatResponse
 
@@ -35,7 +27,7 @@ class GeminiChatProvider(ChatProvider):
         location: str = "us-central1",
         default_model_name: str = "gemini-2.5-flash",
         default_temperature: float = 1.0,
-        default_thinking_budget: Optional[int] = None
+        default_thinking_budget: int = -1
     ):
         """
         Initialize Vertex AI client using Application Default Credentials.
@@ -59,13 +51,10 @@ class GeminiChatProvider(ChatProvider):
         self.default_temperature = default_temperature
         self.default_thinking_budget = default_thinking_budget
         
-        # Initialize Vertex AI project and location
-        aiplatform.init(project=self.project_id, location=self.location)
-        
-        # Initialize Vertex AI client using HttpOptions with api_version="v1beta"
+        # Initialize Vertex AI client using HttpOptions with api_version="v1"
         # This uses Application Default Credentials automatically
         self.client = genai.Client(
-            http_options=types.HttpOptions(api_version="v1beta"),
+            http_options=types.HttpOptions(api_version="v1")
         )
         logger.info(f"Initialized Vertex AI with model: {default_model_name}, project: {self.project_id}, location: {location}")
     
