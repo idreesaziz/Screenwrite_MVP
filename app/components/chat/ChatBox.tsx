@@ -26,7 +26,7 @@ import { cn } from "~/lib/utils";
 import axios from "axios";
 import { apiUrl, getApiBaseUrl } from "~/utils/api";
 import { generateUUID } from "~/utils/uuid";
-import { useGeminiUpload } from "~/hooks/useGeminiUpload";
+import type { GetTokenFn } from "~/utils/authApi";
 import { 
   logUserMessage, 
   logSynthCall, 
@@ -105,6 +105,8 @@ interface ChatBoxProps {
   };
   onRetryFix?: () => Promise<boolean>;
   onClearError?: () => void;
+  // Authentication
+  getToken: GetTokenFn;
 }
 
 export function ChatBox({
@@ -126,6 +128,7 @@ export function ChatBox({
   generationError,
   onRetryFix,
   onClearError,
+  getToken,
 }: ChatBoxProps) {
   const [inputValue, setInputValue] = useState("");
   const [showMentions, setShowMentions] = useState(false);
@@ -141,50 +144,20 @@ export function ChatBox({
   const [isInSynthLoop, setIsInSynthLoop] = useState(false); // Track when unified workflow is active
   const [previewVideo, setPreviewVideo] = useState<any>(null); // Track video being previewed
 
-  // Initialize Gemini upload system for stock videos
-  // Use ref instead of state to avoid stale closure issues in callbacks
-  const localMediaItemsRef = useRef<Map<string, MediaBinItem>>(new Map());
-  
-  const { uploadVideoToGemini, getUploadStatus } = useGeminiUpload({
-    onStatusChange: (videoId, status) => {
-      console.log(`🔄 Upload status changed for ${videoId}:`, status);
-      
-      // Update the media bin item upload status when it changes
-      if (status.status === 'uploaded' && status.gemini_file_id && onUpdateMediaItem) {
-        // Look up in local cache first (using ref to avoid stale closure)
-        const mediaItemName = `pexels_${videoId}`;
-        const mediaItem = localMediaItemsRef.current.get(mediaItemName) || 
-          mediaBinItems.find(item => item.name === mediaItemName || item.id === videoId);
-        
-        console.log(`🔍 Looking for media item with name: ${mediaItemName} or id: ${videoId}`);
-        console.log(`🔍 Found in local cache:`, localMediaItemsRef.current.has(mediaItemName));
-        console.log(`🔍 Available media items from props:`, mediaBinItems.map(item => ({ id: item.id, name: item.name })));
-        console.log(`🔍 Local cache items:`, Array.from(localMediaItemsRef.current.keys()));
-        
-        if (mediaItem) {
-          const updatedItem: MediaBinItem = {
-            ...mediaItem,
-            upload_status: "uploaded",
-            gemini_file_id: status.gemini_file_id
-          };
-          
-          // Update local cache (ref mutation is synchronous)
-          localMediaItemsRef.current.set(mediaItemName, updatedItem);
-          
-          // Update parent component
-          onUpdateMediaItem(updatedItem);
-          console.log(`✅ Updated media item ${mediaItem.name} with gemini_file_id: ${status.gemini_file_id}`);
-        } else {
-          console.error(`❌ Could not find media item for video ${videoId}`);
-          console.error(`❌ Searched for name: ${mediaItemName}`);
-          console.error(`❌ Available names:`, Array.from(localMediaItemsRef.current.keys()));
-        }
-      }
-    }
-  });
+  // Note: Gemini upload removed - backend GCS storage handles everything now
+  // Stock videos are uploaded directly to GCS with signed URLs during fetch
 
-  // Initialize Conversational Synth
-  const [synth] = useState(() => new ConversationalSynth("dummy-api-key")); // Will use actual API key later
+  // Helper to get authenticated headers
+  const getAuthHeaders = useCallback(async () => {
+    const token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+  }, [getToken]);
+
+  // Initialize Conversational Synth with getToken for authenticated backend calls
+  const [synth] = useState(() => new ConversationalSynth("dummy-api-key", getToken));
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -320,11 +293,10 @@ export function ChatBox({
     try {
       console.log("🔍 Attempting direct backend analysis for:", fileName);
       
+      const headers = await getAuthHeaders();
       const response = await fetch(apiUrl('/analyze-video', true), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           file_url: fileName, // Could be URL or gemini file ID
           question: question
@@ -504,11 +476,10 @@ export function ChatBox({
         // For videos with successful upload, use the backend video analysis endpoint
         console.log("🔍 Using backend video analysis for:", mediaFile.gemini_file_id);
         
+        const headers = await getAuthHeaders();
         const response = await fetch(apiUrl('/analyze-video', true), {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             file_url: mediaFile.gemini_file_id,  // Backend now expects file_url parameter
             question: question
@@ -689,11 +660,10 @@ export function ChatBox({
         }
       }
 
+      const headers = await getAuthHeaders();
       const response = await fetch(apiUrl('/generate-content', true), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(requestBody)
       });
 
@@ -718,10 +688,11 @@ export function ChatBox({
       console.log(`🎨 Generated file URL:`, generatedAsset.file_url);
 
       // Create the MediaBinItem for the generated content
-      // Make sure the URL points to the correct FastAPI server using apiUrl function
+      // Make sure the URL points to the correct FastAPI server
+      const fastApiBaseUrl = getApiBaseUrl(true); // true for FastAPI
       const mediaUrl = generatedAsset.file_url.startsWith('http') 
         ? generatedAsset.file_url 
-        : apiUrl(generatedAsset.file_url, true);
+        : `${fastApiBaseUrl}${generatedAsset.file_url}`;
       
       console.log(`🎨 Final ${contentType} URL:`, mediaUrl);
 
@@ -794,11 +765,10 @@ export function ChatBox({
       console.log("🔍 FastAPI base URL:", getApiBaseUrl(true));
       
       // Call the actual backend API to fetch stock videos
+      const headers = await getAuthHeaders();
       const response = await fetch(fetchUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           query: query
         }),
@@ -828,6 +798,9 @@ export function ChatBox({
 
       // Add all fetched videos to the media library automatically
       if (onAddGeneratedImage) {
+        // Get FastAPI base URL for media files
+        const fastApiBaseUrl = getApiBaseUrl(true); // true for FastAPI
+        
         // First, add all media items to the bin
         const mediaItemsToUpload: Array<{mediaItem: MediaBinItem, video: any, videoUrl: string}> = [];
         
@@ -841,10 +814,10 @@ export function ChatBox({
             download_url: video.download_url
           });
           
-          // Create the full URL for the video using apiUrl function
+          // Create the full URL for the video
           const videoUrl = video.download_url.startsWith('http') 
             ? video.download_url 
-            : apiUrl(video.download_url, true);
+            : `${fastApiBaseUrl}${video.download_url}`;
             
           console.log(`🎬 [VIDEO ${index}] Video URL: ${video.download_url} -> ${videoUrl}`);
 
@@ -878,46 +851,12 @@ export function ChatBox({
             uploadStatus: mediaItem.upload_status
           });
           
-          // Store in local cache for reliable lookup later (ref mutation is synchronous)
-          localMediaItemsRef.current.set(mediaItem.name, mediaItem);
-          console.log(`📝 Added to local cache: ${mediaItem.name}, cache size: ${localMediaItemsRef.current.size}`);
-          
+          // GCS URLs are already available - no separate upload needed
           await onAddGeneratedImage(mediaItem);
-          
-          // Store for later upload
-          if (video.upload_status === "pending") {
-            mediaItemsToUpload.push({ mediaItem, video, videoUrl });
-          }
         }
         
-        // Wait a bit for React state to update, then start uploads
-        setTimeout(() => {
-          console.log(`📤 Starting uploads for ${mediaItemsToUpload.length} videos after state update...`);
-          
-          mediaItemsToUpload.forEach(({mediaItem, video, videoUrl}, index) => {
-            const videoIdString = video.id.toString();
-            console.log(`📤 [DELAYED VIDEO ${index}] Starting upload:`, {
-              videoId: video.id,
-              videoIdString: videoIdString,
-              mediaItemName: mediaItem.name,
-              mediaItemId: mediaItem.id
-            });
-            
-            // Generate filename for upload
-            const filename = `pexels_${video.id}_${Date.now()}.mp4`;
-            
-            // Start upload (non-blocking)
-            uploadVideoToGemini(videoUrl, videoIdString, filename).then(geminiFileId => {
-              if (geminiFileId) {
-                console.log(`✅ [DELAYED VIDEO ${index}] Upload completed for video ${video.id}: ${geminiFileId}`);
-              } else {
-                console.error(`❌ [DELAYED VIDEO ${index}] Upload failed for video ${video.id}`);
-              }
-            }).catch(error => {
-              console.error(`❌ [DELAYED VIDEO ${index}] Upload error for video ${video.id}:`, error);
-            });
-          });
-        }, 100); // Small delay to ensure React state is updated
+        // Note: All videos are already uploaded to GCS by the backend
+        // No separate Gemini upload needed
       }
 
       // Create the selection message with real video thumbnails
@@ -1273,11 +1212,14 @@ export function ChatBox({
       const mentionedScrubberIds = itemsToSend.map(item => item.id);
 
       // Make API call to the backend
+      const token = await getToken();
       const response = await axios.post(apiUrl("/ai", true), {
         message: messageContent,
         mentioned_scrubber_ids: mentionedScrubberIds,
         timeline_state: timelineState,
         mediabin_items: mediaBinItems,
+      }, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       const functionCallResponse = response.data;
@@ -1919,9 +1861,7 @@ export function ChatBox({
                 controls
                 autoPlay
                 className="w-full rounded-lg"
-                src={previewVideo.downloadUrl.startsWith('http') 
-                  ? previewVideo.downloadUrl 
-                  : apiUrl(previewVideo.downloadUrl, true)}
+                src={`http://localhost:8001${previewVideo.downloadUrl}`}
               >
                 Your browser does not support the video tag.
               </video>
