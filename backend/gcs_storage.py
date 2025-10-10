@@ -78,6 +78,30 @@ def get_or_create_bucket(
     
     try:
         bucket = client.get_bucket(bucket_name)
+        
+        # Ensure CORS is configured for video playback (idempotent operation)
+        current_cors = bucket.cors
+        needs_cors_update = True
+        
+        if current_cors:
+            # Check if CORS is already properly configured
+            for rule in current_cors:
+                if "*" in rule.get("origin", []) and "GET" in rule.get("method", []):
+                    needs_cors_update = False
+                    break
+        
+        if needs_cors_update:
+            bucket.cors = [
+                {
+                    "origin": ["*"],  # Allow all origins
+                    "method": ["GET", "HEAD"],
+                    "responseHeader": ["Content-Type", "Range", "Accept-Ranges"],
+                    "maxAgeSeconds": 3600
+                }
+            ]
+            bucket.patch()
+            logger.info(f"CORS configured for bucket '{bucket_name}'")
+        
         logger.info(f"Bucket '{bucket_name}' already exists (cached for reuse)")
         _gcs_bucket = bucket
         return bucket
@@ -91,7 +115,19 @@ def get_or_create_bucket(
             # Enable uniform bucket-level access (IAM only, no ACLs)
             bucket.iam_configuration.uniform_bucket_level_access_enabled = True
             bucket.patch()
-            logger.info(f"Bucket '{bucket_name}' created with uniform access in {location}")
+            
+            # Configure CORS for video playback from web browsers
+            bucket.cors = [
+                {
+                    "origin": ["*"],  # Allow all origins (restrict in production)
+                    "method": ["GET", "HEAD"],
+                    "responseHeader": ["Content-Type", "Range", "Accept-Ranges"],
+                    "maxAgeSeconds": 3600
+                }
+            ]
+            bucket.patch()
+            
+            logger.info(f"Bucket '{bucket_name}' created with uniform access and CORS in {location}")
             _gcs_bucket = bucket
             return bucket
         except Conflict:
@@ -144,6 +180,9 @@ def upload_file_to_gcs(
         # Set content type if provided
         if content_type:
             blob.content_type = content_type
+        
+        # Set cache control for better video playback
+        blob.cache_control = "public, max-age=31536000"  # Cache for 1 year
         
         # Upload file (uses crc32c checksum by default in v3.0+)
         blob.upload_from_file(file_data, rewind=True)
@@ -222,6 +261,9 @@ def upload_url_to_gcs(
             content_type = response.headers.get('Content-Type')
             if content_type:
                 blob.content_type = content_type
+            
+            # Set cache control for better video playback
+            blob.cache_control = "public, max-age=31536000"  # Cache for 1 year
             
             # Get content length for progress tracking (optional)
             content_length = response.headers.get('Content-Length')
