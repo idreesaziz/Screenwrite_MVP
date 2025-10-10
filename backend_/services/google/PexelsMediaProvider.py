@@ -60,8 +60,12 @@ class PexelsMediaProvider(MediaProvider):
         self.gcs_bucket = gcs_bucket or os.getenv('STOCK_MEDIA_BUCKET', 'screenwrite-stock-media')
         self.base_url = "https://api.pexels.com"
         
-        # Initialize Gemini provider for AI curation
-        self.gemini = gemini_provider or GeminiChatProvider()
+        # Initialize Gemini provider for AI curation (use Flash Lite for fast curation)
+        self.gemini = gemini_provider or GeminiChatProvider(
+            default_model_name="gemini-flash-lite-latest",
+            default_temperature=0.1,
+            default_thinking_budget=0
+        )
         
         # Initialize GCS client
         self.storage_client = storage.Client()
