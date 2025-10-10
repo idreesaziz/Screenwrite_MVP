@@ -162,27 +162,23 @@ Best Practices:
 export const CUSTOM_TEXT_COMPONENTS = `
 CUSTOM TEXT ANIMATION COMPONENTS - PREFER THESE OVER MANUAL ANIMATIONS:
 
-**IMPORTANT: These components handle ENTRANCE animations only. For exit effects, use separate fade-out animations or transitions.**
-
 Available Components:
 
 1. **SplitText** - Letter-by-letter or word-by-word slide-in reveal
    Visual Effect: Text appears one letter/word at a time, sliding in from top or bottom
    Use When: You want dynamic, attention-grabbing text introductions
-   Note: Only animates IN - for fade out, add separate opacity animation
+   Note: Only animates IN - for fade out, add separate transition
    Best For: Titles, headlines, emphasis text
 
 2. **BlurText** - Letter-by-letter or word-by-word blur fade-in
    Visual Effect: Text fades in with blur effect, each letter/word appears progressively
    Use When: You want smooth, elegant text reveals with depth
    Note: Only animates IN - combine with fade-out for complete effect
-   Best For: Subtitles, captions, elegant intros
 
 3. **TypewriterText** - Typing effect with optional blinking cursor
    Visual Effect: Text types out character-by-character like a typewriter
    Use When: You want retro, nostalgic, or tech-themed text
    Note: Can loop through multiple texts, animates typing IN only
-   Best For: Code snippets, terminal-style text, typewriter aesthetics
 
 4. **GradientText** - Animated moving gradient text
    Visual Effect: Gradient colors flow smoothly across text continuously
@@ -199,8 +195,6 @@ Available Components:
 6. **DecryptedText** - Matrix-style character randomization reveal
    Visual Effect: Characters cycle through random values before settling
    Use When: You want matrix/hacker/decryption style text
-   Note: Sequential or simultaneous character revelation
-   Best For: Tech themes, sci-fi content, code-breaking aesthetics
 
 7. **TrueFocus** - Sequential word highlighting with blur
    Visual Effect: Words blur out except one in focus, cycling through
@@ -217,7 +211,6 @@ Available Components:
 **USAGE PHILOSOPHY:**
 - PREFER these components over manual animations - they're professionally designed
 - Use them for ALL text that needs visual flair
-- Combine multiple components on different text elements for variety
 - Remember: Most only animate IN - plan separate exit animations if needed
 - Don't reinvent the wheel - these provide instant professional polish
 

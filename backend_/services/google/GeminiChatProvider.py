@@ -1,431 +1,231 @@
-"""
-Google Gemini implementation of ChatProvider.
-
-This module provides a fully self-contained implementation of the ChatProvider
-interface using Google's Gemini API. All API initialization, configuration, and
-calls are handled internally.
-"""
+"""Google Gemini implem    def __init__(
+        self,
+        project_id: Optional[str] = None,
+        location: str = "us-central1",
+        default_model_name: str = "gemini-flash-latest",
+        default_temperature: float = 1.0,
+        default_thinking_budget: int = -1
+    ): using Vertex AI."""
 
 import json
 import logging
+import os
 from typing import List, Dict, Any, AsyncIterator, Optional
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
+from google import genai
+from google.genai import types
+from google.cloud import aiplatform
 
 from services.base.ChatProvider import ChatProvider, ChatMessage, ChatResponse
 
-
-# Configure logging
 logger = logging.getLogger(__name__)
 
 
 class GeminiChatProvider(ChatProvider):
-    """
-    Google Gemini implementation of the ChatProvider interface.
+    """Gemini implementation using Vertex AI (Google Cloud Platform).
     
-    This provider is fully self-contained and handles all Gemini API interactions
-    internally, including configuration, authentication, and error handling.
-    
-    Attributes:
-        api_key: Google AI API key for authentication
-        model_name: Name of the Gemini model to use (default: gemini-2.5-flash)
-        default_temperature: Default temperature for generation (default: 0.7)
+    Authentication is handled via Application Default Credentials (ADC):
+    - Service account JSON file via GOOGLE_APPLICATION_CREDENTIALS env var
+    - gcloud auth application-default login
+    - Workload Identity (for GKE/Cloud Run)
     """
     
     def __init__(
         self,
-        api_key: str,
-        model_name: str = "gemini-2.5-flash",
-        default_temperature: float = 0.7
+        project_id: Optional[str] = None,
+        location: str = "us-central1",
+        default_model_name: str = "gemini-2.5-flash",
+        default_temperature: float = 1.0,
+        default_thinking_budget: Optional[int] = None
     ):
         """
-        Initialize the Gemini chat provider.
+        Initialize Vertex AI client using Application Default Credentials.
         
         Args:
-            api_key: Google AI API key
-            model_name: Gemini model to use (gemini-1.5-pro, gemini-1.5-flash, etc.)
-            default_temperature: Default temperature for generation
-            
-        Raises:
-            ValueError: If api_key is empty or invalid
-        """
-        if not api_key:
-            raise ValueError("API key is required for GeminiChatProvider")
+            project_id: Google Cloud project ID (optional, will use from ADC if not provided)
+            location: GCP region (default: us-central1)
+            default_model_name: Default model to use
+            default_temperature: Default temperature
+            default_thinking_budget: Default thinking budget
         
-        self.api_key = api_key
-        self.model_name = model_name
+        Authentication:
+            Uses Application Default Credentials (ADC) in this order:
+            1. GOOGLE_APPLICATION_CREDENTIALS environment variable pointing to service account JSON
+            2. gcloud auth application-default login credentials
+            3. Workload Identity (in GKE/Cloud Run)
+        """
+        self.project_id = project_id or os.getenv('GOOGLE_CLOUD_PROJECT')
+        self.location = location
+        self.default_model_name = default_model_name
         self.default_temperature = default_temperature
+        self.default_thinking_budget = default_thinking_budget
         
-        # Configure the Gemini API
-        genai.configure(api_key=self.api_key)
+        # Initialize Vertex AI project and location
+        aiplatform.init(project=self.project_id, location=self.location)
         
-        # Initialize the model
-        self.model = genai.GenerativeModel(
-            model_name=self.model_name,
-            safety_settings={
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            }
+        # Initialize Vertex AI client using HttpOptions with api_version="v1beta"
+        # This uses Application Default Credentials automatically
+        self.client = genai.Client(
+            http_options=types.HttpOptions(api_version="v1beta"),
         )
-        
-        logger.info(f"GeminiChatProvider initialized with model: {model_name}")
+        logger.info(f"Initialized Vertex AI with model: {default_model_name}, project: {self.project_id}, location: {location}")
     
-    def _convert_messages_to_gemini_format(
-        self,
-        messages: List[ChatMessage]
-    ) -> List[Dict[str, str]]:
-        """
-        Convert ChatMessage list to Gemini's expected format.
-        
-        Gemini expects messages in the format:
-        [{"role": "user", "parts": ["text"]}, {"role": "model", "parts": ["text"]}]
-        
-        Args:
-            messages: List of ChatMessage objects
-            
-        Returns:
-            List of messages in Gemini format
-        """
-        gemini_messages = []
-        
-        for msg in messages:
-            # Convert role names
-            role = "model" if msg.role == "assistant" else msg.role
-            
-            gemini_messages.append({
-                "role": role,
-                "parts": [msg.content]
-            })
-        
-        return gemini_messages
-    
-    def _extract_system_message(
-        self,
-        messages: List[ChatMessage]
-    ) -> tuple[Optional[str], List[ChatMessage]]:
-        """
-        Extract system message from the message list.
-        
-        Gemini handles system messages differently - they're passed as
-        system_instruction separately, not in the message history.
-        
-        Args:
-            messages: List of ChatMessage objects
-            
-        Returns:
-            Tuple of (system_instruction, remaining_messages)
-        """
+    def _convert_messages(self, messages: List[ChatMessage]):
         system_instruction = None
-        remaining_messages = []
+        contents = []
         
         for msg in messages:
             if msg.role == "system":
-                # Combine multiple system messages if present
-                if system_instruction:
-                    system_instruction += "\n\n" + msg.content
-                else:
-                    system_instruction = msg.content
+                system_instruction = msg.content if not system_instruction else system_instruction + "\n\n" + msg.content
             else:
-                remaining_messages.append(msg)
+                role = "model" if msg.role == "assistant" else "user"
+                contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg.content)]))
         
-        return system_instruction, remaining_messages
+        return system_instruction, contents
     
     async def generate_chat_response(
         self,
         messages: List[ChatMessage],
-        temperature: float = 0.7,
+        model_name: Optional[str] = None,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> ChatResponse:
-        """
-        Generate a single chat response using Gemini.
-        
-        Args:
-            messages: List of conversation messages
-            temperature: Controls randomness (0.0-2.0)
-            max_tokens: Maximum tokens in response (None = use default)
-            **kwargs: Additional Gemini-specific parameters
-            
-        Returns:
-            ChatResponse with generated content
-            
-        Raises:
-            ValueError: If messages are invalid or empty
-            RuntimeError: If Gemini API call fails
-        """
         if not messages:
-            raise ValueError("Messages list cannot be empty")
+            raise ValueError("Messages cannot be empty")
         
-        try:
-            # Extract system message if present
-            system_instruction, conversation_messages = self._extract_system_message(messages)
-            
-            # Create model with system instruction if present
-            if system_instruction:
-                model = genai.GenerativeModel(
-                    model_name=self.model_name,
-                    system_instruction=system_instruction,
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    }
-                )
-            else:
-                model = self.model
-            
-            # Convert messages to Gemini format
-            gemini_messages = self._convert_messages_to_gemini_format(conversation_messages)
-            
-            # Create generation config
-            config_params = {
-                'temperature': temperature,
-                **kwargs
+        system_inst, contents = self._convert_messages(messages)
+        model = model_name or self.default_model_name
+        temp = temperature if temperature is not None else self.default_temperature
+        think = thinking_budget if thinking_budget is not None else self.default_thinking_budget
+        
+        config_params = {
+            'temperature': temp,
+            'top_p': 0.95,
+            'safety_settings': [
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
+            ],
+            'thinking_config': types.ThinkingConfig(thinking_budget=think),
+            **kwargs
+        }
+        
+        if max_tokens:
+            config_params['max_output_tokens'] = max_tokens
+        if system_inst:
+            config_params['system_instruction'] = system_inst
+        
+        response = self.client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(**config_params)
+        )
+        
+        usage = None
+        if hasattr(response, 'usage_metadata'):
+            usage = {
+                'prompt_tokens': getattr(response.usage_metadata, 'prompt_token_count', 0),
+                'completion_tokens': getattr(response.usage_metadata, 'candidates_token_count', 0),
+                'total_tokens': getattr(response.usage_metadata, 'total_token_count', 0)
             }
-            if max_tokens is not None:
-                config_params['max_output_tokens'] = max_tokens
-            
-            generation_config = GenerationConfig(**config_params)
-            
-            # Start chat session
-            chat = model.start_chat(history=gemini_messages[:-1])
-            
-            # Send the last message and get response
-            response = await chat.send_message_async(
-                gemini_messages[-1]["parts"][0],
-                generation_config=generation_config
-            )
-            
-            # Extract usage statistics if available
-            usage = None
-            if hasattr(response, 'usage_metadata') and response.usage_metadata:
-                usage = {
-                    'prompt_tokens': response.usage_metadata.prompt_token_count,
-                    'completion_tokens': response.usage_metadata.candidates_token_count,
-                    'total_tokens': response.usage_metadata.total_token_count
-                }
-            
-            # Extract metadata
-            metadata = {
-                'finish_reason': response.candidates[0].finish_reason.name if response.candidates else None,
-                'safety_ratings': [
-                    {
-                        'category': rating.category.name,
-                        'probability': rating.probability.name
-                    }
-                    for rating in response.candidates[0].safety_ratings
-                ] if response.candidates else []
-            }
-            
-            logger.info(f"Generated chat response with {usage['total_tokens'] if usage else 'unknown'} tokens")
-            
-            return ChatResponse(
-                content=response.text,
-                model=self.model_name,
-                usage=usage,
-                metadata=metadata
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to generate chat response: {str(e)}")
-            raise RuntimeError(f"Gemini API call failed: {str(e)}") from e
+        
+        return ChatResponse(
+            content=response.text,
+            model=model,
+            usage=usage,
+            metadata={'system_instruction': system_inst}
+        )
     
     async def stream_chat_response(
         self,
         messages: List[ChatMessage],
-        temperature: float = 0.7,
+        model_name: Optional[str] = None,
+        temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> AsyncIterator[str]:
-        """
-        Stream chat response chunks as they are generated.
-        
-        Args:
-            messages: List of conversation messages
-            temperature: Controls randomness (0.0-2.0)
-            max_tokens: Maximum tokens in response (None = use default)
-            **kwargs: Additional Gemini-specific parameters
-            
-        Yields:
-            Text chunks as they are generated
-            
-        Raises:
-            ValueError: If messages are invalid or empty
-            RuntimeError: If Gemini API call fails
-        """
         if not messages:
-            raise ValueError("Messages list cannot be empty")
+            raise ValueError("Messages cannot be empty")
         
-        try:
-            # Extract system message if present
-            system_instruction, conversation_messages = self._extract_system_message(messages)
-            
-            # Create model with system instruction if present
-            if system_instruction:
-                model = genai.GenerativeModel(
-                    model_name=self.model_name,
-                    system_instruction=system_instruction,
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    }
-                )
-            else:
-                model = self.model
-            
-            # Convert messages to Gemini format
-            gemini_messages = self._convert_messages_to_gemini_format(conversation_messages)
-            
-            # Create generation config
-            config_params = {
-                'temperature': temperature,
-                **kwargs
-            }
-            if max_tokens is not None:
-                config_params['max_output_tokens'] = max_tokens
-            
-            generation_config = GenerationConfig(**config_params)
-            
-            # Start chat session
-            chat = model.start_chat(history=gemini_messages[:-1])
-            
-            # Send the last message and stream response
-            response = await chat.send_message_async(
-                gemini_messages[-1]["parts"][0],
-                generation_config=generation_config,
-                stream=True
-            )
-            
-            # Yield chunks as they arrive
-            async for chunk in response:
-                if chunk.text:
-                    yield chunk.text
-            
-            logger.info("Completed streaming chat response")
-            
-        except Exception as e:
-            logger.error(f"Failed to stream chat response: {str(e)}")
-            raise RuntimeError(f"Gemini API streaming failed: {str(e)}") from e
+        system_inst, contents = self._convert_messages(messages)
+        model = model_name or self.default_model_name
+        temp = temperature if temperature is not None else self.default_temperature
+        think = thinking_budget if thinking_budget is not None else self.default_thinking_budget
+        
+        config_params = {
+            'temperature': temp,
+            'top_p': 0.95,
+            'safety_settings': [
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
+            ],
+            'thinking_config': types.ThinkingConfig(thinking_budget=think),
+            **kwargs
+        }
+        
+        if max_tokens:
+            config_params['max_output_tokens'] = max_tokens
+        if system_inst:
+            config_params['system_instruction'] = system_inst
+        
+        for chunk in self.client.models.generate_content_stream(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(**config_params)
+        ):
+            if hasattr(chunk, 'text') and chunk.text:
+                yield chunk.text
     
     async def generate_chat_response_with_schema(
         self,
         messages: List[ChatMessage],
         response_schema: Dict[str, Any],
-        temperature: float = 0.7,
+        model_name: Optional[str] = None,
+        temperature: Optional[float] = None,
+        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Generate a structured response matching a JSON schema.
+        if not messages or not response_schema:
+            raise ValueError("Messages and schema required")
         
-        Args:
-            messages: List of conversation messages
-            response_schema: JSON schema defining expected response structure
-            temperature: Controls randomness (0.0-2.0)
-            **kwargs: Additional Gemini-specific parameters
-            
-        Returns:
-            Dictionary matching the provided schema
-            
-        Raises:
-            ValueError: If messages or schema are invalid
-            RuntimeError: If API call fails or response doesn't match schema
-        """
-        if not messages:
-            raise ValueError("Messages list cannot be empty")
-        if not response_schema:
-            raise ValueError("Response schema cannot be empty")
+        system_inst, contents = self._convert_messages(messages)
+        model = model_name or self.default_model_name
+        temp = temperature if temperature is not None else self.default_temperature
+        think = thinking_budget if thinking_budget is not None else self.default_thinking_budget
         
-        try:
-            # Extract system message if present
-            system_instruction, conversation_messages = self._extract_system_message(messages)
-            
-            # Create model with system instruction if present
-            if system_instruction:
-                model = genai.GenerativeModel(
-                    model_name=self.model_name,
-                    system_instruction=system_instruction,
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    }
-                )
-            else:
-                model = self.model
-            
-            # Convert messages to Gemini format
-            gemini_messages = self._convert_messages_to_gemini_format(conversation_messages)
-            
-            # Create generation config with response schema
-            generation_config = GenerationConfig(
-                temperature=temperature,
-                response_mime_type="application/json",
-                response_schema=response_schema,
-                **kwargs
-            )
-            
-            # Start chat session
-            chat = model.start_chat(history=gemini_messages[:-1])
-            
-            # Send the last message and get response
-            response = await chat.send_message_async(
-                gemini_messages[-1]["parts"][0],
-                generation_config=generation_config
-            )
-            
-            # Parse JSON response
-            try:
-                structured_response = json.loads(response.text)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON response: {response.text}")
-                raise RuntimeError(f"Response is not valid JSON: {str(e)}") from e
-            
-            logger.info("Generated structured response matching schema")
-            
-            return structured_response
-            
-        except Exception as e:
-            logger.error(f"Failed to generate structured response: {str(e)}")
-            raise RuntimeError(f"Gemini structured generation failed: {str(e)}") from e
+        config_params = {
+            'temperature': temp,
+            'top_p': 0.95,
+            'response_mime_type': 'application/json',
+            'response_schema': response_schema,
+            'safety_settings': [
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
+            ],
+            'thinking_config': types.ThinkingConfig(thinking_budget=think),
+            **kwargs
+        }
+        
+        if system_inst:
+            config_params['system_instruction'] = system_inst
+        
+        response = self.client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(**config_params)
+        )
+        
+        return json.loads(response.text)
     
-    async def count_tokens(
-        self,
-        messages: List[ChatMessage],
-        **kwargs
-    ) -> int:
-        """
-        Count tokens in a list of messages.
-        
-        Args:
-            messages: List of conversation messages
-            **kwargs: Additional Gemini-specific parameters
-            
-        Returns:
-            Approximate token count
-            
-        Raises:
-            ValueError: If messages are invalid
-        """
+    async def count_tokens(self, messages: List[ChatMessage], model_name: Optional[str] = None, **kwargs) -> int:
         if not messages:
-            raise ValueError("Messages list cannot be empty")
-        
-        try:
-            # Convert messages to single text for counting
-            text_content = "\n".join([f"{msg.role}: {msg.content}" for msg in messages])
-            
-            # Use Gemini's token counting API
-            token_count = self.model.count_tokens(text_content)
-            
-            logger.debug(f"Counted {token_count.total_tokens} tokens in messages")
-            
-            return token_count.total_tokens
-            
-        except Exception as e:
-            logger.error(f"Failed to count tokens: {str(e)}")
-            raise ValueError(f"Token counting failed: {str(e)}") from e
+            raise ValueError("Messages cannot be empty")
+        text = "\n".join([f"{m.role}: {m.content}" for m in messages])
+        return len(text) // 4  # Rough estimate

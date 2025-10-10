@@ -57,8 +57,10 @@ class ChatProvider(ABC):
     async def generate_chat_response(
         self,
         messages: List[ChatMessage],
+        model_name: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> ChatResponse:
         """
@@ -66,8 +68,10 @@ class ChatProvider(ABC):
         
         Args:
             messages: List of conversation messages
+            model_name: Override default model (None = use provider's default)
             temperature: Controls randomness (0.0 = deterministic, 1.0 = creative)
             max_tokens: Maximum tokens in the response (None = provider default)
+            thinking_budget: Token budget for model thinking (None = provider default, -1 = unlimited)
             **kwargs: Provider-specific parameters
             
         Returns:
@@ -83,8 +87,10 @@ class ChatProvider(ABC):
     async def stream_chat_response(
         self,
         messages: List[ChatMessage],
+        model_name: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> AsyncIterator[str]:
         """
@@ -92,8 +98,10 @@ class ChatProvider(ABC):
         
         Args:
             messages: List of conversation messages
+            model_name: Override default model (None = use provider's default)
             temperature: Controls randomness (0.0 = deterministic, 1.0 = creative)
             max_tokens: Maximum tokens in the response (None = provider default)
+            thinking_budget: Token budget for model thinking (None = provider default, -1 = unlimited)
             **kwargs: Provider-specific parameters
             
         Yields:
@@ -110,7 +118,9 @@ class ChatProvider(ABC):
         self,
         messages: List[ChatMessage],
         response_schema: Dict[str, Any],
+        model_name: Optional[str] = None,
         temperature: float = 0.7,
+        thinking_budget: Optional[int] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -122,7 +132,9 @@ class ChatProvider(ABC):
         Args:
             messages: List of conversation messages
             response_schema: JSON schema defining the expected response structure
+            model_name: Override default model (None = use provider's default)
             temperature: Controls randomness (0.0 = deterministic, 1.0 = creative)
+            thinking_budget: Token budget for model thinking (None = provider default, -1 = unlimited)
             **kwargs: Provider-specific parameters
             
         Returns:
