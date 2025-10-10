@@ -8,6 +8,18 @@ from services.base.ImageGenerationProvider import (
     GeneratedImage,
     ImageUpscaleRequest
 )
+from services.base.MediaProvider import (
+    MediaProvider,
+    MediaSearchRequest,
+    MediaSearchResponse,
+    MediaDownloadRequest,
+    MediaItem,
+    CuratedMediaItem,
+    VideoFile,
+    MediaCreator,
+    MediaType,
+    VideoOrientation
+)
 
 __all__ = [
     'ChatProvider',
@@ -17,5 +29,15 @@ __all__ = [
     'ImageGenerationRequest',
     'ImageGenerationResponse',
     'GeneratedImage',
-    'ImageUpscaleRequest'
+    'ImageUpscaleRequest',
+    'MediaProvider',
+    'MediaSearchRequest',
+    'MediaSearchResponse',
+    'MediaDownloadRequest',
+    'MediaItem',
+    'CuratedMediaItem',
+    'VideoFile',
+    'MediaCreator',
+    'MediaType',
+    'VideoOrientation'
 ]
