@@ -3,6 +3,7 @@ import axios from "axios"
 import { type MediaBinItem } from "~/components/timeline/types"
 import { generateUUID } from "~/utils/uuid"
 import { apiUrl } from "~/utils/api"
+import { uploadFileToGCS, type GetTokenFn } from "~/utils/authApi"
 
 // Delete media file from server
 export const deleteMediaFile = async (filename: string): Promise<{ success: boolean; message?: string; error?: string }> => {
@@ -135,7 +136,10 @@ const getMediaMetadata = (file: File, mediaType: "video" | "image" | "audio"): P
   });
 };
 
-export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: string) => void) => {
+export const useMediaBin = (
+  handleDeleteScrubbersByMediaBinId: (mediaBinId: string) => void,
+  getToken: GetTokenFn
+) => {
   const [mediaBinItems, setMediaBinItems] = useState<MediaBinItem[]>([])
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -170,92 +174,53 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
         name,
         mediaType,
         mediaUrlLocal,
-        mediaUrlRemote: null, // Will be set after successful upload
+        mediaUrlRemote: null, // Will be set after successful GCS upload
         durationInSeconds: metadata.durationInSeconds ?? 0,
         media_width: metadata.width,
         media_height: metadata.height,
         text: null,
         isUploading: true,
         uploadProgress: 0,
-        upload_status: "pending", // New unified status field
+        upload_status: "pending",
         left_transition_id: null,
         right_transition_id: null,
-        gemini_file_id: null, // Will be set after Gemini upload
+        gemini_file_id: null, // Not needed - Gemini can access GCS URLs directly
       };
       setMediaBinItems(prev => [...prev, newItem]);
 
-      const formData = new FormData();
-      formData.append('media', file);
-
-      console.log("Uploading file to server...");
-      const uploadResponse = await axios.post(apiUrl('/upload'), formData, {
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`Upload progress: ${percentCompleted}%`);
-
-            // Update upload progress in the media bin
-            setMediaBinItems(prev =>
-              prev.map(item =>
-                item.id === id
-                  ? { ...item, uploadProgress: percentCompleted }
-                  : item
-              )
-            );
-          }
-        }
-      });
-
-      const uploadResult = uploadResponse.data;
-      console.log("Upload successful:", uploadResult);
-
-      // Upload to Gemini Files API for analysis (required for media analysis)
-      console.log("Uploading to Gemini for analysis...");
-      const geminiFormData = new FormData();
-      geminiFormData.append('file', file);
+      console.log("Uploading file to GCS...");
       
-      let geminiFileId: string;
-      try {
-        const geminiResponse = await axios.post(apiUrl('/upload-to-gemini', true), geminiFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        
-        if (!geminiResponse.data.success) {
-          throw new Error(`Server connection error: ${geminiResponse.data.error_message || 'Failed to connect to AI analysis service'}`);
+      // Upload to GCS with JWT authentication
+      const uploadResult = await uploadFileToGCS(
+        file,
+        getToken,
+        (percentCompleted) => {
+          console.log(`Upload progress: ${percentCompleted}%`);
+          
+          // Update upload progress in the media bin
+          setMediaBinItems(prev =>
+            prev.map(item =>
+              item.id === id
+                ? { ...item, uploadProgress: percentCompleted }
+                : item
+            )
+          );
         }
-        
-        geminiFileId = geminiResponse.data.gemini_file_id;
-        console.log("Gemini upload successful:", geminiFileId);
-      } catch (geminiError) {
-        if (geminiError instanceof Error && geminiError.message.includes("Server connection error")) {
-          throw geminiError; // Re-throw our custom error
-        }
-        // Handle axios/network errors
-        if (axios.isAxiosError(geminiError)) {
-          if (geminiError.code === 'ECONNREFUSED' || geminiError.message.includes('ECONNREFUSED')) {
-            throw new Error('Server connection error: AI analysis service is not available. Please contact support.');
-          } else if (geminiError.response?.status === 500) {
-            throw new Error('Server connection error: AI analysis service encountered an internal error. Please try again later.');
-          } else if (geminiError.response?.status === 404) {
-            throw new Error('Server connection error: AI analysis service endpoint not found. Please contact support.');
-          }
-        }
-        throw new Error(`Server connection error: Unable to connect to AI analysis service. Please try again later.`);
-      }
+      );
 
-      // Update item with successful upload result and remove progress tracking
+      console.log("GCS upload successful:", uploadResult.url);
+
+      // Update item with successful GCS upload result
       setMediaBinItems(prev =>
         prev.map(item =>
           item.id === id
             ? {
               ...item,
-              mediaUrlRemote: uploadResult.fullUrl,
+              mediaUrlRemote: uploadResult.url, // GCS signed URL
               isUploading: false,
               uploadProgress: null,
-              upload_status: "uploaded", // Mark as successfully uploaded
-              gemini_file_id: geminiFileId
+              upload_status: "uploaded",
+              gemini_file_id: null // Gemini can access GCS URLs directly when needed
             }
             : item
         )
@@ -267,12 +232,14 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
       // Provide user-friendly error messages
       let errorMessage: string;
       if (error instanceof Error) {
-        if (error.message.includes("Server connection error")) {
-          errorMessage = error.message; // Use the specific server error message
+        if (error.message.includes("No authentication token")) {
+          errorMessage = "Authentication required. Please sign in to upload media.";
         } else if (error.message.includes("Network Error") || error.message.includes("ERR_NETWORK")) {
           errorMessage = "Network connection error. Please check your internet connection and try again.";
         } else if (error.message.includes("timeout")) {
           errorMessage = "Upload timeout. Please try again with a smaller file or check your connection.";
+        } else if (error.message.includes("401") || error.message.includes("403")) {
+          errorMessage = "Authentication error. Please sign in again.";
         } else {
           errorMessage = `Upload failed: ${error.message}`;
         }
@@ -285,7 +252,7 @@ export const useMediaBin = (handleDeleteScrubbersByMediaBinId: (mediaBinId: stri
 
       throw new Error(errorMessage);
     }
-  }, []);
+  }, [getToken]);
 
   const handleAddTextToBin = useCallback((
     textContent: string,

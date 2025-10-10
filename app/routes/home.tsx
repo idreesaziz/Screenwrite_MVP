@@ -62,7 +62,7 @@ export default function TimelineEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { theme, setTheme } = useTheme();
-  const { signOut, user } = useAuth();
+  const { signOut, user, getToken } = useAuth();
 
   const navigate = useNavigate();
 
@@ -362,7 +362,7 @@ export default function TimelineEditor() {
     handleDeleteFromContext,
     handleSplitAudioFromContext,
     handleCloseContextMenu
-  } = useMediaBin(() => {}); // Empty function since we don't need timeline integration
+  } = useMediaBin(() => {}, getToken); // Pass getToken for authenticated GCS uploads
 
   const { isRendering, renderStatus, handleRenderVideo } = useRenderer();
 
