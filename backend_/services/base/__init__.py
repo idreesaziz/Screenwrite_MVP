@@ -2,6 +2,7 @@
 
 from services.base.ChatProvider import ChatProvider, ChatMessage, ChatResponse
 from services.base.StorageProvider import StorageProvider, StorageFile, UploadResult
+from services.base.VideoGenerationProvider import VideoGenerationProvider, VideoGenerationOperation, GeneratedVideo
 
 __all__ = [
     'ChatProvider',
@@ -10,4 +11,7 @@ __all__ = [
     'StorageProvider',
     'StorageFile',
     'UploadResult',
+    'VideoGenerationProvider',
+    'VideoGenerationOperation',
+    'GeneratedVideo',
 ]
