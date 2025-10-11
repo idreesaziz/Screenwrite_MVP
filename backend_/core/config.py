@@ -20,6 +20,7 @@ class GoogleCloudConfig(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 class GeminiConfig(BaseSettings):
@@ -33,6 +34,7 @@ class GeminiConfig(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 class ImagenConfig(BaseSettings):
@@ -43,6 +45,7 @@ class ImagenConfig(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 class VeoConfig(BaseSettings):
@@ -53,6 +56,7 @@ class VeoConfig(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 class PexelsConfig(BaseSettings):
@@ -64,6 +68,7 @@ class PexelsConfig(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 class GCSConfig(BaseSettings):
@@ -74,16 +79,18 @@ class GCSConfig(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 class AuthConfig(BaseSettings):
     """Authentication configuration"""
-    supabase_url: str = Field(..., alias="SUPABASE_URL")
+    supabase_url: str = Field(default="https://placeholder.supabase.co", alias="SUPABASE_URL")
     supabase_jwt_secret: str = Field(..., alias="SUPABASE_JWT_SECRET")
     
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 class AppConfig(BaseSettings):
@@ -93,18 +100,19 @@ class AppConfig(BaseSettings):
     api_version: str = Field(default="v1")
     cors_origins: list[str] = Field(default=["*"])
     
-    # Sub-configurations
+    # Sub-configurations (all use default_factory for proper BaseSettings nesting)
     google_cloud: GoogleCloudConfig = Field(default_factory=GoogleCloudConfig)
-    gemini: GeminiConfig
+    gemini: GeminiConfig = Field(default_factory=GeminiConfig)
     imagen: ImagenConfig = Field(default_factory=ImagenConfig)
     veo: VeoConfig = Field(default_factory=VeoConfig)
-    pexels: PexelsConfig
+    pexels: PexelsConfig = Field(default_factory=PexelsConfig)
     gcs: GCSConfig = Field(default_factory=GCSConfig)
-    auth: AuthConfig
+    auth: AuthConfig = Field(default_factory=AuthConfig)
     
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 @lru_cache()

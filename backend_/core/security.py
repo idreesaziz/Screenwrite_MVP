@@ -7,7 +7,7 @@ Handles Supabase JWT token validation and user extraction.
 import os
 import jwt
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, Security
+from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from functools import lru_cache
 
@@ -42,11 +42,15 @@ def decode_jwt_token(token: str) -> Dict[str, Any]:
         secret = get_jwt_secret()
         
         # Decode JWT token
+        # Supabase tokens have audience claim that we need to skip verification for
         payload = jwt.decode(
             token,
             secret,
             algorithms=["HS256"],
-            options={"verify_signature": True}
+            options={
+                "verify_signature": True,
+                "verify_aud": False  # Skip audience verification for Supabase tokens
+            }
         )
         
         return payload
@@ -122,10 +126,10 @@ async def get_current_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security_scheme, auto_error=False)
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security_scheme)
 ) -> Optional[Dict[str, Any]]:
     """
-    Optional authentication - returns None if no token provided.
+    Optional authentication - returns None if no token provided or invalid.
     
     Usage:
         @app.get("/optional-auth")
