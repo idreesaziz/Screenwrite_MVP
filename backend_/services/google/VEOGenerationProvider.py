@@ -4,11 +4,13 @@ import os
 import io
 import logging
 import tempfile
+import uuid
 from typing import Optional
 from datetime import datetime
 from PIL import Image
 from google import genai
 from google.genai import types
+from google.cloud import storage
 import asyncio
 from functools import wraps
 
@@ -48,7 +50,8 @@ class VEOGenerationProvider(VideoGenerationProvider):
         project_id: Optional[str] = None,
         location: str = "us-central1",
         model_name: str = "veo-3.0-fast-generate-001",
-        credentials_path: Optional[str] = None
+        credentials_path: Optional[str] = None,
+        gcs_bucket: Optional[str] = None
     ):
         """
         Initialize Veo video generation provider.
@@ -58,17 +61,22 @@ class VEOGenerationProvider(VideoGenerationProvider):
             location: GCP region
             model_name: Veo model to use (default: fast model)
             credentials_path: Path to service account JSON (uses ADC if not provided)
+            gcs_bucket: Default GCS bucket for uploads (optional)
         """
         self.project_id = project_id or os.getenv('GOOGLE_CLOUD_PROJECT')
         self.location = location
         self.model_name = model_name
+        self.gcs_bucket = gcs_bucket or os.getenv('GCS_BUCKET_NAME', 'screenwrite-media')
         
         # Initialize Vertex AI client using v1beta API (supports latest features)
         self.client = genai.Client(
             http_options=types.HttpOptions(api_version="v1beta")
         )
         
-        logger.info(f"VEOGenerationProvider initialized: model={model_name}, project={self.project_id}")
+        # Initialize GCS client for optional uploads
+        self.storage_client = storage.Client()
+        
+        logger.info(f"VEOGenerationProvider initialized: model={model_name}, project={self.project_id}, gcs_bucket={self.gcs_bucket}")
     
     def _format_reference_image(self, reference_image: Image.Image) -> types.Image:
         """Convert PIL Image to Google API Image format."""
@@ -189,9 +197,24 @@ class VEOGenerationProvider(VideoGenerationProvider):
     async def download_generated_video(
         self,
         operation: VideoGenerationOperation,
+        upload_to_gcs: bool = False,
+        gcs_path: Optional[str] = None,
+        gcs_bucket: Optional[str] = None,
         **kwargs
     ) -> GeneratedVideo:
-        """Download completed video."""
+        """
+        Download completed video and optionally upload to GCS.
+        
+        Args:
+            operation: Completed VideoGenerationOperation
+            upload_to_gcs: Whether to upload to GCS (default: False)
+            gcs_path: Optional GCS path prefix (e.g., 'user_id/session_id')
+            gcs_bucket: Optional GCS bucket (uses default if not provided)
+            **kwargs: Additional parameters
+            
+        Returns:
+            GeneratedVideo with video bytes and optional GCS URLs
+        """
         def _sync_download():
             try:
                 # Verify operation is completed
@@ -238,7 +261,8 @@ class VEOGenerationProvider(VideoGenerationProvider):
                 
                 logger.info(f"Video downloaded successfully: {file_size} bytes")
                 
-                return GeneratedVideo(
+                # Create base result
+                result = GeneratedVideo(
                     video_data=video_data,
                     prompt=operation.prompt,
                     duration_seconds=8.0,  # Veo generates 8-second videos
@@ -246,8 +270,44 @@ class VEOGenerationProvider(VideoGenerationProvider):
                     height=height,
                     file_size=file_size,
                     format="mp4",
-                    metadata=operation.metadata
+                    metadata=operation.metadata or {}
                 )
+                
+                # Upload to GCS if requested
+                if upload_to_gcs:
+                    bucket_name = gcs_bucket or self.gcs_bucket
+                    
+                    # Generate unique filename
+                    asset_id = str(uuid.uuid4())
+                    file_name = f"generated_video_{asset_id}.mp4"
+                    
+                    if gcs_path:
+                        blob_name = f"{gcs_path}/{file_name}"
+                    else:
+                        blob_name = f"generated_videos/{file_name}"
+                    
+                    logger.info(f"Uploading to GCS: gs://{bucket_name}/{blob_name}")
+                    
+                    bucket = self.storage_client.bucket(bucket_name)
+                    blob = bucket.blob(blob_name)
+                    
+                    blob.upload_from_string(video_data, content_type="video/mp4")
+                    
+                    # Generate signed URL (7 days expiration)
+                    signed_url = blob.generate_signed_url(
+                        version="v4",
+                        expiration=7 * 24 * 60 * 60,  # 7 days
+                        method="GET"
+                    )
+                    
+                    # Update metadata with GCS info
+                    result.metadata['gcs_uri'] = f"gs://{bucket_name}/{blob_name}"
+                    result.metadata['gcs_signed_url'] = signed_url
+                    result.metadata['gcs_public_url'] = blob.public_url
+                    
+                    logger.info(f"Upload complete: {signed_url[:80]}...")
+                
+                return result
                 
             except Exception as e:
                 logger.error(f"Failed to download video: {e}")
