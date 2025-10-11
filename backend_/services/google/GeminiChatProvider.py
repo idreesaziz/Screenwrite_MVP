@@ -51,13 +51,14 @@ class GeminiChatProvider(ChatProvider):
         self.default_temperature = default_temperature
         self.default_thinking_budget = default_thinking_budget
         
-        # Initialize Vertex AI client using HttpOptions with api_version="v1beta"
-        # Beta API supports thinkingConfig and latest features
-        # This uses Application Default Credentials automatically
-        self.client = genai.Client(
-            http_options=types.HttpOptions(api_version="v1beta")
-        )
-        logger.info(f"Initialized Vertex AI with model: {default_model_name}, project: {self.project_id}, location: {location}")
+        # Initialize Google AI API client with API key
+        # Uses GEMINI_API_KEY or GOOGLE_API_KEY environment variable
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required")
+        
+        self.client = genai.Client(api_key=api_key)
+        logger.info(f"Initialized Google AI API with model: {default_model_name}")
     
     def _convert_messages(self, messages: List[ChatMessage]):
         system_instruction = None
