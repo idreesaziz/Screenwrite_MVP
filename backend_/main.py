@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from api.analysis_router import router as analysis_router
+from api.agent_router import router as agent_router
 
 # Load environment variables
 load_dotenv()
@@ -36,6 +37,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(analysis_router, prefix="/api/v1/analysis", tags=["Analysis"])
+app.include_router(agent_router, prefix="/api/v1/agent", tags=["Agent"])
 
 # Health check endpoint
 @app.get("/api/v1/health")

@@ -51,14 +51,30 @@ class GeminiChatProvider(ChatProvider):
         self.default_temperature = default_temperature
         self.default_thinking_budget = default_thinking_budget
         
-        # Initialize Google AI API client with API key
-        # Uses GEMINI_API_KEY or GOOGLE_API_KEY environment variable
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required")
+        # Determine authentication mode: Vertex AI (ADC) or API Key
+        use_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
         
-        self.client = genai.Client(api_key=api_key)
-        logger.info(f"Initialized Google AI API with model: {default_model_name}")
+        if use_vertex or self.project_id:
+            # Use Vertex AI with Application Default Credentials
+            if not self.project_id:
+                raise ValueError("GOOGLE_CLOUD_PROJECT is required for Vertex AI mode")
+            
+            # Ensure Vertex AI environment variable is set
+            os.environ['GOOGLE_GENAI_USE_VERTEXAI'] = 'True'
+            
+            from google.genai.types import HttpOptions
+            self.client = genai.Client(
+                http_options=HttpOptions(api_version="v1")
+            )
+            logger.info(f"Initialized Vertex AI client with model: {default_model_name}, project: {self.project_id}, location: {self.location}")
+        else:
+            # Use Google AI API with API key
+            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            if not api_key:
+                raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required for API key mode")
+            
+            self.client = genai.Client(api_key=api_key)
+            logger.info(f"Initialized Google AI API with API key, model: {default_model_name}")
     
     def _convert_messages(self, messages: List[ChatMessage]):
         system_instruction = None
@@ -200,9 +216,13 @@ class GeminiChatProvider(ChatProvider):
                 types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
                 types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
             ],
-            'thinking_config': types.ThinkingConfig(thinking_budget=think),
             **kwargs
         }
+        
+        # Only add thinking_config if model supports it (thinking models)
+        # Standard models like gemini-2.0-flash-exp don't support thinking mode
+        if think > 0 and 'thinking' in model.lower():
+            config_params['thinking_config'] = types.ThinkingConfig(thinking_budget=think)
         
         if system_inst:
             config_params['system_instruction'] = system_inst
