@@ -51,10 +51,11 @@ class GeminiChatProvider(ChatProvider):
         self.default_temperature = default_temperature
         self.default_thinking_budget = default_thinking_budget
         
-        # Initialize Vertex AI client using HttpOptions with api_version="v1"
+        # Initialize Vertex AI client using HttpOptions with api_version="v1beta"
+        # Beta API supports thinkingConfig and latest features
         # This uses Application Default Credentials automatically
         self.client = genai.Client(
-            http_options=types.HttpOptions(api_version="v1")
+            http_options=types.HttpOptions(api_version="v1beta")
         )
         logger.info(f"Initialized Vertex AI with model: {default_model_name}, project: {self.project_id}, location: {location}")
     
