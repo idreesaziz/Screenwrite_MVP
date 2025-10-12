@@ -12,9 +12,11 @@ from typing import Optional
 from services.base.MediaAnalysisProvider import MediaAnalysisProvider
 from services.base.StorageProvider import StorageProvider
 from services.base.ChatProvider import ChatProvider
+from services.base.MediaProvider import MediaProvider
 from services.google.GeminiMediaAnalysisProvider import GeminiMediaAnalysisProvider
 from services.google.GCStorageProvider import GCStorageProvider
 from services.google.GeminiChatProvider import GeminiChatProvider
+from services.pexels.PexelsMediaProvider import PexelsMediaProvider
 
 
 @lru_cache()
@@ -123,4 +125,47 @@ def get_composition_service():
     
     return CompositionGenerationService(
         chat_provider=get_chat_provider()
+    )
+
+
+@lru_cache()
+def get_media_provider() -> MediaProvider:
+    """
+    Factory function for MediaProvider.
+    
+    Returns a singleton instance of the configured media provider.
+    Uses @lru_cache() to ensure only one instance is created.
+    
+    Currently returns PexelsMediaProvider.
+    Future: Support Shutterstock, Getty, etc. via env variable.
+    
+    Returns:
+        MediaProvider instance (PexelsMediaProvider)
+    """
+    provider_type = os.getenv("MEDIA_PROVIDER", "pexels")
+    
+    if provider_type == "pexels":
+        return PexelsMediaProvider(
+            api_key=os.getenv("PEXELS_API_KEY"),
+            gcs_bucket=os.getenv("GCS_BUCKET_NAME", "screenwrite-media"),
+            gemini_provider=get_chat_provider()
+        )
+    else:
+        raise ValueError(f"Unsupported media provider: {provider_type}")
+
+
+def get_stock_media_service():
+    """
+    Factory function for StockMediaService.
+    
+    Creates a new StockMediaService instance with injected dependencies.
+    
+    Returns:
+        StockMediaService instance
+    """
+    from business_logic.fetch_media import StockMediaService
+    
+    return StockMediaService(
+        media_provider=get_media_provider(),
+        storage_provider=get_storage_provider()
     )
