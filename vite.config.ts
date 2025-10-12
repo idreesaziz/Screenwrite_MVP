@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
   resolve: {
     alias: {
+      "~": "/home/idrees-mustafa/Dev/screenwrite/app",
       "remotion-animated": "/node_modules/remotion-animated-root/packages/remotion-animated/dist/index.js"
     }
   }
