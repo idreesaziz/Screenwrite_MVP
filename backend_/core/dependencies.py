@@ -13,10 +13,14 @@ from services.base.MediaAnalysisProvider import MediaAnalysisProvider
 from services.base.StorageProvider import StorageProvider
 from services.base.ChatProvider import ChatProvider
 from services.base.MediaProvider import MediaProvider
+from services.base.ImageGenerationProvider import ImageGenerationProvider
+from services.base.VideoGenerationProvider import VideoGenerationProvider
 from services.google.GeminiMediaAnalysisProvider import GeminiMediaAnalysisProvider
 from services.google.GCStorageProvider import GCStorageProvider
 from services.google.GeminiChatProvider import GeminiChatProvider
 from services.pexels.PexelsMediaProvider import PexelsMediaProvider
+from services.google.ImagenGenerationProvider import ImagenGenerationProvider
+from services.google.VEOGenerationProvider import VEOGenerationProvider
 
 
 @lru_cache()
@@ -167,5 +171,64 @@ def get_stock_media_service():
     
     return StockMediaService(
         media_provider=get_media_provider(),
+        storage_provider=get_storage_provider()
+    )
+
+
+@lru_cache()
+def get_image_generation_provider() -> ImageGenerationProvider:
+    """
+    Factory function for ImageGenerationProvider.
+    
+    Returns a singleton instance of the configured image generation provider.
+    Uses @lru_cache() to ensure only one instance is created.
+    
+    Currently returns ImagenGenerationProvider (Google Imagen).
+    
+    Returns:
+        ImageGenerationProvider instance (ImagenGenerationProvider)
+    """
+    return ImagenGenerationProvider(
+        project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+        location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        default_model_name=os.getenv("IMAGEN_MODEL", "imagen-3.0-generate-001")
+    )
+
+
+@lru_cache()
+def get_video_generation_provider() -> VideoGenerationProvider:
+    """
+    Factory function for VideoGenerationProvider.
+    
+    Returns a singleton instance of the configured video generation provider.
+    Uses @lru_cache() to ensure only one instance is created.
+    
+    Currently returns VEOGenerationProvider (Google Veo).
+    
+    Returns:
+        VideoGenerationProvider instance (VEOGenerationProvider)
+    """
+    return VEOGenerationProvider(
+        project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+        location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        model_name=os.getenv("VEO_MODEL", "veo-3.0-fast-generate-001"),
+        gcs_bucket=os.getenv("GCS_BUCKET_NAME", "screenwrite-media")
+    )
+
+
+def get_media_generation_service():
+    """
+    Factory function for MediaGenerationService.
+    
+    Creates a new MediaGenerationService instance with injected dependencies.
+    
+    Returns:
+        MediaGenerationService instance
+    """
+    from business_logic.generate_media import MediaGenerationService
+    
+    return MediaGenerationService(
+        image_provider=get_image_generation_provider(),
+        video_provider=get_video_generation_provider(),
         storage_provider=get_storage_provider()
     )
