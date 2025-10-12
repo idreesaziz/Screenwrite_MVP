@@ -10,11 +10,11 @@ from functools import lru_cache
 from typing import Optional
 
 from services.base.MediaAnalysisProvider import MediaAnalysisProvider
-from services.base.ChatProvider import ChatProvider
 from services.base.StorageProvider import StorageProvider
+from services.base.ChatProvider import ChatProvider
 from services.google.GeminiMediaAnalysisProvider import GeminiMediaAnalysisProvider
-from services.google.GeminiChatProvider import GeminiChatProvider
 from services.google.GCStorageProvider import GCStorageProvider
+from services.google.GeminiChatProvider import GeminiChatProvider
 
 
 @lru_cache()
@@ -70,7 +70,7 @@ def get_chat_provider() -> ChatProvider:
     Returns a singleton instance of the configured chat provider.
     Uses @lru_cache() to ensure only one instance is created.
     
-    Currently returns GeminiChatProvider (uses API key, not Vertex AI).
+    Currently returns GeminiChatProvider (Google AI API).
     Future: Support multiple providers via env variable.
     
     Returns:
@@ -82,7 +82,9 @@ def get_chat_provider() -> ChatProvider:
         return GeminiChatProvider(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            default_model_name=os.getenv("CHAT_MODEL", "gemini-2.0-flash-exp")
+            default_model_name=os.getenv("CHAT_MODEL", "gemini-2.5-flash"),
+            default_temperature=1.0,
+            default_thinking_budget=8000
         )
     else:
         raise ValueError(f"Unsupported chat provider: {provider_type}")
@@ -107,19 +109,18 @@ def get_media_analysis_service():
     )
 
 
-def get_agent_service():
+def get_composition_service():
     """
-    Factory function for AgentService.
+    Factory function for CompositionGenerationService.
     
-    Creates a new AgentService instance with injected dependencies.
-    Note: Does not use @lru_cache() since the service is stateless and
-    dependencies are already cached.
+    Creates a new CompositionGenerationService instance with injected
+    chat provider dependency.
     
     Returns:
-        AgentService instance
+        CompositionGenerationService instance
     """
-    from business_logic.invoke_agent import AgentService
+    from business_logic.generate_composition import CompositionGenerationService
     
-    return AgentService(
+    return CompositionGenerationService(
         chat_provider=get_chat_provider()
     )
