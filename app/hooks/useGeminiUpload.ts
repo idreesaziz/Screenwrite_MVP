@@ -1,3 +1,9 @@
+/**
+ * @deprecated This hook is deprecated. Files are now uploaded directly to GCS via /api/v1/upload/upload
+ * Gemini can access GCS URLs directly when needed for analysis.
+ * This file is kept for backwards compatibility but should not be used in new code.
+ */
+
 import { useState, useCallback } from 'react';
 import { apiUrl } from '~/utils/api';
 

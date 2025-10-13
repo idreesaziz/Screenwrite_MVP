@@ -523,7 +523,7 @@ export default function TimelineEditor() {
     
     try {
       // Call the Python backend API with current composition
-      const response = await axios.post(apiUrl("/ai/generate-composition", true), {
+      const response = await axios.post(apiUrl("/api/v1/compositions/generate", true), {
         user_request: userRequest,
         preview_settings: previewSettings,
         media_library: mediaBinItems.map(item => ({
@@ -862,6 +862,7 @@ export default function TimelineEditor() {
                   isGeneratingComposition={isAiGenerating}
                   onAddGeneratedImage={handleAddGeneratedImage}
                   onUpdateMediaItem={handleUpdateMediaItem}
+                  getToken={getToken}
                 />
               </div>
             </ResizablePanel>

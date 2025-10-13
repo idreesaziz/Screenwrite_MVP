@@ -116,7 +116,7 @@ Your job is to generate the next appropriate response based on the conversation 
         }
       }
       
-      const response = await fetch(apiUrl('/ai/agent', true), {
+      const response = await fetch(apiUrl('/api/v1/agent/chat', true), {
         method: 'POST',
         headers,
         body: JSON.stringify({

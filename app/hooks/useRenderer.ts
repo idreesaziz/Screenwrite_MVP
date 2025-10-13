@@ -23,10 +23,14 @@ export const useRenderer = () => {
       console.log("Render server base URL:", apiUrl("/render"));
 
       try {
+        // NOTE: Render server is separate from FastAPI backend
+        // It runs on port 8000 and handles Remotion video rendering
+        // fastapi=false means use http://localhost:8000
+        
         // Test server connection first
         setRenderStatus("Connecting to render server...");
         try {
-          await axios.get(apiUrl("/health"), { timeout: 5000 });
+          await axios.get(apiUrl("/health", false), { timeout: 5000 });
         } catch (healthError) {
           throw new Error(
             "Cannot connect to render server. Make sure the server is running on http://localhost:8000"
@@ -81,7 +85,7 @@ export const useRenderer = () => {
         setRenderStatus("Rendering video...");
 
         const response = await axios.post(
-          apiUrl("/render"),
+          apiUrl("/render", false), // false = use Node.js render server (port 8000)
           {
             timelineData: timelineData,
             compositionWidth: compositionWidth,

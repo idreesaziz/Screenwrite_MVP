@@ -69,7 +69,7 @@ export interface CodeFixResponse {
 // Function to generate composition via AI
 export async function generateComposition(request: CompositionRequest): Promise<CompositionResponse> {
   try {
-    const response = await fetch(apiUrl("/ai/generate-composition", true), {
+    const response = await fetch(apiUrl("/api/v1/compositions/generate", true), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

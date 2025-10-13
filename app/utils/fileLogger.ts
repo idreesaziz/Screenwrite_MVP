@@ -41,21 +41,28 @@ class ChatWorkflowLogger {
   }
 
   async saveEntry(entry: ChatLogEntry) {
+    // TODO: Backend endpoint /chat/log does not exist yet. 
+    // Either create this endpoint or remove chat logging functionality.
+    // Temporarily disabled to prevent errors.
+    
     try {
-      const response = await fetch(apiUrl('/chat/log', true), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: this.sessionId,
-          log_entry: entry
-        })
-      });
+      // const response = await fetch(apiUrl('/api/v1/chat/log', true), {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     session_id: this.sessionId,
+      //     log_entry: entry
+      //   })
+      // });
 
-      if (!response.ok) {
-        console.error('Failed to save log entry:', await response.text());
-      }
+      // if (!response.ok) {
+      //   console.error('Failed to save log entry:', await response.text());
+      // }
+      
+      // For now, just log locally
+      console.log('📝 [CHAT LOG]', entry);
     } catch (error) {
       console.error('❌ Failed to save log entry:', error);
     }

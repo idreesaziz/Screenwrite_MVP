@@ -294,7 +294,7 @@ export function ChatBox({
       console.log("🔍 Attempting direct backend analysis for:", fileName);
       
       const headers = await getAuthHeaders();
-      const response = await fetch(apiUrl('/analyze-video', true), {
+      const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -477,7 +477,7 @@ export function ChatBox({
         console.log("🔍 Using backend video analysis for:", mediaFile.gemini_file_id);
         
         const headers = await getAuthHeaders();
-        const response = await fetch(apiUrl('/analyze-video', true), {
+        const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -661,7 +661,7 @@ export function ChatBox({
       }
 
       const headers = await getAuthHeaders();
-      const response = await fetch(apiUrl('/generate-content', true), {
+      const response = await fetch(apiUrl('/api/v1/media/generate', true), {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
@@ -760,7 +760,7 @@ export function ChatBox({
       console.log("🔍 Request body will be:", { query: query });
       
       // Debug: Log the full URL being called
-      const fetchUrl = apiUrl("/fetch-stock-video", true);
+      const fetchUrl = apiUrl("/api/v1/stock/search", true);
       console.log("🔍 Full fetch URL:", fetchUrl);
       console.log("🔍 FastAPI base URL:", getApiBaseUrl(true));
       
@@ -770,7 +770,8 @@ export function ChatBox({
         method: "POST",
         headers,
         body: JSON.stringify({
-          query: query
+          query: query,
+          media_type: "video" // Explicitly specify video
         }),
       });
 
@@ -1213,7 +1214,8 @@ export function ChatBox({
 
       // Make API call to the backend
       const token = await getToken();
-      const response = await axios.post(apiUrl("/ai", true), {
+      // TODO: Update this to use the new agent endpoint properly
+      const response = await axios.post(apiUrl("/api/v1/agent/chat", true), {
         message: messageContent,
         mentioned_scrubber_ids: mentionedScrubberIds,
         timeline_state: timelineState,

@@ -64,7 +64,7 @@ export async function uploadFileToGCS(
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await authenticatedRequest('/upload-media', getToken, {
+  const response = await authenticatedRequest('/api/v1/upload/upload', getToken, {
     method: 'POST',
     data: formData,
     headers: {

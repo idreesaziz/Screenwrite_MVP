@@ -5,10 +5,10 @@ import { generateUUID } from "~/utils/uuid"
 import { apiUrl } from "~/utils/api"
 import { uploadFileToGCS, type GetTokenFn } from "~/utils/authApi"
 
-// Delete media file from server
+// Delete media file from server (Node.js render server, port 8000)
 export const deleteMediaFile = async (filename: string): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
-    const response = await fetch(apiUrl(`/media/${encodeURIComponent(filename)}`), {
+    const response = await fetch(apiUrl(`/media/${encodeURIComponent(filename)}`, false), {
       method: 'DELETE',
     });
 
@@ -27,10 +27,10 @@ export const deleteMediaFile = async (filename: string): Promise<{ success: bool
   }
 };
 
-// Clone/copy media file on server
+// Clone/copy media file on server (Node.js render server, port 8000)
 export const cloneMediaFile = async (filename: string, originalName: string, suffix: string): Promise<{ success: boolean; filename?: string; originalName?: string; url?: string; fullUrl?: string; size?: number; error?: string }> => {
   try {
-    const response = await fetch(apiUrl('/clone-media'), {
+    const response = await fetch(apiUrl('/clone-media', false), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

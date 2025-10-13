@@ -232,3 +232,19 @@ def get_media_generation_service():
         video_provider=get_video_generation_provider(),
         storage_provider=get_storage_provider()
     )
+
+
+def get_agent_service():
+    """
+    Factory function for AgentService.
+    
+    Creates a new AgentService instance with injected chat provider dependency.
+    
+    Returns:
+        AgentService instance
+    """
+    from business_logic.invoke_agent import AgentService
+    
+    return AgentService(
+        chat_provider=get_chat_provider()
+    )
