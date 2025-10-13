@@ -43,7 +43,7 @@ class AgentService:
         user_message: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
         composition_json: Optional[str] = None,
-        media_library: Optional[List[str]] = None,
+        media_library: Optional[List[Dict[str, str]]] = None,
         duration: Optional[float] = None,
         user_id: str = None,
         session_id: str = None,
@@ -57,7 +57,7 @@ class AgentService:
             user_message: The user's message
             conversation_history: Recent conversation for context
             composition_json: Current composition state as JSON string
-            media_library: List of available media filenames
+            media_library: List of media items with name, url, and type
             duration: Total composition duration
             user_id: User ID for logging
             session_id: Session ID for logging
@@ -83,10 +83,14 @@ class AgentService:
             else:
                 context_parts.append("**Current Composition:** No composition loaded (empty timeline)")
             
-            # Add media library context
+            # Add media library context with URLs
+            # IMPORTANT: When creating probe requests, use the URL field (not the name)
             if media_library:
-                media_list = "\n".join([f"- {filename}" for filename in media_library])
-                context_parts.append(f"**Available Media Files:**\n{media_list}")
+                media_list = "\n".join([
+                    f"- Name: {media['name']} ({media['type']}) → URL: {media['url']}"
+                    for media in media_library
+                ])
+                context_parts.append(f"**Available Media Files:**\n{media_list}\n\n**CRITICAL: For probe requests, the fileName field MUST be the full URL (e.g., gs://bucket/path or https://... or YouTube URL), NEVER just the name like 'unnamed.png'.**")
             else:
                 context_parts.append("**Available Media Files:** No media files in library")
             
@@ -140,7 +144,7 @@ Respond with structured JSON containing "type" and "content" fields, plus any ad
                     },
                     "fileName": {
                         "type": "string",
-                        "description": "For probe type: filename to analyze OR YouTube URL",
+                        "description": "For probe type: MUST be the full URL from the media library (gs://, https://, or YouTube URL). NEVER use just the filename.",
                         "nullable": True
                     },
                     "question": {

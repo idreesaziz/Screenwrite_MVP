@@ -172,10 +172,22 @@ async def agent_chat(
             import json
             composition_json = json.dumps(request.currentComposition, indent=2)
         
-        # Extract media library filenames
+        # Extract media library with URLs (not just names)
+        # AI needs URLs to create probe requests with actual file locations
         media_library = None
         if request.mediaLibrary:
-            media_library = [media.get("name") for media in request.mediaLibrary if media.get("name")]
+            media_library = [
+                {
+                    "name": media.get("name"),
+                    "url": media.get("gcsUri") or media.get("mediaUrlRemote"),  # Prefer gs:// URI for Vertex AI
+                    "type": media.get("mediaType")
+                }
+                for media in request.mediaLibrary 
+                if media.get("name") and (media.get("gcsUri") or media.get("mediaUrlRemote"))
+            ]
+            logger.info(f"📚 Media library for AI agent: {len(media_library)} items")
+            for item in media_library:
+                logger.info(f"  - {item['name']}: {item['url'][:80]}...")
         
         # Call agent service
         result = await service.chat(

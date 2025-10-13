@@ -140,11 +140,34 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
             logger.debug(f"Question: {question}")
             logger.debug(f"Model: {model}, Temperature: {temperature}")
             
-            # Determine MIME type from file extension
-            mime_type = self._get_mime_type(file_url)
+            # Check if it's a YouTube URL (special handling)
+            is_youtube = 'youtube.com/watch' in file_url or 'youtu.be/' in file_url
             
-            # Construct request using Part.from_uri() pattern (official Vertex AI docs)
-            if file_url.startswith("gs://") or file_url.startswith("http://") or file_url.startswith("https://"):
+            if is_youtube:
+                # YouTube URLs: Use FileData pattern with video/mp4 MIME type
+                # Vertex AI requires mimeType even for YouTube URLs
+                # See: https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference
+                logger.info(f"Detected YouTube URL, using FileData pattern with video/mp4")
+                from google.genai import types
+                
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=types.Content(
+                        role="user",
+                        parts=[
+                            types.Part(
+                                file_data=types.FileData(
+                                    file_uri=file_url,
+                                    mime_type="video/mp4"
+                                )
+                            ),
+                            types.Part(text=question)
+                        ]
+                    )
+                )
+            elif file_url.startswith("gs://") or file_url.startswith("http://") or file_url.startswith("https://"):
+                # GCS or HTTP URLs: Use Part.from_uri() with MIME type
+                mime_type = self._get_mime_type(file_url)
                 logger.debug(f"Using Part.from_uri() with mime_type={mime_type}")
                 
                 response = self.client.models.generate_content(
@@ -160,8 +183,8 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
             else:
                 raise ValueError(
                     f"Unsupported file URL format: {file_url}. "
-                    "Supported formats: GCS URIs (gs://), HTTP/HTTPS URLs. "
-                    "For Vertex AI, files should be in Google Cloud Storage."
+                    "Supported formats: YouTube URLs, GCS URIs (gs://), HTTP/HTTPS URLs. "
+                    "For Vertex AI, files should be in Google Cloud Storage or YouTube."
                 )
             
             analysis_text = response.text

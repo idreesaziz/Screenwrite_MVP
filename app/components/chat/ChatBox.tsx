@@ -281,129 +281,41 @@ export function ChatBox({
     }, 0);
   };
 
-  // Simple internal probe handler that just does media analysis (no nested synth calls)
+  // Simple internal probe handler - just passes URL/filename to backend
   const handleProbeRequestInternal = async (
     fileName: string, 
     question: string
   ): Promise<Message[]> => {
     await logProbeStart(fileName, question);
     console.log("🔍 Executing probe request for:", fileName);
+    console.log("🔍 Backend will handle this URL/file directly (GCS URL, YouTube URL, etc.)");
     
-    // Try direct backend analysis first (works for GCS URLs)
     try {
-      console.log("🔍 Attempting direct backend analysis for:", fileName);
-      
       const headers = await getAuthHeaders();
       const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          file_url: fileName, // Could be URL or gemini file ID
+          file_url: fileName, // AI provides the actual URL (GCS, YouTube, etc.)
           question: question
         })
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (result.success) {
-          const analysisResult = result.analysis;
-          await logProbeAnalysis(fileName, analysisResult);
-          
-          const responseMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            content: analysisResult,
-            isUser: false,
-            timestamp: new Date(),
-            isAnalysisResult: true, // Make it appear in blue collapsible bubble
-          };
-
-          // Immediately add to collapsed state so it appears collapsed from the start
-          setCollapsedMessages(prev => {
-            const newSet = new Set(prev);
-            newSet.add(responseMessage.id);
-            return newSet;
-          });
-          
-          return [responseMessage];
-        }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error_message || `Backend analysis failed: ${response.status}`);
       }
-      
-      // If direct backend analysis failed, fall back to file lookup
-      console.log("🔍 Direct backend analysis failed, trying file lookup...");
-      
-    } catch (error) {
-      console.log("🔍 Direct backend analysis error, trying file lookup:", error);
-    }
-    
-    // Fallback: treat as filename and look up in media library
-    console.log("🔍 Available media files:", mediaBinItems.map(item => ({
-      name: item.name,
-      hasRemoteUrl: !!item.mediaUrlRemote,
-      isUploading: item.isUploading
-    })));
-    
-    // Smart file matching logic
-    let mediaFile = mediaBinItems.find(item => item.name === fileName);
-    
-    if (!mediaFile) {
-      console.log(`🔍 Exact name match not found for "${fileName}". Trying fuzzy matching...`);
-      
-      // Try title matching first
-      mediaFile = mediaBinItems.find(item => 
-        item.title && (
-          item.title.toLowerCase().includes(fileName.toLowerCase()) ||
-          fileName.toLowerCase().includes(item.title.toLowerCase())
-        )
-      );
-      
-      if (mediaFile) {
-        console.log(`🔍 Found title match: "${mediaFile.title}" (${mediaFile.name}) for "${fileName}"`);
-      } else {
-        // If no filename provided or not found, and only one media file exists, use it
-        if (mediaBinItems.length === 1) {
-          mediaFile = mediaBinItems[0];
-          console.log(`🔍 Using only available media file: ${mediaFile.title || mediaFile.name}`);
-        } else {
-          // Try partial name matching
-          mediaFile = mediaBinItems.find(item => 
-            item.name.toLowerCase().includes(fileName.toLowerCase()) ||
-            fileName.toLowerCase().includes(item.name.toLowerCase())
-          );
-          
-          if (mediaFile) {
-            console.log(`🔍 Found fuzzy name match: "${mediaFile.name}" for "${fileName}"`);
-          } else {
-            console.log(`🔍 No fuzzy matches found for "${fileName}"`);
-          }
-        }
-      }
-    } else {
-      console.log(`🔍 Found exact name match: "${mediaFile.name}"`);
-    }
-    
-    if (!mediaFile) {
-      const availableFiles = mediaBinItems.map(item => 
-        item.title ? `${item.title} (${item.name})` : item.name
-      ).join(', ');
-      await logProbeError(fileName, `Media file not found. Available files: ${availableFiles}`);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `Could not find media file: ${fileName}. Available files: ${availableFiles}`,
-        isUser: false,
-        timestamp: new Date(),
-        isSystemMessage: true,
-      };
-      return [errorMessage];
-    }
 
-    try {
-      // Call Gemini Vision API to analyze the media file
-      const analysisResult = await analyzeMediaWithGemini(mediaFile, question);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error_message || 'Analysis failed');
+      }
+
+      const analysisResult = result.analysis;
       await logProbeAnalysis(fileName, analysisResult);
       
-      // Create analysis result message (just return the analysis, don't call synth)
-      const analysisMessage: Message = {
+      const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: analysisResult,
         isUser: false,
@@ -414,14 +326,14 @@ export function ChatBox({
       // Immediately add to collapsed state so it appears collapsed from the start
       setCollapsedMessages(prev => {
         const newSet = new Set(prev);
-        newSet.add(analysisMessage.id);
+        newSet.add(responseMessage.id);
         return newSet;
       });
-
-      return [analysisMessage];
+      
+      return [responseMessage];
 
     } catch (error) {
-      console.error("Probe analysis failed:", error);
+      console.error("❌ Probe analysis failed:", error);
       await logProbeError(fileName, error instanceof Error ? error.message : 'Unknown error');
       
       const errorMessage: Message = {
