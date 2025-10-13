@@ -152,13 +152,19 @@ async def agent_chat(
         last_user_message = user_messages[-1].content
         
         # Build conversation history for context
+        # Include ALL messages - the workflow needs complete history including analysis results
         conversation_history = [
             {
                 "role": "user" if msg.isUser else "assistant",
                 "content": msg.content
             }
-            for msg in request.messages[:-1]  # Exclude last message (it's the current one)
+            for msg in request.messages
         ]
+        
+        logger.info(f"📥 Received {len(request.messages)} messages, built history with {len(conversation_history)} entries")
+        for i, msg in enumerate(conversation_history):
+            preview = msg['content'][:100] + ('...' if len(msg['content']) > 100 else '')
+            logger.debug(f"  [{i}] {msg['role']}: {preview}")
         
         # Convert composition to JSON string
         composition_json = None

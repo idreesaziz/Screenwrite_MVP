@@ -94,13 +94,16 @@ class AgentService:
             if duration is not None:
                 context_parts.append(f"**Composition Duration:** {duration} seconds")
             
-            # Add conversation history context
+            # Add conversation history context - INCLUDE ALL MESSAGES WITH FULL CONTENT
+            # This is critical for the workflow loop to see analysis results and previous exchanges
             if conversation_history:
+                logger.info(f"📚 Including {len(conversation_history)} messages in conversation history")
                 history_text = "\n".join([
-                    f"- {msg.get('role', 'unknown')}: {msg.get('content', '')[:100]}..."
-                    for msg in conversation_history[-5:]  # Last 5 messages
+                    f"- {msg.get('role', 'unknown')}: {msg.get('content', '')}"
+                    for msg in conversation_history  # ALL messages, no truncation
                 ])
-                context_parts.append(f"**Recent Conversation:**\n{history_text}")
+                context_parts.append(f"**Complete Conversation History:**\n{history_text}")
+                logger.debug(f"History preview (first 500 chars): {history_text[:500]}...")
             
             # Combine all context
             full_context = "\n\n".join(context_parts)

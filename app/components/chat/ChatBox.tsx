@@ -854,11 +854,17 @@ export function ChatBox({
         // Route to appropriate handler and execute action
         const stepMessages = await executeResponseAction(synthResponse, conversationMessages, synthContext);
         
+        console.log(`📝 Step ${iterationCount} returned ${stepMessages.length} message(s):`, 
+          stepMessages.map(m => ({ isSystem: m.isSystemMessage, content: m.content.substring(0, 50) + '...' }))
+        );
+        
         // Add step messages to our collection
         allResponseMessages.push(...stepMessages);
         
         // Update UI immediately with new messages
         onMessagesChange(prevMessages => [...prevMessages, ...stepMessages]);
+        
+        console.log(`📚 Total messages in history for next iteration: ${conversationMessages.length + stepMessages.length}`);
 
         // Check if workflow should continue
         if (synthResponse.type === 'sleep') {
@@ -941,10 +947,10 @@ export function ChatBox({
     console.log(`🎬 Executing action for response type: ${synthResponse.type}`);
     
     if (synthResponse.type === 'probe') {
-      // Probe request - analyze media file (only show analysis result)
+      // Probe request - analyze media file
       console.log("🔍 Executing probe:", synthResponse.fileName, synthResponse.question);
       
-      // Add immediate feedback message
+      // Create feedback message to add to conversation history
       const analyzingMessage: Message = {
         id: Date.now().toString(),
         content: `Analysing ${synthResponse.fileName}: ${synthResponse.question}`,
@@ -952,17 +958,17 @@ export function ChatBox({
         timestamp: new Date(),
         isSystemMessage: true,
       };
-      onMessagesChange(prev => [...prev, analyzingMessage]);
       
       const probeResults = await handleProbeRequestInternal(synthResponse.fileName!, synthResponse.question!);
       
-      return probeResults; // Only return analysis result, no "Analyzing..." message
+      // Return BOTH the analyzing message AND the analysis result for complete history
+      return [analyzingMessage, ...probeResults];
       
     } else if (synthResponse.type === 'generate') {
-      // Generate request - create image (only show generation result)
+      // Generate request - create image or video
       console.log("🎨 Executing generation:", synthResponse.prompt, synthResponse.suggestedName);
       
-      // Add immediate feedback message
+      // Create feedback message to add to conversation history
       const contentTypeText = synthResponse.content_type === 'video' ? 'video' : 'image';
       const generatingMessage: Message = {
         id: Date.now().toString(),
@@ -971,7 +977,6 @@ export function ChatBox({
         timestamp: new Date(),
         isSystemMessage: true,
       };
-      onMessagesChange(prev => [...prev, generatingMessage]);
       
       const generateResults = await handleGenerateRequestInternal(
         synthResponse.prompt!, 
@@ -981,13 +986,14 @@ export function ChatBox({
         synthResponse.seedImageFileName // Pass seed image filename for video generation
       );
       
-      return generateResults; // Only return generation result, no "Generating..." message
+      // Return BOTH the generating message AND the generation result for complete history
+      return [generatingMessage, ...generateResults];
       
     } else if (synthResponse.type === 'fetch') {
-      // Fetch request - search stock videos (only show selection options)
+      // Fetch request - search stock videos
       console.log("🎬 Executing stock video fetch:", synthResponse.query, synthResponse.suggestedName);
       
-      // Add immediate feedback message
+      // Create feedback message to add to conversation history
       const fetchingMessage: Message = {
         id: Date.now().toString(),
         content: `Fetching stock videos: ${synthResponse.query}`,
@@ -995,7 +1001,6 @@ export function ChatBox({
         timestamp: new Date(),
         isSystemMessage: true,
       };
-      onMessagesChange(prev => [...prev, fetchingMessage]);
       
       const fetchResults = await handleFetchRequestInternal(
         'pexels', // Default to pexels for now
@@ -1003,10 +1008,11 @@ export function ChatBox({
         parseInt(synthResponse.content, 10) || 1
       );
       
-      return fetchResults; // Only return fetch results, no "Fetching..." message
+      // Return BOTH the fetching message AND the fetch results for complete history
+      return [fetchingMessage, ...fetchResults];
       
     } else if (synthResponse.type === 'edit') {
-      // Edit instructions - send to backend (only show final result)
+      // Edit instructions - send to backend
       console.log("🎬 Executing edit:", synthResponse.content);
       await logEditExecution(synthResponse.content);
       
@@ -1014,7 +1020,7 @@ export function ChatBox({
         const success = await onGenerateComposition(synthResponse.content, mediaBinItems, selectedModel);
         await logEditResult(success);
         
-        const resultMessage = {
+        const resultMessage: Message = {
           id: (Date.now() + 1).toString(),
           content: success ? "Edit implemented successfully!" : "Failed to implement the edit. Please try again.",
           isUser: false,
@@ -1022,7 +1028,7 @@ export function ChatBox({
           isSystemMessage: true,
         };
         
-        return [resultMessage]; // Only return final result, no "Applying..." message
+        return [resultMessage];
       } else {
         return [{
           id: (Date.now() + 1).toString(),

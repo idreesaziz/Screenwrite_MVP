@@ -116,6 +116,14 @@ Your job is to generate the next appropriate response based on the conversation 
         }
       }
       
+      console.log(`📤 Sending ${context.messages.length} messages to backend agent:`, 
+        context.messages.map((m, i) => ({ 
+          index: i, 
+          isUser: m.isUser, 
+          preview: m.content.substring(0, 80) + (m.content.length > 80 ? '...' : '')
+        }))
+      );
+      
       const response = await fetch(apiUrl('/api/v1/agent/chat', true), {
         method: 'POST',
         headers,
