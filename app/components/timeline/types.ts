@@ -2,8 +2,9 @@
 export interface BaseScrubber {
   id: string;
   mediaType: "video" | "image" | "audio" | "text";
-  mediaUrlLocal: string | null; // null for text
-  mediaUrlRemote: string | null;
+  mediaUrlLocal: string | null; // null for text - blob URL for local preview
+  mediaUrlRemote: string | null; // HTTPS URL for browser access
+  gcsUri?: string; // GCS URI (gs://bucket/path) for Vertex AI backend access
   media_width: number; // width of the media in pixels
   media_height: number; // height of the media in pixels
   text: TextProperties | null;
@@ -39,15 +40,14 @@ export interface MediaBinItem extends BaseScrubber {
   title?: string; // User-friendly title for display and AI reference
   durationInSeconds: number; // For media, to calculate initial width
 
-  // Upload tracking properties
-  uploadProgress: number | null; // 0-100, null when upload complete
-  isUploading: boolean; // True while upload is in progress
+  // GCS upload tracking properties
+  uploadProgress: number | null; // 0-100, null when upload complete or not started
+  isUploading: boolean; // True while upload to GCS is in progress
   
-  // Unified upload status for AI analysis
-  upload_status: "uploaded" | "not_uploaded" | "pending";
-  
-  // Gemini file reference for analysis
-  gemini_file_id: string | null; // Gemini Files API file ID, null if upload failed
+  // Upload is considered complete when:
+  // - isUploading === false
+  // - mediaUrlRemote !== null
+  // mediaUrlRemote contains the GCS signed URL for backend access
 }
 
 // state of the scrubber in the timeline

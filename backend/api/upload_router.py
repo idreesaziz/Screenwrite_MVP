@@ -109,10 +109,15 @@ async def upload_media(
         
         logger.info(f"✅ File uploaded: {upload_result.url[:80]}...")
         
+        # Construct GCS URI for Vertex AI access
+        bucket_name = storage_provider.bucket_name if hasattr(storage_provider, 'bucket_name') else "screenwrite-media"
+        gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
+        
         return MediaUploadResponse(
             success=True,
             file_path=upload_result.path,
             file_url=upload_result.url,
+            gcs_uri=gcs_uri,
             signed_url=upload_result.signed_url,
             file_size=upload_result.size,
             content_type=upload_result.content_type,

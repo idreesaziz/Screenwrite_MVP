@@ -196,7 +196,7 @@ export function ChatBox({
       console.log("🔄 Retrying with message:", message.retryData.originalMessage);
       console.log("🔄 Current media bin items:", mediaBinItems.map(item => ({
         name: item.name,
-        gemini_file_id: item.gemini_file_id,
+        hasRemoteUrl: !!item.mediaUrlRemote,
         isUploading: item.isUploading
       })));
       handleConversationalMessage(message.retryData.originalMessage);
@@ -289,7 +289,7 @@ export function ChatBox({
     await logProbeStart(fileName, question);
     console.log("🔍 Executing probe request for:", fileName);
     
-    // Try direct backend analysis first (works for both URLs and uploaded files with gemini_file_id)
+    // Try direct backend analysis first (works for GCS URLs)
     try {
       console.log("🔍 Attempting direct backend analysis for:", fileName);
       
@@ -339,7 +339,7 @@ export function ChatBox({
     // Fallback: treat as filename and look up in media library
     console.log("🔍 Available media files:", mediaBinItems.map(item => ({
       name: item.name,
-      gemini_file_id: item.gemini_file_id,
+      hasRemoteUrl: !!item.mediaUrlRemote,
       isUploading: item.isUploading
     })));
     
@@ -444,157 +444,70 @@ export function ChatBox({
     conversationMessages: ConversationMessage[],
     synthContext: SynthContext
   ): Promise<Message[]> => {
-    // Check if this is a video without gemini_file_id (race condition)
-    const mediaFile = mediaBinItems.find(item => item.name === fileName);
-    const fileExtension = mediaFile?.name.split('.').pop()?.toLowerCase();
-    const isVideo = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(fileExtension || '');
-    
-    // Simply proceed with internal handler - it will handle the "still uploading" case with retry button
+    // All media analysis now goes through the backend with GCS URLs
+    // No need for special handling - backend handles all media types
     return handleProbeRequestInternal(fileName, question);
   };
 
   const analyzeMediaWithGemini = async (mediaFile: MediaBinItem, question: string): Promise<string> => {
-    const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
-
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment.");
-    }
-
-    const fileExtension = mediaFile.name.split('.').pop()?.toLowerCase();
-    const isImage = mediaFile.mediaType === 'image' || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
-    const isVideo = mediaFile.mediaType === 'video' || ['mp4', 'mov', 'avi', 'webm'].includes(fileExtension || '');
+    // All media analysis now goes through the backend API
+    // Backend handles videos, images, audio, and documents via Gemini
     
-    if (!isImage && !isVideo) {
-      throw new Error(`Unsupported file type: ${mediaFile.mediaType || fileExtension}. Only images and videos can be analyzed.`);
+    console.log("🔍 Analyzing media with backend API:", {
+      name: mediaFile.name,
+      mediaUrlRemote: mediaFile.mediaUrlRemote,
+      mediaUrlLocal: mediaFile.mediaUrlLocal,
+      isUploading: mediaFile.isUploading,
+      uploadProgress: mediaFile.uploadProgress,
+      gcsUri: mediaFile.gcsUri
+    });
+    
+    // Check if media file has been uploaded to GCS
+    // Use GCS URI (gs://) for Vertex AI access, fallback to HTTPS URL
+    const fileUrl = mediaFile.gcsUri || mediaFile.mediaUrlRemote;
+    
+    if (!fileUrl) {
+      console.error("❌ No GCS URL available for media file:", mediaFile);
+      
+      // Provide specific error based on upload status
+      if (mediaFile.isUploading) {
+        throw new Error(`Media file "${mediaFile.name}" is currently uploading to cloud storage (${mediaFile.uploadProgress || 0}%). Please wait for upload to complete.`);
+      } else {
+        throw new Error(`Media file "${mediaFile.name}" was not uploaded to cloud storage. Please delete and re-upload the file.`);
+      }
     }
 
     try {
-      let requestBody: any;
-
-      if (isVideo && mediaFile.gemini_file_id && mediaFile.upload_status === "uploaded") {
-        // For videos with successful upload, use the backend video analysis endpoint
-        console.log("🔍 Using backend video analysis for:", mediaFile.gemini_file_id);
-        
-        const headers = await getAuthHeaders();
-        const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            file_url: mediaFile.gemini_file_id,  // Backend now expects file_url parameter
-            question: question
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Backend video analysis failed: ${response.status}`);
-        }
-
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error_message || 'Video analysis failed');
-        }
-
-        return result.analysis;
-      } else if (isVideo && mediaFile.upload_status === "pending") {
-        // Video is currently uploading to AI service
-        throw new Error("VIDEO_PENDING_UPLOAD");
-      } else if (isVideo && mediaFile.upload_status === "not_uploaded") {
-        // Video was not uploaded to AI service
-        throw new Error("VIDEO_NOT_UPLOADED");
-      } else if (isVideo && !mediaFile.gemini_file_id) {
-        // Fallback for backward compatibility
-        throw new Error("VIDEO_STILL_UPLOADING");
-      } else {
-        // For images, use base64 inline data
-        const fileUrl = mediaFile.mediaUrlRemote || mediaFile.mediaUrlLocal;
-        console.log("🔍 Media file URLs:", { remote: mediaFile.mediaUrlRemote, local: mediaFile.mediaUrlLocal, using: fileUrl });
-        
-        if (!fileUrl) {
-          throw new Error("No valid media URL found for this file");
-        }
-        
-        const response = await fetch(fileUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch media file: ${response.status} ${response.statusText}`);
-        }
-        const blob = await response.blob();
-        console.log("🔍 Blob info:", { type: blob.type, size: blob.size });
-        
-        const base64Data = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            // Remove the data:mime/type;base64, prefix
-            const base64 = result.split(',')[1];
-            resolve(base64);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-
-        requestBody = {
-          contents: [
-            {
-              parts: [
-                {
-                  text: question
-                },
-                {
-                  inline_data: {
-                    mime_type: blob.type,
-                    data: base64Data
-                  }
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.1
-          }
-        };
-      }
-
-      const apiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      // Call backend media analysis endpoint with GCS URI
+      // Backend uses gs:// URI with Vertex AI for direct GCS access
+      console.log("🔗 Sending file URL to backend:", fileUrl);
+      const headers = await getAuthHeaders();
+      const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
+        headers,
+        body: JSON.stringify({
+          file_url: fileUrl,  // GCS URI (gs://bucket/path) for Vertex AI
+          question: question,
+          temperature: 0.1
+        })
       });
 
-      if (!apiResponse.ok) {
-        const errorData = await apiResponse.json().catch(() => ({}));
-        throw new Error(`Gemini API error: ${apiResponse.status} - ${errorData.error?.message || 'Unknown error'}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error_message || `Backend analysis failed: ${response.status}`);
       }
 
-      const data = await apiResponse.json();
-      console.log("🔍 Gemini Vision API response:", JSON.stringify(data, null, 2));
+      const result = await response.json();
       
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        console.error("❌ Missing candidates or content in response:", data);
-        throw new Error('Invalid response format from Gemini API - no candidates or content');
+      if (!result.success) {
+        throw new Error(result.error_message || 'Media analysis failed');
       }
 
-      const candidate = data.candidates[0];
-      const content = candidate.content;
-      
-      if (!content.parts || !Array.isArray(content.parts) || content.parts.length === 0) {
-        console.error("❌ Missing parts in content:", content);
-        throw new Error('Invalid response format from Gemini API - no parts in content');
-      }
-      
-      const firstPart = content.parts[0];
-      if (!firstPart || !firstPart.text) {
-        console.error("❌ Missing text in first part:", firstPart);
-        throw new Error('Invalid response format from Gemini API - no text in first part');
-      }
-
-      return firstPart.text;
+      console.log("✅ Backend analysis complete:", result.model_used);
+      return result.analysis;
 
     } catch (error) {
-      console.error("❌ Gemini Vision API failed:", error);
+      console.error("❌ Backend media analysis failed:", error);
       throw error;
     }
   };
@@ -709,10 +622,8 @@ export function ChatBox({
         text: null,
         isUploading: false,
         uploadProgress: null,
-        upload_status: "not_uploaded", // Generated content doesn't need upload initially
         left_transition_id: null,
         right_transition_id: null,
-        gemini_file_id: null, // Generated content doesn't need Gemini analysis initially
       };
 
       console.log(`🎨 Created ${contentType} MediaBinItem:`, newMediaItem);
@@ -839,17 +750,15 @@ export function ChatBox({
             text: null,
             isUploading: false,
             uploadProgress: null,
-            upload_status: video.upload_status || "not_uploaded", // Set from backend response
             left_transition_id: null,
             right_transition_id: null,
-            gemini_file_id: video.gemini_file_id, // ✅ Now set from backend!
           };
 
           console.log(`🎬 [VIDEO ${index}] Created MediaBinItem:`, {
             mediaItemId: mediaItem.id,
             mediaItemName: mediaItem.name,
             videoId: video.id,
-            uploadStatus: mediaItem.upload_status
+            remoteUrl: mediaItem.mediaUrlRemote
           });
           
           // GCS URLs are already available - no separate upload needed

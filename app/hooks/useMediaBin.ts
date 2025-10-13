@@ -181,10 +181,8 @@ export const useMediaBin = (
         text: null,
         isUploading: true,
         uploadProgress: 0,
-        upload_status: "pending",
         left_transition_id: null,
         right_transition_id: null,
-        gemini_file_id: null, // Not needed - Gemini can access GCS URLs directly
       };
       setMediaBinItems(prev => [...prev, newItem]);
 
@@ -208,7 +206,10 @@ export const useMediaBin = (
         }
       );
 
-      console.log("GCS upload successful:", uploadResult.url);
+      console.log("✅ GCS upload successful!");
+      console.log("📦 Upload result:", uploadResult);
+      console.log("🔗 File URL:", uploadResult.file_url);
+      console.log("🔗 GCS URI:", uploadResult.gcs_uri);
 
       // Update item with successful GCS upload result
       setMediaBinItems(prev =>
@@ -216,15 +217,16 @@ export const useMediaBin = (
           item.id === id
             ? {
               ...item,
-              mediaUrlRemote: uploadResult.url, // GCS signed URL
+              mediaUrlRemote: uploadResult.file_url, // HTTPS URL for browser/preview
+              gcsUri: uploadResult.gcs_uri, // GCS URI for Vertex AI backend
               isUploading: false,
               uploadProgress: null,
-              upload_status: "uploaded",
-              gemini_file_id: null // Gemini can access GCS URLs directly when needed
             }
             : item
         )
       );
+
+      console.log("✅ Media item updated - URL:", uploadResult.file_url, "GCS URI:", uploadResult.gcs_uri);
 
     } catch (error) {
       console.error("Error adding media to bin:", error);
@@ -277,14 +279,12 @@ export const useMediaBin = (
         fontWeight,
       },
       mediaUrlLocal: null,
-      mediaUrlRemote: null,
+      mediaUrlRemote: null, // Text items don't need cloud storage
       durationInSeconds: 0,
       isUploading: false,
       uploadProgress: null,
-      upload_status: "not_uploaded", // Text items don't need upload
       left_transition_id: null,
       right_transition_id: null,
-      gemini_file_id: null, // Text items don't need Gemini upload
     };
     setMediaBinItems(prev => [...prev, newItem]);
   }, []);
@@ -384,10 +384,8 @@ export const useMediaBin = (
         text: null,
         isUploading: false,
         uploadProgress: null,
-        upload_status: "not_uploaded", // Audio files don't need upload for now
         left_transition_id: null,
         right_transition_id: null,
-        gemini_file_id: null, // TODO: Audio could also be uploaded to Gemini for analysis
       };
 
       // Add the audio item to the media bin
