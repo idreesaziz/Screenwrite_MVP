@@ -174,6 +174,8 @@ async def agent_chat(
         
         # Extract media library with URLs (not just names)
         # AI needs URLs to create probe requests with actual file locations
+        logger.info(f"📥 Raw mediaLibrary from frontend: {len(request.mediaLibrary) if request.mediaLibrary else 0} items")
+        
         media_library = None
         if request.mediaLibrary:
             media_library = [
@@ -185,7 +187,7 @@ async def agent_chat(
                 for media in request.mediaLibrary 
                 if media.get("name") and (media.get("gcsUri") or media.get("mediaUrlRemote"))
             ]
-            logger.info(f"📚 Media library for AI agent: {len(media_library)} items")
+            logger.info(f"📚 Processed media library for AI agent: {len(media_library)} items (filtered from {len(request.mediaLibrary)})")
             for item in media_library:
                 logger.info(f"  - {item['name']}: {item['url'][:80]}...")
         
@@ -202,7 +204,8 @@ async def agent_chat(
                 "session_id": session_id,
                 "timestamp": timestamp,
                 "conversation_history": conversation_history,
-                "media_library": media_library,
+                "media_library_raw": [dict(media) for media in request.mediaLibrary] if request.mediaLibrary else None,
+                "media_library_processed": media_library,
                 "composition": composition_json
             }, f, indent=2)
         

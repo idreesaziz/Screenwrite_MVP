@@ -138,6 +138,14 @@ export function ChatBox({
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [textareaHeight, setTextareaHeight] = useState(36); // Starting height for proper size
+  
+  // Keep a ref to the latest media bin items so async workflows can always access current state
+  const mediaBinItemsRef = useRef<MediaBinItem[]>(mediaBinItems);
+  
+  // Update ref whenever prop changes
+  useEffect(() => {
+    mediaBinItemsRef.current = mediaBinItems;
+  }, [mediaBinItems]);
   const [selectedModel, setSelectedModel] = useState<string>("gemini"); // AI model selection
   const [sendWithMedia, setSendWithMedia] = useState(false); // Track send mode
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
@@ -431,8 +439,9 @@ export function ChatBox({
     suggestedName: string,
     description: string,
     contentType: 'image' | 'video' = 'image', // Add content type parameter
-    seedImageFileName?: string // Add seed image parameter for video generation
-  ): Promise<Message[]> => {
+    seedImageFileName?: string, // Add seed image parameter for video generation
+    generatedItemsArray?: MediaBinItem[] // Optional array to track generated items
+  ): Promise<{ messages: Message[], newMediaItem: MediaBinItem | null }> => {
     console.log("🎨 Executing generation request:", { prompt, suggestedName, description, contentType, seedImageFileName });
     
     try {
@@ -546,16 +555,16 @@ export function ChatBox({
         await onAddGeneratedImage(newMediaItem);
       }
 
-      // Create success message
+      // Create success message that clearly indicates completion
       const generationMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Generated: ${generatedFileName}`,
+        content: `Successfully generated ${contentType}: ${suggestedName || generatedFileName}. The ${contentType} has been added to your media library.`,
         isUser: false,
         timestamp: new Date(),
-        isSystemMessage: true,
+        isSystemMessage: true, // Show as plain text
       };
 
-      return [generationMessage];
+      return { messages: [generationMessage], newMediaItem };
 
     } catch (error) {
       console.error(`${contentType} generation failed:`, error);
@@ -566,7 +575,7 @@ export function ChatBox({
         timestamp: new Date(),
         isSystemMessage: true,
       };
-      return [errorMessage];
+      return { messages: [errorMessage], newMediaItem: null };
     }
   };
 
@@ -722,6 +731,9 @@ export function ChatBox({
     let iterationCount = 0;
     const MAX_ITERATIONS = 10; // Prevent infinite loops
     
+    // Track generated items during this workflow (they won't appear in mediaBinItems prop until re-render)
+    let generatedItemsThisWorkflow: MediaBinItem[] = [];
+    
     // Start the loading indicator for the entire workflow
     setIsInSynthLoop(true);
     
@@ -756,13 +768,16 @@ export function ChatBox({
           }))
         );
 
-        // Build synth context with latest state
+        // Build synth context with latest state using ref (always current, even during async workflow)
+        const currentMediaBin = mediaBinItemsRef.current;
         const synthContext: SynthContext = {
           messages: conversationMessages,
           currentComposition: currentComposition ? JSON.parse(currentComposition) : undefined,
-          mediaLibrary: mediaBinItems,
+          mediaLibrary: currentMediaBin, // Use ref to get latest state including newly generated items
           compositionDuration: undefined
         };
+        
+        console.log(`📚 Media library has ${currentMediaBin.length} items for iteration ${iterationCount}`);
 
         // Call synth for decision
         await logSynthCall("conversation_analysis", synthContext);
@@ -918,8 +933,14 @@ export function ChatBox({
         synthResponse.seedImageFileName // Pass seed image filename for video generation
       );
       
+      // Immediately update the ref with the new media item (no delay needed!)
+      if (generateResults.newMediaItem) {
+        mediaBinItemsRef.current = [...mediaBinItemsRef.current, generateResults.newMediaItem];
+        console.log(`📦 Immediately added ${generateResults.newMediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
+      }
+      
       // Return BOTH the generating message AND the generation result for complete history
-      return [generatingMessage, ...generateResults];
+      return [generatingMessage, ...generateResults.messages];
       
     } else if (synthResponse.type === 'fetch') {
       // Fetch request - search stock videos
