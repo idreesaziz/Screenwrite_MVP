@@ -1,6 +1,6 @@
 import { useOutletContext } from "react-router";
-import { useMemo, memo } from "react";
-import { FileVideo, FileImage, Type, Clock, Upload, Music, Trash2, SplitSquareHorizontal } from "lucide-react";
+import { useMemo, memo, useState } from "react";
+import { FileVideo, FileImage, Type, Clock, Upload, Music, Trash2, SplitSquareHorizontal, X } from "lucide-react";
 import { Thumbnail } from '@remotion/player';
 import { OffthreadVideo, Img, Video } from 'remotion';
 import { type MediaBinItem } from "./types";
@@ -74,6 +74,9 @@ export default function MediaBin() {
     handleSplitAudioFromContext, 
     handleCloseContextMenu 
   } = useOutletContext<MediaBinProps>();
+
+  // State for media preview popup
+  const [previewItem, setPreviewItem] = useState<MediaBinItem | null>(null);
 
   const getMediaIcon = (mediaType: string) => {
     switch (mediaType) {
@@ -210,6 +213,12 @@ export default function MediaBin() {
               }
             }}
             onContextMenu={(e) => handleContextMenu(e, item)}
+            onClick={(e) => {
+              // Only open preview if not dragging and not uploading
+              if (!item.isUploading && e.button === 0) {
+                setPreviewItem(item);
+              }
+            }}
           >
             <div className="flex items-start gap-2">
               <div className="flex-shrink-0">
@@ -297,6 +306,101 @@ export default function MediaBin() {
               Split Audio
             </button>
           )}
+        </div>
+      )}
+
+      {/* Media Preview Modal */}
+      {previewItem && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]"
+          onClick={() => setPreviewItem(null)}
+        >
+          <div 
+            className="bg-card border border-border rounded-lg shadow-2xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                {getMediaIcon(previewItem.mediaType)}
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {previewItem.title || previewItem.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="secondary" className="text-xs">
+                      {previewItem.mediaType}
+                    </Badge>
+                    {previewItem.media_width && previewItem.media_height && (
+                      <span className="text-xs text-muted-foreground">
+                        {previewItem.media_width} × {previewItem.media_height}
+                      </span>
+                    )}
+                    {previewItem.durationInSeconds > 0 && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {previewItem.durationInSeconds.toFixed(1)}s
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewItem(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Preview Content */}
+            <div className="p-4 max-h-[calc(90vh-80px)] overflow-auto">
+              {previewItem.mediaType === 'video' && (
+                <video
+                  src={previewItem.mediaUrlLocal || previewItem.mediaUrlRemote || ''}
+                  controls
+                  autoPlay
+                  className="w-full rounded border border-border bg-black"
+                  style={{ maxHeight: 'calc(90vh - 200px)' }}
+                />
+              )}
+              {previewItem.mediaType === 'image' && (
+                <img
+                  src={previewItem.mediaUrlLocal || previewItem.mediaUrlRemote || ''}
+                  alt={previewItem.name}
+                  className="w-full rounded border border-border"
+                  style={{ maxHeight: 'calc(90vh - 200px)', objectFit: 'contain' }}
+                />
+              )}
+              {previewItem.mediaType === 'audio' && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Music className="h-16 w-16 text-muted-foreground mb-4" />
+                  <audio
+                    src={previewItem.mediaUrlLocal || previewItem.mediaUrlRemote || ''}
+                    controls
+                    autoPlay
+                    className="w-full max-w-md"
+                  />
+                </div>
+              )}
+              {previewItem.mediaType === 'text' && previewItem.text && (
+                <div className="flex items-center justify-center min-h-[300px] bg-muted/20 rounded border border-border">
+                  <p
+                    style={{
+                      fontSize: `${previewItem.text.fontSize}px`,
+                      fontFamily: previewItem.text.fontFamily,
+                      color: previewItem.text.color,
+                      textAlign: previewItem.text.textAlign,
+                      fontWeight: previewItem.text.fontWeight,
+                    }}
+                    className="px-8"
+                  >
+                    {previewItem.text.textContent}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
