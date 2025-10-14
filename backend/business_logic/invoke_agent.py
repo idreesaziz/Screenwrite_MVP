@@ -40,8 +40,7 @@ class AgentService:
     
     async def chat(
         self,
-        user_message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
+        conversation_history: List[Dict[str, str]],
         composition_json: Optional[str] = None,
         media_library: Optional[List[Dict[str, str]]] = None,
         duration: Optional[float] = None,
@@ -51,11 +50,10 @@ class AgentService:
         temperature: float = 0.7
     ) -> Dict[str, Any]:
         """
-        Process user message and generate agent response.
+        Process conversation and generate agent response.
         
         Args:
-            user_message: The user's message
-            conversation_history: Recent conversation for context
+            conversation_history: Complete conversation history (all messages)
             composition_json: Current composition state as JSON string
             media_library: List of media items with name, url, and type
             duration: Total composition duration
@@ -68,7 +66,7 @@ class AgentService:
             Dictionary with type, content, and optional action fields
         """
         logger.info(f"Agent chat request from user={user_id}, session={session_id}")
-        logger.debug(f"User message: {user_message[:100]}...")
+        logger.info(f"Processing conversation with {len(conversation_history) if conversation_history else 0} messages")
         
         try:
             # Build system prompt
@@ -98,36 +96,31 @@ class AgentService:
             if duration is not None:
                 context_parts.append(f"**Composition Duration:** {duration} seconds")
             
-            # Add conversation history context - INCLUDE ALL MESSAGES WITH FULL CONTENT
-            # This is critical for the workflow loop to see analysis results and previous exchanges
-            if conversation_history:
-                logger.info(f"📚 Including {len(conversation_history)} messages in conversation history")
-                history_text = "\n".join([
-                    f"- {msg.get('role', 'unknown')}: {msg.get('content', '')}"
-                    for msg in conversation_history  # ALL messages, no truncation
-                ])
-                context_parts.append(f"**Complete Conversation History:**\n{history_text}")
-                logger.debug(f"History preview (first 500 chars): {history_text[:500]}...")
-            
-            # Combine all context
+            # Combine context (this goes in system message ONCE)
             full_context = "\n\n".join(context_parts)
-            
-            # Build user prompt with context
-            user_prompt = f"""{full_context}
-
-**User Request:**
-{user_message}
-
-Respond with structured JSON containing "type" and "content" fields, plus any additional fields needed for the action type."""
             
             # Call chat provider with structured output schema
             logger.debug("Calling chat provider for agent response...")
             from services.base.ChatProvider import ChatMessage
             
+            # Build messages array: system message with context + conversation history as actual messages
+            # DO NOT add user_message again - it's already in conversation_history!
             messages = [
-                ChatMessage(role="system", content=system_prompt),
-                ChatMessage(role="user", content=user_prompt)
+                ChatMessage(role="system", content=f"{system_prompt}\n\n{full_context}")
             ]
+            
+            # Add conversation history as actual message turns (not as text)
+            if conversation_history:
+                logger.info(f"📚 Adding {len(conversation_history)} conversation messages as actual message turns")
+                for msg in conversation_history:
+                    role = msg.get('role', 'user')
+                    content = msg.get('content', '')
+                    messages.append(ChatMessage(role=role, content=content))
+                    logger.debug(f"  Added {role} message: {content[:80]}...")
+            else:
+                logger.warning("⚠️ No conversation history provided - this is unusual")
+            
+            logger.info(f"🤖 Sending {len(messages)} total messages to AI (1 system + {len(messages)-1} conversation)")
             
             # Define strict response schema for Gemini
             response_schema = {

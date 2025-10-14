@@ -145,15 +145,12 @@ async def agent_chat(
         from datetime import datetime
         from pathlib import Path
         
-        # Extract the last user message
-        user_messages = [msg for msg in request.messages if msg.isUser]
-        if not user_messages:
+        # Validate we have messages
+        if not request.messages or len(request.messages) == 0:
             raise HTTPException(
                 status_code=400,
-                detail="No user messages found in conversation"
+                detail="No messages provided in conversation"
             )
-        
-        last_user_message = user_messages[-1].content
         
         # Build conversation history for context
         # Include ALL messages - the workflow needs complete history including analysis results
@@ -211,9 +208,8 @@ async def agent_chat(
         
         logger.info(f"💾 Saved full conversation to: {log_file}")
         
-        # Call agent service
+        # Call agent service (no user_message - it's in conversation_history)
         result = await service.chat(
-            user_message=last_user_message,
             conversation_history=conversation_history,
             composition_json=composition_json,
             media_library=media_library,
