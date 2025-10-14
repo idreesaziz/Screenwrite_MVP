@@ -208,7 +208,7 @@ export const useMediaBin = (
 
       console.log("✅ GCS upload successful!");
       console.log("📦 Upload result:", uploadResult);
-      console.log("🔗 File URL:", uploadResult.file_url);
+      console.log("🔗 Signed URL:", uploadResult.signed_url);
       console.log("🔗 GCS URI:", uploadResult.gcs_uri);
 
       // Update item with successful GCS upload result
@@ -217,7 +217,7 @@ export const useMediaBin = (
           item.id === id
             ? {
               ...item,
-              mediaUrlRemote: uploadResult.file_url, // HTTPS URL for browser/preview
+              mediaUrlRemote: uploadResult.signed_url || uploadResult.file_url, // Use signed URL for secure browser access
               gcsUri: uploadResult.gcs_uri, // GCS URI for Vertex AI backend
               isUploading: false,
               uploadProgress: null,
@@ -226,7 +226,7 @@ export const useMediaBin = (
         )
       );
 
-      console.log("✅ Media item updated - URL:", uploadResult.file_url, "GCS URI:", uploadResult.gcs_uri);
+      console.log("✅ Media item updated - Signed URL:", uploadResult.signed_url, "GCS URI:", uploadResult.gcs_uri);
 
     } catch (error) {
       console.error("Error adding media to bin:", error);

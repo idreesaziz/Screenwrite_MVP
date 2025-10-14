@@ -158,7 +158,7 @@ class MediaGenerationService:
                 asset_id=asset_id,
                 content_type="image",
                 file_path=upload_result.path,
-                file_url=upload_result.url,
+                file_url=upload_result.signed_url or upload_result.url,  # Use signed URL for secure browser access
                 prompt=prompt,
                 width=width,
                 height=height,
@@ -322,7 +322,7 @@ class MediaGenerationService:
                 asset_id=asset_id,
                 content_type="video",
                 file_path=upload_result.path,
-                file_url=upload_result.url,
+                file_url=upload_result.signed_url or upload_result.url,  # Use signed URL for secure browser access
                 prompt=prompt,
                 width=generated_video.width,
                 height=generated_video.height,

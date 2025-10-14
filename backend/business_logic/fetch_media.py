@@ -173,7 +173,7 @@ class StockMediaService:
                         session_id=session_id,
                         filename=file_name
                     )
-                    storage_url = upload_result.url
+                    storage_url = upload_result.signed_url or upload_result.url  # Use signed URL for secure browser access
                     
                     # Build response item
                     uploaded_items.append({
