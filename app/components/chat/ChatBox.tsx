@@ -68,6 +68,7 @@ interface Message {
   }[]; // Video options for selection
   isWaitingForAnalysis?: boolean; // For messages waiting on analysis result
   fileName?: string; // Associated file name for analysis
+  alreadyInUI?: boolean; // Internal flag: message already added to UI, skip duplicate addition
 }
 
 interface ChatBoxProps {
@@ -773,8 +774,11 @@ export function ChatBox({
         // Add step messages to our collection
         allResponseMessages.push(...stepMessages);
         
-        // Update UI immediately with new messages
-        onMessagesChange(prevMessages => [...prevMessages, ...stepMessages]);
+        // Update UI immediately with new messages (skip those already added)
+        const newMessagesForUI = stepMessages.filter(m => !m.alreadyInUI);
+        if (newMessagesForUI.length > 0) {
+          onMessagesChange(prevMessages => [...prevMessages, ...newMessagesForUI]);
+        }
         
         console.log(`📚 Total messages in history for next iteration: ${conversationMessages.length + stepMessages.length}`);
 
@@ -869,7 +873,11 @@ export function ChatBox({
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
+        alreadyInUI: true, // Mark as already added to UI
       };
+      
+      // Show analyzing message immediately in UI
+      onMessagesChange(prevMessages => [...prevMessages, analyzingMessage]);
       
       const probeResults = await handleProbeRequestInternal(synthResponse.fileName!, synthResponse.question!);
       
@@ -888,7 +896,11 @@ export function ChatBox({
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
+        alreadyInUI: true, // Mark as already added to UI
       };
+      
+      // Show generating message immediately in UI
+      onMessagesChange(prevMessages => [...prevMessages, generatingMessage]);
       
       const generateResults = await handleGenerateRequestInternal(
         synthResponse.prompt!, 
@@ -912,7 +924,11 @@ export function ChatBox({
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
+        alreadyInUI: true, // Mark as already added to UI
       };
+      
+      // Show fetching message immediately in UI
+      onMessagesChange(prevMessages => [...prevMessages, fetchingMessage]);
       
       const fetchResults = await handleFetchRequestInternal(
         'pexels', // Default to pexels for now
