@@ -747,6 +747,14 @@ export function ChatBox({
             timestamp: msg.timestamp
           }))
         ];
+        
+        console.log(`📚 Built conversation with ${conversationMessages.length} messages (${currentMessages.length} current + ${allResponseMessages.length} new):`,
+          conversationMessages.map((m, i) => ({ 
+            index: i, 
+            isUser: m.isUser, 
+            preview: m.content.substring(0, 60) + '...'
+          }))
+        );
 
         // Build synth context with latest state
         const synthContext: SynthContext = {

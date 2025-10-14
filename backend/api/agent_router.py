@@ -141,6 +141,10 @@ async def agent_chat(
     logger.info(f"Agent chat request from user={user_id}, session={session_id}")
     
     try:
+        import json
+        from datetime import datetime
+        from pathlib import Path
+        
         # Extract the last user message
         user_messages = [msg for msg in request.messages if msg.isUser]
         if not user_messages:
@@ -162,14 +166,10 @@ async def agent_chat(
         ]
         
         logger.info(f"📥 Received {len(request.messages)} messages, built history with {len(conversation_history)} entries")
-        for i, msg in enumerate(conversation_history):
-            preview = msg['content'][:100] + ('...' if len(msg['content']) > 100 else '')
-            logger.debug(f"  [{i}] {msg['role']}: {preview}")
         
         # Convert composition to JSON string
         composition_json = None
         if request.currentComposition:
-            import json
             composition_json = json.dumps(request.currentComposition, indent=2)
         
         # Extract media library with URLs (not just names)
@@ -188,6 +188,25 @@ async def agent_chat(
             logger.info(f"📚 Media library for AI agent: {len(media_library)} items")
             for item in media_library:
                 logger.info(f"  - {item['name']}: {item['url'][:80]}...")
+        
+        # Save full conversation to file for debugging
+        logs_dir = Path(__file__).parent.parent / "logs"
+        logs_dir.mkdir(exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = logs_dir / f"conversation_{session_id}_{timestamp}.json"
+        
+        with open(log_file, "w") as f:
+            json.dump({
+                "user_id": user_id,
+                "session_id": session_id,
+                "timestamp": timestamp,
+                "conversation_history": conversation_history,
+                "media_library": media_library,
+                "composition": composition_json
+            }, f, indent=2)
+        
+        logger.info(f"💾 Saved full conversation to: {log_file}")
         
         # Call agent service
         result = await service.chat(
