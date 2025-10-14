@@ -11,7 +11,7 @@ import { iris } from "@remotion/transitions/iris";
 import { wipe } from "@remotion/transitions/wipe";
 import { flip } from "@remotion/transitions/flip";
 import { slide } from "@remotion/transitions/slide";
-import React from "react";
+import React, { useState } from "react";
 import {
   FPS,
   type ScrubberState,
@@ -20,6 +20,7 @@ import {
   type Transition,
 } from "../components/timeline/types";
 import { SortedOutlines, layerContainer, outer } from "./DragDrop";
+import { Play, Pause, Maximize, Volume2, VolumeX } from "lucide-react";
 
 type TimelineCompositionProps = {
   timelineData: TimelineDataItem[];
@@ -336,6 +337,12 @@ export function VideoPlayer({
   selectedItem,
   setSelectedItem,
 }: VideoPlayerProps) {
+  // State for custom video controls
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+
   // Calculate composition width if not provided
   if (compositionWidth === null) {
     let maxWidth = 0;
@@ -365,42 +372,152 @@ export function VideoPlayer({
     compositionHeight = maxHeight || 1080; // Default to 1080 if no media found
   }
 
+  // Handle play/pause toggle
+  const togglePlayPause = () => {
+    const player = (ref as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (newVolume: number) => {
+    const player = (ref as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    setVolume(newVolume);
+    player.setVolume(newVolume);
+    setIsMuted(newVolume === 0);
+  };
+
+  // Handle mute toggle
+  const toggleMute = () => {
+    const player = (ref as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    if (isMuted) {
+      player.setVolume(volume);
+      setIsMuted(false);
+    } else {
+      player.setVolume(0);
+      setIsMuted(true);
+    }
+  };
+
+  // Handle fullscreen
+  const toggleFullscreen = () => {
+    const player = (ref as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    player.requestFullscreen();
+  };
+
   return (
-    <Player
-      ref={ref}
-      component={TimelineComposition}
-      inputProps={{
-        timelineData,
-        durationInFrames,
-        isRendering: false,
-        selectedItem,
-        setSelectedItem,
-        timeline,
-        handleUpdateScrubber,
-      }}
-      durationInFrames={durationInFrames || 10}
-      compositionWidth={compositionWidth}
-      compositionHeight={compositionHeight}
-      fps={30}
-      style={{
-        width: "100%",
-        height: "100%",
-        position: "relative",
-        zIndex: 1,
-      }}
-      // Enable built-in controls with scrubber/seek bar
-      controls={true}
-      // Show volume controls alongside play/pause and scrubber
-      showVolumeControls={true}
-      // Allow fullscreen functionality
-      allowFullscreen={true}
-      // Enable click-to-play/pause
-      clickToPlay={true}
-      // Show controls briefly when player loads, then auto-hide
-      initiallyShowControls={true}
-      // Enable space key for play/pause
-      spaceKeyToPlayOrPause={true}
-      acknowledgeRemotionLicense
-    />
+    <div 
+      className="relative w-full h-full"
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+    >
+      <Player
+        ref={ref}
+        component={TimelineComposition}
+        inputProps={{
+          timelineData,
+          durationInFrames,
+          isRendering: false,
+          selectedItem,
+          setSelectedItem,
+          timeline,
+          handleUpdateScrubber,
+        }}
+        durationInFrames={durationInFrames || 10}
+        compositionWidth={compositionWidth}
+        compositionHeight={compositionHeight}
+        fps={30}
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          zIndex: 1,
+        }}
+        // Disable default controls - we're using custom ones
+        controls={false}
+        showVolumeControls={false}
+        allowFullscreen={false}
+        clickToPlay={false}
+        initiallyShowControls={false}
+        // Enable space key for play/pause
+        spaceKeyToPlayOrPause={true}
+        acknowledgeRemotionLicense
+      />
+
+      {/* Custom Controls Overlay */}
+      <div 
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 transition-opacity duration-200 ${
+          showControls ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ zIndex: 10 }}
+      >
+        <div className="flex items-center gap-3">
+          {/* Play/Pause Button */}
+          <button
+            onClick={togglePlayPause}
+            className="text-white hover:text-primary transition-colors"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? (
+              <Pause className="w-6 h-6" fill="currentColor" />
+            ) : (
+              <Play className="w-6 h-6" fill="currentColor" />
+            )}
+          </button>
+
+          {/* Volume Control */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMute}
+              className="text-white hover:text-primary transition-colors"
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5" />
+              ) : (
+                <Volume2 className="w-5 h-5" />
+              )}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-20 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer
+                [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full 
+                [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+            />
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Fullscreen Button */}
+          <button
+            onClick={toggleFullscreen}
+            className="text-white hover:text-primary transition-colors"
+            aria-label="Fullscreen"
+          >
+            <Maximize className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

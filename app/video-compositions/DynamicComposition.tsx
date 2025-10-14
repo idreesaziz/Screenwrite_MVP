@@ -5,6 +5,7 @@ import { interp } from "../utils/animations";
 import { BlueprintComposition } from "./BlueprintComposition";
 import { calculateBlueprintDuration } from "./executeClipElement";
 import type { CompositionBlueprint } from "./BlueprintTypes";
+import { Play, Pause, Maximize, Volume2, VolumeX } from "lucide-react";
 
 // Destructure commonly used components for convenience
 const { 
@@ -85,6 +86,12 @@ export function DynamicVideoPlayer({
 }: DynamicVideoPlayerProps) {
   console.log("DynamicVideoPlayer - Blueprint tracks:", blueprint?.length || 0);
 
+  // State for custom video controls
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+
   // Calculate duration based on blueprint
   const calculatedDuration = React.useMemo(() => {
     if (blueprint) {
@@ -93,37 +100,144 @@ export function DynamicVideoPlayer({
     return durationInFrames || 300; // Default 10 seconds at 30fps
   }, [blueprint, durationInFrames]);
 
+  // Handle play/pause toggle
+  const togglePlayPause = () => {
+    const player = (playerRef as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (newVolume: number) => {
+    const player = (playerRef as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    setVolume(newVolume);
+    player.setVolume(newVolume);
+    setIsMuted(newVolume === 0);
+  };
+
+  // Handle mute toggle
+  const toggleMute = () => {
+    const player = (playerRef as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    if (isMuted) {
+      player.setVolume(volume);
+      setIsMuted(false);
+    } else {
+      player.setVolume(0);
+      setIsMuted(true);
+    }
+  };
+
+  // Handle fullscreen
+  const toggleFullscreen = () => {
+    const player = (playerRef as React.RefObject<PlayerRef>)?.current;
+    if (!player) return;
+    
+    player.requestFullscreen();
+  };
+
   return (
-    <Player
-      ref={playerRef}
-      component={DynamicComposition}
-      inputProps={{
-        blueprint,
-        backgroundColor,
-      }}
-      durationInFrames={Math.max(calculatedDuration, 1)} // Ensure minimum 1 frame
-      compositionWidth={compositionWidth}
-      compositionHeight={compositionHeight}
-      fps={30}
-      style={{
-        width: "100%",
-        height: "100%",
-        position: "relative",
-        zIndex: 1,
-      }}
-      // Enable built-in controls with scrubber/seek bar
-      controls={true}
-      // Show volume controls alongside play/pause and scrubber
-      showVolumeControls={true}
-      // Allow fullscreen functionality
-      allowFullscreen={true}
-      // Enable click-to-play/pause
-      clickToPlay={true}
-      // Show controls briefly when player loads, then auto-hide
-      initiallyShowControls={true}
-      // Enable space key for play/pause
-      spaceKeyToPlayOrPause={true}
-      acknowledgeRemotionLicense
-    />
+    <div className="relative w-full h-full flex flex-col">
+      {/* Video Player */}
+      <div className="flex-1">
+        <Player
+          ref={playerRef}
+          component={DynamicComposition}
+          inputProps={{
+            blueprint,
+            backgroundColor,
+          }}
+          durationInFrames={Math.max(calculatedDuration, 1)} // Ensure minimum 1 frame
+          compositionWidth={compositionWidth}
+          compositionHeight={compositionHeight}
+          fps={30}
+          style={{
+            width: "100%",
+            height: "100%",
+            position: "relative",
+            zIndex: 1,
+          }}
+          // Disable default controls - we're using custom ones
+          controls={false}
+          showVolumeControls={false}
+          allowFullscreen={false}
+          clickToPlay={false}
+          initiallyShowControls={false}
+          // Enable space key for play/pause
+          spaceKeyToPlayOrPause={true}
+          acknowledgeRemotionLicense
+        />
+      </div>
+
+      {/* Custom Controls Bar - Always Visible */}
+      <div 
+        className="bg-muted border-t border-border p-2 flex-shrink-0"
+        style={{ zIndex: 10 }}
+      >
+        <div className="flex items-center gap-2">
+          {/* Play/Pause Button */}
+          <button
+            onClick={togglePlayPause}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-accent transition-colors"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? (
+              <Pause className="w-4 h-4" fill="currentColor" />
+            ) : (
+              <Play className="w-4 h-4" fill="currentColor" />
+            )}
+          </button>
+
+          {/* Volume Control */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={toggleMute}
+              className="h-7 w-7 flex items-center justify-center rounded hover:bg-accent transition-colors"
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-16 h-1 bg-border rounded-lg appearance-none cursor-pointer
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 
+                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:cursor-pointer
+                [&::-moz-range-thumb]:w-2.5 [&::-moz-range-thumb]:h-2.5 [&::-moz-range-thumb]:rounded-full 
+                [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+            />
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Fullscreen Button */}
+          <button
+            onClick={toggleFullscreen}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-accent transition-colors"
+            aria-label="Fullscreen"
+          >
+            <Maximize className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
