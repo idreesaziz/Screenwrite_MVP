@@ -48,6 +48,8 @@ export default function PropertiesPanel() {
     Map<string, Record<string, string>>
   >(new Map());
   const [hasChanges, setHasChanges] = useState(false);
+  const [viewMode, setViewMode] = useState<"visual" | "code">("visual");
+  const [rawCodeEdit, setRawCodeEdit] = useState<string>("");
 
   // Parse elements when selected clip changes
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function PropertiesPanel() {
       setElementTree([]);
       setEditedValues(new Map());
       setHasChanges(false);
+      setRawCodeEdit("");
       return;
     }
 
@@ -70,8 +73,12 @@ export default function PropertiesPanel() {
 
     if (!selectedClip) {
       setElementTree([]);
+      setRawCodeEdit("");
       return;
     }
+
+    // Set raw code for code view
+    setRawCodeEdit(selectedClip.element.elements.join("\n"));
 
     // Parse elements into a tree structure
     const parsedElements: ParsedElement[] = selectedClip.element.elements.map(
@@ -154,37 +161,52 @@ export default function PropertiesPanel() {
 
     if (!selectedClip) return;
 
-    // Apply edits to elements
-    const updatedElements = selectedClip.element.elements.map((elementStr) => {
-      const parsed = parseElementString(elementStr);
-      const edits = parsed.id ? editedValues.get(parsed.id) : undefined;
+    let updatedElements: string[];
 
-      if (!edits) return elementStr;
+    if (viewMode === "code") {
+      // In code mode, use the raw edited text
+      updatedElements = rawCodeEdit
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } else {
+      // In visual mode, apply edits to elements
+      updatedElements = selectedClip.element.elements.map((elementStr) => {
+        const parsed = parseElementString(elementStr);
+        const edits = parsed.id ? editedValues.get(parsed.id) : undefined;
 
-      // Apply edits to props
-      const { tag, id, parent, ...otherProps } = parsed;
-      const updatedProps = { ...otherProps, ...edits };
+        if (!edits) return elementStr;
 
-      // Rebuild element string
-      const parts = [
-        tag,
-        `id:${id || ""}`,
-        `parent:${parent || "root"}`,
-      ];
+        // Apply edits to props
+        const { tag, id, parent, ...otherProps } = parsed;
+        const updatedProps = { ...otherProps, ...edits };
 
-      Object.entries(updatedProps).forEach(([key, value]) => {
-        if (value !== undefined) {
-          parts.push(`${key}:${value}`);
-        }
+        // Rebuild element string
+        const parts = [
+          tag,
+          `id:${id || ""}`,
+          `parent:${parent || "root"}`,
+        ];
+
+        Object.entries(updatedProps).forEach(([key, value]) => {
+          if (value !== undefined) {
+            parts.push(`${key}:${value}`);
+          }
+        });
+
+        return parts.join(";");
       });
-
-      return parts.join(";");
-    });
+    }
 
     // Update the clip
     onUpdateClipElements(selectedClipId, updatedElements);
     setEditedValues(new Map());
     setHasChanges(false);
+  };
+
+  const handleCodeEdit = (newCode: string) => {
+    setRawCodeEdit(newCode);
+    setHasChanges(true);
   };
 
   const getElementIcon = (tag: string) => {
@@ -531,7 +553,7 @@ export default function PropertiesPanel() {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="p-3 border-b border-border">
+      <div className="p-3 border-b border-border space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileCode className="h-4 w-4 text-primary" />
@@ -548,18 +570,98 @@ export default function PropertiesPanel() {
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground">
           Clip: {selectedClipId}
         </p>
+        
+        {/* View Mode Toggle */}
+        <div className="flex gap-1 bg-muted/30 p-1 rounded-md">
+          <Button
+            variant={viewMode === "visual" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("visual")}
+            className="h-6 text-xs flex-1"
+          >
+            Visual Editor
+          </Button>
+          <Button
+            variant={viewMode === "code" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("code")}
+            className="h-6 text-xs flex-1"
+          >
+            Element Code
+          </Button>
+        </div>
       </div>
 
-      {/* Element Tree */}
+      {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-2">
-        <Card className="border-border/50">
-          <CardContent className="p-2">
-            {elementTree.map((element) => renderElement(element, 0))}
-          </CardContent>
-        </Card>
+        {viewMode === "visual" ? (
+          // Visual Editor Mode
+          <Card className="border-border/50">
+            <CardContent className="p-2">
+              {elementTree.map((element) => renderElement(element, 0))}
+            </CardContent>
+          </Card>
+        ) : (
+          // Code View Mode
+          <Card className="border-border/50">
+            <CardContent className="p-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">
+                    Element Strings
+                  </Label>
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {rawCodeEdit.split("\n").filter((l) => l.trim()).length} elements
+                  </Badge>
+                </div>
+                
+                {/* Code Editor with Line Numbers */}
+                <div className="border border-border rounded-md overflow-hidden bg-muted/10">
+                  <div className="flex max-h-[500px] overflow-auto">
+                    {/* Line Numbers */}
+                    <div className="sticky left-0 w-12 bg-muted/50 border-r border-border py-3 flex flex-col text-xs text-muted-foreground font-mono text-right pr-2 select-none shrink-0">
+                      {rawCodeEdit.split("\n").map((_, i) => (
+                        <div key={i} className="leading-6 h-6">
+                          {i + 1}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Editable Code Area */}
+                    <div className="flex-1 min-w-0">
+                      <Textarea
+                        value={rawCodeEdit}
+                        onChange={(e) => handleCodeEdit(e.target.value)}
+                        className="min-h-[400px] w-full text-xs font-mono resize-none border-0 focus-visible:ring-0 bg-transparent rounded-none p-3"
+                        placeholder="tag;id:value;parent:value;prop:value"
+                        spellCheck={false}
+                        style={{
+                          lineHeight: "1.5rem",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs flex-wrap bg-muted/30 p-2 rounded">
+                  <span className="text-muted-foreground">Syntax:</span>
+                  <code className="px-1.5 py-0.5 bg-background rounded text-blue-400 font-semibold">tag</code>
+                  <span className="text-muted-foreground">;</span>
+                  <code className="px-1.5 py-0.5 bg-background rounded text-green-400">id</code>
+                  <span className="text-muted-foreground">:</span>
+                  <code className="px-1.5 py-0.5 bg-background rounded text-orange-400">value</code>
+                  <span className="text-muted-foreground">;</span>
+                  <code className="px-1.5 py-0.5 bg-background rounded text-purple-400">property</code>
+                  <span className="text-muted-foreground">:</span>
+                  <code className="px-1.5 py-0.5 bg-background rounded text-orange-400">value</code>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
