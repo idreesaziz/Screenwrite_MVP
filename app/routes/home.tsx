@@ -38,6 +38,9 @@ import { toast } from "sonner";
 import { useMediaBin } from "~/hooks/useMediaBin";
 import { useRenderer } from "~/hooks/useRenderer";
 import { useUndoRedo, useUndoRedoShortcuts } from "~/hooks/useUndoRedo";
+
+// Transform utilities
+import { updateClipTransform, type TransformValues } from "../utils/transformUtils";
 import { useAuth } from "~/hooks/useAuth";
 
 
@@ -76,6 +79,20 @@ export default function TimelineEditor() {
 
   // AI generation state with undo/redo
   const [currentComposition, undoRedoActions] = useUndoRedo<CompositionBlueprint>(emptyCompositionBlueprint);
+  
+  // Clip selection state for transform overlay
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  
+  // Handler to update clip transform
+  const handleUpdateClipTransform = (clipId: string, transform: Partial<TransformValues>) => {
+    const newComposition = currentComposition.map(track => ({
+      ...track,
+      clips: track.clips.map(clip => 
+        clip.id === clipId ? updateClipTransform(clip, transform) : clip
+      )
+    }));
+    undoRedoActions.set(newComposition, "Transform clip");
+  };
   
   // Setup keyboard shortcuts for undo/redo
   const handleUndoRedoKeyDown = useUndoRedoShortcuts(undoRedoActions);
@@ -809,6 +826,9 @@ export default function TimelineEditor() {
                           compositionHeight={previewSettings.height}
                           backgroundColor={previewSettings.backgroundColor}
                           playerRef={playerRef}
+                          selectedClipId={selectedClipId}
+                          onSelectClip={setSelectedClipId}
+                          onUpdateTransform={handleUpdateClipTransform}
                         />
                       </div>
                     </div>

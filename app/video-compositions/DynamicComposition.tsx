@@ -6,6 +6,7 @@ import { BlueprintComposition } from "./BlueprintComposition";
 import { calculateBlueprintDuration } from "./executeClipElement";
 import type { CompositionBlueprint } from "./BlueprintTypes";
 import { Play, Pause, Maximize, Volume2, VolumeX } from "lucide-react";
+import { TransformOverlay } from "../components/editor/TransformOverlay";
 
 // Destructure commonly used components for convenience
 const { 
@@ -73,6 +74,9 @@ export interface DynamicVideoPlayerProps {
   backgroundColor?: string;
   playerRef?: React.Ref<PlayerRef>;
   durationInFrames?: number;
+  selectedClipId?: string | null;
+  onSelectClip?: (clipId: string | null) => void;
+  onUpdateTransform?: (clipId: string, transform: Partial<import("../utils/transformUtils").TransformValues>) => void;
 }
 
 // The dynamic video player component
@@ -83,6 +87,9 @@ export function DynamicVideoPlayer({
   backgroundColor = "#000000",
   playerRef,
   durationInFrames,
+  selectedClipId,
+  onSelectClip,
+  onUpdateTransform,
 }: DynamicVideoPlayerProps) {
   console.log("DynamicVideoPlayer - Blueprint tracks:", blueprint?.length || 0);
 
@@ -91,6 +98,22 @@ export function DynamicVideoPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [currentFrame, setCurrentFrame] = useState(0);
+  
+  // Track current frame continuously (both when playing and paused)
+  useEffect(() => {
+    if (!playerRef) return;
+    
+    const interval = setInterval(() => {
+      const player = (playerRef as React.RefObject<PlayerRef>)?.current;
+      if (player) {
+        const frame = player.getCurrentFrame();
+        setCurrentFrame(frame);
+      }
+    }, 100); // Update every 100ms
+    
+    return () => clearInterval(interval);
+  }, [playerRef]); // Always track, not just when playing
 
   // Calculate duration based on blueprint
   const calculatedDuration = React.useMemo(() => {
@@ -148,35 +171,53 @@ export function DynamicVideoPlayer({
 
   return (
     <div className="relative w-full h-full flex flex-col">
-      {/* Video Player */}
-      <div className="flex-1">
-        <Player
-          ref={playerRef}
-          component={DynamicComposition}
-          inputProps={{
-            blueprint,
-            backgroundColor,
-          }}
-          durationInFrames={Math.max(calculatedDuration, 1)} // Ensure minimum 1 frame
-          compositionWidth={compositionWidth}
-          compositionHeight={compositionHeight}
-          fps={30}
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "relative",
-            zIndex: 1,
-          }}
-          // Disable default controls - we're using custom ones
-          controls={false}
-          showVolumeControls={false}
-          allowFullscreen={false}
-          clickToPlay={false}
-          initiallyShowControls={false}
-          // Enable space key for play/pause
-          spaceKeyToPlayOrPause={true}
-          acknowledgeRemotionLicense
-        />
+      {/* Video Player Container with Overlay */}
+      <div className="flex-1 relative" style={{ pointerEvents: 'none' }}>
+        {/* Player - no pointer events so overlay can capture clicks */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+          <Player
+            ref={playerRef}
+            component={DynamicComposition}
+            inputProps={{
+              blueprint,
+              backgroundColor,
+            }}
+            durationInFrames={Math.max(calculatedDuration, 1)} // Ensure minimum 1 frame
+            compositionWidth={compositionWidth}
+            compositionHeight={compositionHeight}
+            fps={30}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            // Disable default controls - we're using custom ones
+            controls={false}
+            showVolumeControls={false}
+            allowFullscreen={false}
+            clickToPlay={false}
+            initiallyShowControls={false}
+            // Enable space key for play/pause
+            spaceKeyToPlayOrPause={true}
+            acknowledgeRemotionLicense
+          />
+        </div>
+        
+        {/* Transform Overlay - On top of player */}
+        {!isPlaying && blueprint && onSelectClip && onUpdateTransform && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'auto' }}>
+            <TransformOverlay
+              composition={blueprint}
+              currentFrame={currentFrame}
+              fps={30}
+              compositionWidth={compositionWidth}
+              compositionHeight={compositionHeight}
+              selectedClipId={selectedClipId || null}
+              onSelectClip={onSelectClip}
+              onUpdateTransform={onUpdateTransform}
+              isPlaying={isPlaying}
+            />
+          </div>
+        )}
       </div>
 
       {/* Custom Controls Bar - Always Visible */}
