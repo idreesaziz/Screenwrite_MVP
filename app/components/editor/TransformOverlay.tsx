@@ -255,12 +255,12 @@ export function TransformOverlay({
         
         return (
           <div key={clip.id}>
-            {/* Clickable area - visible for debugging */}
+            {/* Clickable area - invisible until hover or selected */}
             <div
               className={`absolute transition-all ${
                 isSelected
                   ? 'border-2 border-primary bg-primary/5'
-                  : 'border-2 border-green-500 bg-green-500/20 hover:border-primary hover:bg-primary/10'
+                  : 'border border-transparent hover:border-primary/50 hover:bg-primary/5'
               }`}
               style={{
                 left: scaledBounds.x,
