@@ -40,6 +40,7 @@ export function TransformOverlay({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragHandle, setDragHandle] = useState<HandleType>(null);
+  const [hoveredClipId, setHoveredClipId] = useState<string | null>(null);
   const [displaySize, setDisplaySize] = useState({ 
     width: compositionWidth, 
     height: compositionHeight,
@@ -139,12 +140,58 @@ export function TransformOverlay({
     onSelectClip(clipId);
   };
   
-  // Handle click on empty space to deselect
+  // Handle clicks - find topmost clip at click position
   const handleOverlayClick = (event: React.MouseEvent) => {
-    console.log('handleOverlayClick - deselecting');
-    if (event.target === event.currentTarget) {
-      onSelectClip(null);
+    const rect = overlayRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    // Get click position relative to overlay
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    console.log('Overlay clicked at:', clickX, clickY, 'total clips:', clipBounds.length);
+    
+    // Find all clips at this position (iterate in reverse to get topmost first)
+    let foundClip: string | null = null;
+    const matchingClips: string[] = [];
+    
+    for (let i = clipBounds.length - 1; i >= 0; i--) {
+      const { clip, bounds, trackIndex } = clipBounds[i];
+      
+      // Scale bounds to display coordinates
+      const scaledBounds = {
+        x: bounds.x * scaleX + displaySize.offsetX,
+        y: bounds.y * scaleY + displaySize.offsetY,
+        width: bounds.width * scaleX,
+        height: bounds.height * scaleY,
+      };
+      
+      console.log(`Checking clip ${clip.id} (track ${trackIndex}):`, 
+        'click:', clickX, clickY,
+        'bounds:', scaledBounds);
+      
+      // Check if click is within bounds
+      if (
+        clickX >= scaledBounds.x &&
+        clickX <= scaledBounds.x + scaledBounds.width &&
+        clickY >= scaledBounds.y &&
+        clickY <= scaledBounds.y + scaledBounds.height
+      ) {
+        matchingClips.push(clip.id);
+        if (!foundClip) {
+          foundClip = clip.id;
+          console.log('✓ Found topmost clip at position:', clip.id, 'track:', trackIndex);
+        }
+      }
     }
+    
+    if (matchingClips.length > 0) {
+      console.log('All matching clips at position:', matchingClips);
+    } else {
+      console.log('No clips found at click position - deselecting');
+    }
+    
+    onSelectClip(foundClip);
   };
   
   // Handle mouse down on drag handle
@@ -232,8 +279,7 @@ export function TransformOverlay({
       className="absolute inset-0"
       onClick={handleOverlayClick}
       style={{
-        pointerEvents: 'auto', // Allow clicks to pass through to children
-        // Remove explicit width/height - let it fill parent with inset-0
+        pointerEvents: 'auto',
       }}
     >
       {clipBounds.length === 0 && (
@@ -241,6 +287,7 @@ export function TransformOverlay({
       )}
       {clipBounds.map(({ clip, bounds, trackIndex }) => {
         const isSelected = clip.id === selectedClipId;
+        const isHovered = clip.id === hoveredClipId;
         
         // Scale bounds from composition coordinates to display coordinates
         // and add letterbox offsets
@@ -255,97 +302,111 @@ export function TransformOverlay({
         
         return (
           <div key={clip.id}>
-            {/* Clickable area - invisible until hover or selected */}
-            <div
-              className={`absolute transition-all ${
-                isSelected
-                  ? 'border-2 border-primary bg-primary/5'
-                  : 'border border-transparent hover:border-primary/50 hover:bg-primary/5'
-              }`}
-              style={{
-                left: scaledBounds.x,
-                top: scaledBounds.y,
-                width: scaledBounds.width,
-                height: scaledBounds.height,
-                cursor: isSelected ? 'move' : 'pointer',
-                pointerEvents: 'auto',
-                zIndex: 50,
-              }}
-              onClick={(e) => {
-                console.log('Click on clip div:', clip.id);
-                e.stopPropagation();
-                handleClipClick(clip.id, e);
-              }}
-              onMouseDown={(e) => {
-                console.log('MouseDown on clip div:', clip.id, 'isSelected:', isSelected);
-                if (isSelected) {
+            {/* Selection box - only shown for selected clip */}
+            {isSelected && (
+              <>
+              {/* Invisible drag area that covers the clip */}
+              <div
+                className="absolute transition-all"
+                style={{
+                  left: scaledBounds.x,
+                  top: scaledBounds.y,
+                  width: scaledBounds.width,
+                  height: scaledBounds.height,
+                  cursor: 'move',
+                  pointerEvents: 'auto',
+                  zIndex: 1000,
+                  background: 'transparent',
+                }}
+                onMouseDown={(e) => {
+                  console.log('MouseDown on selection box:', clip.id);
                   e.stopPropagation();
                   handleMouseDown(clip.id, null, e);
-                }
-              }}
-              title={`${clip.id} (Track ${trackIndex + 1})`}
-            >
-              {/* Show handles and info only when selected */}
-              {isSelected && (
-                <>
-                  {/* Clip info label - always visible when selected */}
+                }}
+                title={`${clip.id} (Track ${trackIndex + 1})`}
+              />
+              {/* Visual border indicator (pointer-events none so it doesn't interfere) */}
+              <div
+                className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
+                style={{
+                  left: scaledBounds.x,
+                  top: scaledBounds.y,
+                  width: scaledBounds.width,
+                  height: scaledBounds.height,
+                  zIndex: 999,
+                }}
+              />
+              
+              {/* Handles container - positioned relative to clip */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: scaledBounds.x,
+                  top: scaledBounds.y,
+                  width: scaledBounds.width,
+                  height: scaledBounds.height,
+                  zIndex: 1001,
+                }}
+              >
+                {/* Clip info label */}
+                <div
+                  className="absolute bg-primary text-primary-foreground text-xs px-2 py-1 rounded whitespace-nowrap"
+                  style={{
+                    left: 0,
+                    top: -28,
+                  }}
+                >
+                  {clip.id} • Track {trackIndex + 1}
+                </div>
+                
+                {/* Corner handles for scaling */}
+                <Handle
+                  position="tl"
+                  onMouseDown={(e) => handleMouseDown(clip.id, 'tl', e)}
+                />
+                <Handle
+                  position="tr"
+                  onMouseDown={(e) => handleMouseDown(clip.id, 'tr', e)}
+                />
+                <Handle
+                  position="bl"
+                  onMouseDown={(e) => handleMouseDown(clip.id, 'bl', e)}
+                />
+                <Handle
+                  position="br"
+                  onMouseDown={(e) => handleMouseDown(clip.id, 'br', e)}
+                />
+                
+                {/* Rotation handle */}
+                <div
+                  className="absolute bg-primary rounded-full cursor-grab active:cursor-grabbing pointer-events-auto"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    left: '50%',
+                    top: -30,
+                    transform: 'translateX(-50%)',
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    handleMouseDown(clip.id, 'rotate', e);
+                  }}
+                >
+                  {/* Line connecting to top edge */}
                   <div
-                    className="absolute bg-primary text-primary-foreground text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap"
+                    className="absolute bg-primary"
                     style={{
-                      left: 0,
-                      top: -28,
-                      zIndex: 100,
-                    }}
-                  >
-                    {clip.id} • Track {trackIndex + 1}
-                  </div>
-                  
-                  {/* Corner handles for scaling */}
-                  <Handle
-                    position="tl"
-                    onMouseDown={(e) => handleMouseDown(clip.id, 'tl', e)}
-                  />
-                  <Handle
-                    position="tr"
-                    onMouseDown={(e) => handleMouseDown(clip.id, 'tr', e)}
-                  />
-                  <Handle
-                    position="bl"
-                    onMouseDown={(e) => handleMouseDown(clip.id, 'bl', e)}
-                  />
-                  <Handle
-                    position="br"
-                    onMouseDown={(e) => handleMouseDown(clip.id, 'br', e)}
-                  />
-                  
-                  {/* Rotation handle */}
-                  <div
-                    className="absolute bg-primary rounded-full cursor-grab active:cursor-grabbing"
-                    style={{
-                      width: 12,
-                      height: 12,
+                      width: 2,
+                      height: 24,
                       left: '50%',
-                      top: -30,
+                      top: 12,
                       transform: 'translateX(-50%)',
-                      zIndex: 100,
                     }}
-                    onMouseDown={(e) => handleMouseDown(clip.id, 'rotate', e)}
-                  >
-                    {/* Line connecting to top edge */}
-                    <div
-                      className="absolute bg-primary"
-                      style={{
-                        width: 2,
-                        height: 24,
-                        left: '50%',
-                        top: 12,
-                        transform: 'translateX(-50%)',
-                      }}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+                  />
+                </div>
+              </div>
+              </>
+            )}
           </div>
         );
       })}

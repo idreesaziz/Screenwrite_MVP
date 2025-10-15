@@ -280,12 +280,18 @@ export function calculateClipBounds(
     // Check if this is a container element (has children)
     const contentBounds = calculateContentBounds(props.id || '', elements, compositionWidth, compositionHeight);
     
-    // If element has 100% dimensions and contains content, use content bounds
+    // If element has 100% dimensions
     if ((width === compositionWidth || props.width === '100%') && 
         (height === compositionHeight || props.height === '100%')) {
       
-      // If no content found, this is just a background element - skip it
+      // If no content found, this is a background element - use full dimensions
       if (!contentBounds) {
+        bounds.push({
+          x: 0,
+          y: 0,
+          width: compositionWidth,
+          height: compositionHeight,
+        });
         continue;
       }
       
