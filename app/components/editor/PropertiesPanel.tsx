@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { Textarea } from "../ui/textarea";
 import {
   ChevronRight,
   ChevronDown,
@@ -14,6 +15,10 @@ import {
   Image as ImageIcon,
   Layout,
   Save,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
 } from "lucide-react";
 import { parseElementString } from "../../utils/transformUtils";
 import type { CompositionBlueprint, Clip } from "../../video-compositions/BlueprintTypes";
@@ -188,11 +193,236 @@ export default function PropertiesPanel() {
         return <Box className="h-3.5 w-3.5" />;
       case "p":
       case "span":
+      case "h1":
+      case "h2":
+      case "h3":
         return <TypeIcon className="h-3.5 w-3.5" />;
       case "img":
         return <ImageIcon className="h-3.5 w-3.5" />;
       default:
         return <Layout className="h-3.5 w-3.5" />;
+    }
+  };
+
+  // Determine field type based on property name and value
+  const getFieldType = (
+    key: string,
+    value: string | undefined
+  ): "text" | "number" | "color" | "alignment" | "select" | "textarea" => {
+    const lowerKey = key.toLowerCase();
+
+    // Text content - use textarea
+    if (lowerKey === "text") return "textarea";
+
+    // Colors
+    if (
+      lowerKey.includes("color") ||
+      lowerKey === "background" ||
+      (value && (value.startsWith("#") || value.startsWith("rgb")))
+    )
+      return "color";
+
+    // Alignment properties
+    if (
+      lowerKey === "textalign" ||
+      lowerKey === "justifycontent" ||
+      lowerKey === "alignitems"
+    )
+      return "alignment";
+
+    // Numeric properties
+    if (
+      lowerKey.includes("size") ||
+      lowerKey.includes("width") ||
+      lowerKey.includes("height") ||
+      lowerKey.includes("padding") ||
+      lowerKey.includes("margin") ||
+      lowerKey.includes("rotation") ||
+      lowerKey.includes("scale") ||
+      lowerKey.includes("opacity") ||
+      lowerKey === "top" ||
+      lowerKey === "left" ||
+      lowerKey === "right" ||
+      lowerKey === "bottom"
+    ) {
+      // Check if value has a unit or is pure number
+      if (value && /^\d+(\.\d+)?(px|%|em|rem|vh|vw)?$/.test(value)) {
+        return "number";
+      }
+    }
+
+    // Select for specific properties
+    if (
+      lowerKey === "display" ||
+      lowerKey === "position" ||
+      lowerKey === "fontweight" ||
+      lowerKey === "flexdirection"
+    )
+      return "select";
+
+    return "text";
+  };
+
+  // Get options for select fields
+  const getSelectOptions = (key: string): string[] => {
+    const lowerKey = key.toLowerCase();
+    switch (lowerKey) {
+      case "display":
+        return ["flex", "block", "inline", "inline-block", "none", "grid"];
+      case "position":
+        return ["relative", "absolute", "fixed", "sticky", "static"];
+      case "fontweight":
+        return ["normal", "bold", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
+      case "flexdirection":
+        return ["row", "column", "row-reverse", "column-reverse"];
+      case "justifycontent":
+        return ["flex-start", "center", "flex-end", "space-between", "space-around", "space-evenly"];
+      case "alignitems":
+        return ["flex-start", "center", "flex-end", "stretch", "baseline"];
+      case "textalign":
+        return ["left", "center", "right", "justify"];
+      default:
+        return [];
+    }
+  };
+
+  // Render appropriate field based on type
+  const renderField = (
+    elementId: string,
+    key: string,
+    value: string | undefined
+  ) => {
+    const fieldType = getFieldType(key, value);
+    const displayValue = value || "";
+
+    switch (fieldType) {
+      case "textarea":
+        return (
+          <Textarea
+            value={displayValue}
+            onChange={(e) =>
+              handlePropertyChange(elementId, key, e.target.value)
+            }
+            className="min-h-[60px] text-xs font-mono resize-y"
+            placeholder={`Enter ${key}`}
+          />
+        );
+
+      case "color":
+        return (
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={
+                displayValue.startsWith("#")
+                  ? displayValue
+                  : displayValue.startsWith("rgb")
+                  ? "#000000"
+                  : displayValue || "#000000"
+              }
+              onChange={(e) =>
+                handlePropertyChange(elementId, key, e.target.value)
+              }
+              className="w-12 h-7 rounded border border-border cursor-pointer"
+            />
+            <Input
+              value={displayValue}
+              onChange={(e) =>
+                handlePropertyChange(elementId, key, e.target.value)
+              }
+              className="flex-1 h-7 text-xs font-mono"
+              placeholder="#000000"
+            />
+          </div>
+        );
+
+      case "alignment":
+        const alignmentOptions:
+          | { value: string; icon: React.ComponentType<any>; label: string }[]
+          | { value: string; label: string }[] =
+          key.toLowerCase() === "textalign"
+            ? [
+                { value: "left", icon: AlignLeft, label: "Left" },
+                { value: "center", icon: AlignCenter, label: "Center" },
+                { value: "right", icon: AlignRight, label: "Right" },
+                { value: "justify", icon: AlignJustify, label: "Justify" },
+              ]
+            : key.toLowerCase() === "justifycontent"
+            ? [
+                { value: "flex-start", label: "Start" },
+                { value: "center", label: "Center" },
+                { value: "flex-end", label: "End" },
+                { value: "space-between", label: "Between" },
+              ]
+            : [
+                { value: "flex-start", label: "Start" },
+                { value: "center", label: "Center" },
+                { value: "flex-end", label: "End" },
+                { value: "stretch", label: "Stretch" },
+              ];
+
+        return (
+          <div className="flex gap-1 flex-wrap">
+            {alignmentOptions.map((option) => {
+              const Icon = "icon" in option ? option.icon : null;
+              return (
+                <Button
+                  key={option.value}
+                  variant={displayValue === option.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePropertyChange(elementId, key, option.value)}
+                  className="h-7 px-2 text-xs flex-1 min-w-0"
+                  title={option.label}
+                >
+                  {Icon ? <Icon className="h-3 w-3" /> : option.label}
+                </Button>
+              );
+            })}
+          </div>
+        );
+
+      case "select":
+        const options = getSelectOptions(key);
+        return (
+          <div className="flex gap-1 flex-wrap">
+            {options.map((option) => (
+              <Button
+                key={option}
+                variant={displayValue === option ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePropertyChange(elementId, key, option)}
+                className="h-7 px-2 text-xs"
+              >
+                {option}
+              </Button>
+            ))}
+          </div>
+        );
+
+      case "number":
+        return (
+          <Input
+            type="text"
+            value={displayValue}
+            onChange={(e) =>
+              handlePropertyChange(elementId, key, e.target.value)
+            }
+            className="h-7 text-xs font-mono"
+            placeholder="0"
+          />
+        );
+
+      default:
+        return (
+          <Input
+            value={displayValue}
+            onChange={(e) =>
+              handlePropertyChange(elementId, key, e.target.value)
+            }
+            className="h-7 text-xs font-mono"
+            placeholder={`Enter ${key}`}
+          />
+        );
     }
   };
 
@@ -242,26 +472,24 @@ export default function PropertiesPanel() {
         {/* Element Properties */}
         {isExpanded && (
           <div
-            className="space-y-2 py-2 border-l-2 border-border/50"
+            className="space-y-3 py-2 border-l-2 border-border/50"
             style={{ marginLeft: `${depth * 16 + 20}px` }}
           >
             {Object.entries(displayProps).length > 0 ? (
-              <div className="grid gap-2 px-3">
-                {Object.entries(displayProps).map(([key, value]) => (
-                  <div key={key} className="grid gap-1">
-                    <Label className="text-xs text-muted-foreground">
-                      {key}
-                    </Label>
-                    <Input
-                      value={value}
-                      onChange={(e) =>
-                        handlePropertyChange(element.id, key, e.target.value)
-                      }
-                      className="h-7 text-xs font-mono"
-                      placeholder={`Enter ${key}`}
-                    />
-                  </div>
-                ))}
+              <div className="grid gap-3 px-3">
+                {Object.entries(displayProps).map(([key, value]) => {
+                  // Skip special keys that aren't properties
+                  if (key === "tag") return null;
+                  
+                  return (
+                    <div key={key} className="grid gap-1.5">
+                      <Label className="text-xs font-medium text-foreground capitalize">
+                        {key.replace(/([A-Z])/g, " $1").trim()}
+                      </Label>
+                      {renderField(element.id, key, value)}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground px-3">
