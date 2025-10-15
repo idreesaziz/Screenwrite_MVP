@@ -16,6 +16,8 @@ export interface TimelineViewProps {
   onMoveClip?: (clipId: string, newTrackIndex: number, newStartTime: number) => void;
   onSplitClip?: (clipId: string, splitTimeInSeconds: number) => void;
   onDeleteClip?: (clipId: string) => void;
+  selectedClipId?: string | null;
+  onSelectClip?: (clipId: string | null) => void;
 }
 
 // Fresh component name to avoid any stale Vite graph node collisions.
@@ -29,11 +31,17 @@ export default function TimelineView({
   onDropMedia,
   onMoveClip,
   onSplitClip,
-  onDeleteClip
+  onDeleteClip,
+  selectedClipId: controlledSelectedClipId,
+  onSelectClip
 }: TimelineViewProps) {
   const [zoomLevel, setZoomLevel] = React.useState(60); // pixels per second
   const [isDragging, setIsDragging] = React.useState(false);
-  const [selectedClipId, setSelectedClipId] = React.useState<string | null>(null);
+  const [internalSelectedClipId, setInternalSelectedClipId] = React.useState<string | null>(null);
+  
+  // Use controlled prop if provided, otherwise use internal state
+  const selectedClipId = controlledSelectedClipId !== undefined ? controlledSelectedClipId : internalSelectedClipId;
+  const setSelectedClipId = onSelectClip || setInternalSelectedClipId;
   const [draggingClip, setDraggingClip] = React.useState<{
     clipId: string;
     trackIndex: number;

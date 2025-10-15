@@ -870,6 +870,8 @@ export default function TimelineEditor() {
                   onMoveClip={handleMoveClip}
                   onSplitClip={handleSplitClip}
                   onDeleteClip={handleDeleteClip}
+                  selectedClipId={selectedClipId}
+                  onSelectClip={setSelectedClipId}
                 />
               </div>
             </ResizablePanel>
