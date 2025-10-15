@@ -8,7 +8,7 @@ export default [
     route("/", "components/auth/ProtectedRoute.tsx", [
         route("/", "routes/home.tsx", [
             index("components/timeline/MediaBin.tsx"),
-            route("/text-editor", "components/media/TextEditor.tsx"),
+            route("/properties", "components/editor/PropertiesPanel.tsx"),
             route("/transitions", "components/media/Transitions.tsx"),
             route("/media-bin", "components/redirects/mediaBinLoader.ts"),
         ]),

@@ -93,6 +93,19 @@ export default function TimelineEditor() {
     }));
     undoRedoActions.set(newComposition, "Transform clip");
   };
+
+  // Handler to update clip elements (from properties panel)
+  const handleUpdateClipElements = (clipId: string, newElements: string[]) => {
+    const newComposition = currentComposition.map(track => ({
+      ...track,
+      clips: track.clips.map(clip =>
+        clip.id === clipId
+          ? { ...clip, element: { elements: newElements } }
+          : clip
+      )
+    }));
+    undoRedoActions.set(newComposition, "Update clip properties");
+  };
   
   // Setup keyboard shortcuts for undo/redo
   const handleUndoRedoKeyDown = useUndoRedoShortcuts(undoRedoActions);
@@ -693,6 +706,9 @@ export default function TimelineEditor() {
                       handleDeleteFromContext={handleDeleteFromContext}
                       handleSplitAudioFromContext={handleSplitAudioFromContext}
                       handleCloseContextMenu={handleCloseContextMenu}
+                      selectedClipId={selectedClipId}
+                      currentComposition={currentComposition}
+                      onUpdateClipElements={handleUpdateClipElements}
                     />
                   </div>
                 </ResizablePanel>

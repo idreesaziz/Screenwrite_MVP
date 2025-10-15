@@ -1,8 +1,9 @@
 import React from "react";
 import { Link, Outlet, useLocation } from "react-router";
-import { FileImage, Type, BetweenVerticalEnd } from "lucide-react";
-import { type MediaBinItem } from "~/components/timeline/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { FileImage, Settings, BetweenVerticalEnd } from "lucide-react";
+import { type MediaBinItem } from "../timeline/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import type { CompositionBlueprint } from "../../video-compositions/BlueprintTypes";
 
 interface LeftPanelProps {
   mediaBinItems: MediaBinItem[];
@@ -24,6 +25,10 @@ interface LeftPanelProps {
   handleDeleteFromContext: () => void;
   handleSplitAudioFromContext: () => void;
   handleCloseContextMenu: () => void;
+  // Properties panel props
+  selectedClipId: string | null;
+  currentComposition: CompositionBlueprint;
+  onUpdateClipElements: (clipId: string, newElements: string[]) => void;
 }
 
 export default function LeftPanel({
@@ -35,13 +40,16 @@ export default function LeftPanel({
   handleDeleteFromContext,
   handleSplitAudioFromContext,
   handleCloseContextMenu,
+  selectedClipId,
+  currentComposition,
+  onUpdateClipElements,
 }: LeftPanelProps) {
   const location = useLocation();
 
   // Determine active tab based on current route
   const getActiveTab = () => {
     if (location.pathname.includes("/media-bin")) return "media-bin";
-    if (location.pathname.includes("/text-editor")) return "text-editor";
+    if (location.pathname.includes("/properties")) return "properties";
     if (location.pathname.includes("/transitions")) return "transitions";
     return "media-bin"; // default
   };
@@ -64,12 +72,12 @@ export default function LeftPanel({
               </Link>
             </TabsTrigger>
             <TabsTrigger
-              value="text-editor"
+              value="properties"
               asChild
               className="h-8 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              <Link to="/text-editor" className="flex items-center gap-1.5">
-                <Type className="h-3 w-3" />
+              <Link to="/properties" className="flex items-center gap-1.5">
+                <Settings className="h-3 w-3" />
               </Link>
             </TabsTrigger>
             <TabsTrigger
@@ -97,6 +105,10 @@ export default function LeftPanel({
               handleDeleteFromContext,
               handleSplitAudioFromContext,
               handleCloseContextMenu,
+              // Properties panel props
+              selectedClipId,
+              currentComposition,
+              onUpdateClipElements,
             }}
           />
         </div>
