@@ -85,12 +85,21 @@ export default function TimelineEditor() {
   
   // Handler to update clip transform
   const handleUpdateClipTransform = (clipId: string, transform: Partial<TransformValues>) => {
+    console.log('handleUpdateClipTransform called:', clipId, transform);
+    
     const newComposition = currentComposition.map(track => ({
       ...track,
-      clips: track.clips.map(clip => 
-        clip.id === clipId ? updateClipTransform(clip, transform) : clip
-      )
+      clips: track.clips.map(clip => {
+        if (clip.id === clipId) {
+          const updatedClip = updateClipTransform(clip, transform);
+          console.log('Updated clip:', updatedClip.element.elements);
+          return updatedClip;
+        }
+        return clip;
+      })
     }));
+    
+    console.log('Setting new composition');
     undoRedoActions.set(newComposition, "Transform clip");
   };
 

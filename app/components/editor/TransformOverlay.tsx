@@ -41,6 +41,7 @@ export function TransformOverlay({
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragHandle, setDragHandle] = useState<HandleType>(null);
   const [hoveredClipId, setHoveredClipId] = useState<string | null>(null);
+  const initialTransformRef = useRef<TransformValues | null>(null);
   const [displaySize, setDisplaySize] = useState({ 
     width: compositionWidth, 
     height: compositionHeight,
@@ -205,6 +206,42 @@ export function TransformOverlay({
     setDragHandle(handle);
     setDragStart({ x: event.clientX, y: event.clientY });
     
+    // Find and store initial transform values
+    const clipData = clipBounds.find(cb => cb.clip.id === clipId);
+    if (clipData) {
+      // Parse existing transform from the clip's first element
+      const firstElement = clipData.clip.element.elements[0];
+      if (firstElement) {
+        const props = firstElement.split(';').reduce((acc, part) => {
+          const [key, value] = part.split(':');
+          if (key && value) acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Extract transform values
+        const transformStr = props.transform || '';
+        const translateMatch = transformStr.match(/translate\(([^,]+),\s*([^)]+)\)/);
+        const scaleMatch = transformStr.match(/scale\(([^,]+)(?:,\s*([^)]+))?\)/);
+        const rotateMatch = transformStr.match(/rotate\(([^)]+)\)/);
+        
+        initialTransformRef.current = {
+          translateX: translateMatch ? parseFloat(translateMatch[1]) : 0,
+          translateY: translateMatch ? parseFloat(translateMatch[2]) : 0,
+          scaleX: scaleMatch ? parseFloat(scaleMatch[1]) : 1,
+          scaleY: scaleMatch ? (scaleMatch[2] ? parseFloat(scaleMatch[2]) : parseFloat(scaleMatch[1])) : 1,
+          rotation: rotateMatch ? parseFloat(rotateMatch[1]) : 0,
+        };
+      } else {
+        initialTransformRef.current = {
+          translateX: 0,
+          translateY: 0,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+        };
+      }
+    }
+    
     // Select clip if not already selected
     if (selectedClipId !== clipId) {
       onSelectClip(clipId);
@@ -213,25 +250,35 @@ export function TransformOverlay({
   
   // Handle mouse move during drag
   useEffect(() => {
-    if (!isDragging || !dragStart || !selectedClipId) return;
+    if (!isDragging || !dragStart || !selectedClipId || !initialTransformRef.current) return;
     
     const handleMouseMove = (event: MouseEvent) => {
+      const initialTransform = initialTransformRef.current!;
+      
+      // Calculate delta from initial drag start position
       const deltaX = event.clientX - dragStart.x;
       const deltaY = event.clientY - dragStart.y;
       
+      // Convert screen-space pixels to composition-space pixels
+      const compositionDeltaX = deltaX / scaleX;
+      const compositionDeltaY = deltaY / scaleY;
+      
       if (dragHandle === null) {
-        // Dragging the clip (translate)
-        onUpdateTransform(selectedClipId, {
-          translateX: deltaX,
-          translateY: deltaY,
-        });
+        // Dragging the clip (translate) - just add delta to initial position
+        const newTransform = {
+          translateX: initialTransform.translateX + compositionDeltaX,
+          translateY: initialTransform.translateY + compositionDeltaY,
+        };
+        
+        console.log('Translating clip:', selectedClipId, 'delta:', compositionDeltaX, compositionDeltaY, 'new:', newTransform);
+        onUpdateTransform(selectedClipId, newTransform);
       } else if (dragHandle === 'rotate') {
         // Rotating the clip
-        // Calculate angle from center
         const selectedClipData = clipBounds.find(cb => cb.clip.id === selectedClipId);
         if (selectedClipData) {
-          const centerX = selectedClipData.bounds.x + selectedClipData.bounds.width / 2;
-          const centerY = selectedClipData.bounds.y + selectedClipData.bounds.height / 2;
+          // Get center in display coordinates
+          const centerX = (selectedClipData.bounds.x + selectedClipData.bounds.width / 2) * scaleX + displaySize.offsetX;
+          const centerY = (selectedClipData.bounds.y + selectedClipData.bounds.height / 2) * scaleY + displaySize.offsetY;
           
           const angle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
           const degrees = (angle * 180) / Math.PI;
@@ -242,24 +289,23 @@ export function TransformOverlay({
         }
       } else {
         // Scaling from corner handle
-        // For now, uniform scale based on distance from center
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const scale = 1 + distance / 200; // Adjust scaling sensitivity
+        const scaleDelta = distance / 200;
+        const scaleMultiplier = (deltaX > 0 || deltaY > 0) ? 1 : -1;
+        const newScale = Math.max(0.1, initialTransform.scaleX + (scaleDelta * scaleMultiplier));
         
         onUpdateTransform(selectedClipId, {
-          scaleX: scale,
-          scaleY: scale,
+          scaleX: newScale,
+          scaleY: newScale,
         });
       }
-      
-      // Update drag start for next delta
-      setDragStart({ x: event.clientX, y: event.clientY });
     };
     
     const handleMouseUp = () => {
       setIsDragging(false);
       setDragStart(null);
       setDragHandle(null);
+      initialTransformRef.current = null;
     };
     
     window.addEventListener('mousemove', handleMouseMove);
@@ -269,7 +315,7 @@ export function TransformOverlay({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragStart, selectedClipId, dragHandle, clipBounds, onUpdateTransform]);
+  }, [isDragging, dragStart, selectedClipId, dragHandle, clipBounds, onUpdateTransform, scaleX, scaleY, displaySize]);
   
   console.log('TransformOverlay rendering with clipBounds:', clipBounds.length);
   
