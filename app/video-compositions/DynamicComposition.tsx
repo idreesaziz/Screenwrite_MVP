@@ -100,7 +100,7 @@ export function DynamicVideoPlayer({
   const [showControls, setShowControls] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   
-  // Track current frame continuously (both when playing and paused)
+  // Track current frame and playing state continuously
   useEffect(() => {
     if (!playerRef) return;
     
@@ -109,11 +109,17 @@ export function DynamicVideoPlayer({
       if (player) {
         const frame = player.getCurrentFrame();
         setCurrentFrame(frame);
+        
+        // Sync isPlaying state with actual player state
+        const playing = player.isPlaying();
+        if (playing !== isPlaying) {
+          setIsPlaying(playing);
+        }
       }
     }, 100); // Update every 100ms
     
     return () => clearInterval(interval);
-  }, [playerRef]); // Always track, not just when playing
+  }, [playerRef, isPlaying]); // Always track, not just when playing
 
   // Calculate duration based on blueprint
   const calculatedDuration = React.useMemo(() => {
@@ -172,7 +178,7 @@ export function DynamicVideoPlayer({
   return (
     <div className="relative w-full h-full flex flex-col">
       {/* Video Player Container with Overlay */}
-      <div className="flex-1 relative" style={{ pointerEvents: 'none' }}>
+      <div className="flex-1 relative overflow-hidden" style={{ pointerEvents: 'none' }}>
         {/* Player - no pointer events so overlay can capture clicks */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
           <Player
@@ -220,30 +226,18 @@ export function DynamicVideoPlayer({
         )}
       </div>
 
-      {/* Custom Controls Bar - Always Visible */}
+      {/* Custom Controls Bar - Below player, not overlaying */}
       <div 
-        className="bg-muted border-t border-border p-2 flex-shrink-0"
-        style={{ zIndex: 10 }}
+        className="flex-shrink-0 bg-background border-t border-border"
+        style={{ zIndex: 20 }}
       >
-        <div className="flex items-center gap-2">
-          {/* Play/Pause Button */}
-          <button
-            onClick={togglePlayPause}
-            className="h-7 w-7 flex items-center justify-center rounded hover:bg-accent transition-colors"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? (
-              <Pause className="w-4 h-4" fill="currentColor" />
-            ) : (
-              <Play className="w-4 h-4" fill="currentColor" />
-            )}
-          </button>
-
-          {/* Volume Control */}
+        {/* Controls Row */}
+        <div className="flex items-center gap-2 px-2 py-1">
+          {/* Left side - Volume Control */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={toggleMute}
-              className="h-7 w-7 flex items-center justify-center rounded hover:bg-accent transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded hover:bg-accent transition-colors"
               aria-label={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? (
@@ -259,24 +253,42 @@ export function DynamicVideoPlayer({
               step="0.01"
               value={isMuted ? 0 : volume}
               onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-16 h-1 bg-border rounded-lg appearance-none cursor-pointer
-                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 
+              className="w-20 h-1 bg-border rounded-lg appearance-none cursor-pointer
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
                 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:cursor-pointer
-                [&::-moz-range-thumb]:w-2.5 [&::-moz-range-thumb]:h-2.5 [&::-moz-range-thumb]:rounded-full 
+                [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full 
                 [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
             />
           </div>
 
-          <div className="flex-1" />
+          {/* Center - Play/Pause Button (subtle) */}
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={togglePlayPause}
+              className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? (
+                <Pause className="w-4 h-4" fill="currentColor" />
+              ) : (
+                <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
+              )}
+            </button>
+          </div>
 
-          {/* Fullscreen Button */}
-          <button
-            onClick={toggleFullscreen}
-            className="h-7 w-7 flex items-center justify-center rounded hover:bg-accent transition-colors"
-            aria-label="Fullscreen"
-          >
-            <Maximize className="w-4 h-4" />
-          </button>
+          {/* Right side - Time display and Fullscreen */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground font-mono">
+              {Math.floor(currentFrame / 30)}s / {Math.floor(calculatedDuration / 30)}s
+            </span>
+            <button
+              onClick={toggleFullscreen}
+              className="h-8 w-8 flex items-center justify-center rounded hover:bg-accent transition-colors"
+              aria-label="Fullscreen"
+            >
+              <Maximize className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

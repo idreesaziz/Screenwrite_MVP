@@ -819,7 +819,7 @@ export default function TimelineEditor() {
                     {/* Video Preview */}
                     <div
                       className={`flex-1 ${theme === "dark" ? "bg-zinc-900" : "bg-zinc-200/70"
-                        } flex flex-col items-center justify-center p-3 border border-border/50 rounded-lg overflow-hidden shadow-2xl relative`}
+                        } flex flex-col border border-border/50 rounded-lg overflow-hidden shadow-2xl relative`}
                     >
                       {/* AI Status Badge */}
                       <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
@@ -843,7 +843,7 @@ export default function TimelineEditor() {
                         )}
                       </div>
 
-                      <div className="flex-1 flex items-center justify-center w-full">
+                      <div className="flex-1 flex w-full">
                         {/* Always show video player - starts with empty composition */}
                         <DynamicVideoPlayer
                           blueprint={currentComposition}
