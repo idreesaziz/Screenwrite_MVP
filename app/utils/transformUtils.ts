@@ -19,6 +19,7 @@ export interface BoundingBox {
   y: number;      // top position in pixels
   width: number;  // width in pixels
   height: number; // height in pixels
+  rotation?: number; // rotation in degrees (optional)
 }
 
 /**
@@ -371,6 +372,7 @@ export function calculateClipBounds(
       if (lastBound) {
         lastBound.x += transform.translateX;
         lastBound.y += transform.translateY;
+        lastBound.rotation = transform.rotation;
       }
     }
   }
@@ -399,12 +401,17 @@ function getCombinedBounds(bounds: BoundingBox[]): BoundingBox {
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
+  let rotation = 0;
   
   for (const box of bounds) {
     minX = Math.min(minX, box.x);
     minY = Math.min(minY, box.y);
     maxX = Math.max(maxX, box.x + box.width);
     maxY = Math.max(maxY, box.y + box.height);
+    // Use the first non-zero rotation found
+    if (box.rotation && rotation === 0) {
+      rotation = box.rotation;
+    }
   }
   
   return {
@@ -412,6 +419,7 @@ function getCombinedBounds(bounds: BoundingBox[]): BoundingBox {
     y: minY,
     width: maxX - minX,
     height: maxY - minY,
+    rotation,
   };
 }
 

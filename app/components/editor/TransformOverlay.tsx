@@ -141,6 +141,41 @@ export function TransformOverlay({
     onSelectClip(clipId);
   };
   
+  // Helper function to check if a point is inside a rotated rectangle
+  const isPointInRotatedRect = (
+    pointX: number,
+    pointY: number,
+    rectX: number,
+    rectY: number,
+    rectWidth: number,
+    rectHeight: number,
+    rotation: number
+  ): boolean => {
+    // Calculate center of rectangle
+    const centerX = rectX + rectWidth / 2;
+    const centerY = rectY + rectHeight / 2;
+    
+    // Translate point to origin (relative to rect center)
+    const translatedX = pointX - centerX;
+    const translatedY = pointY - centerY;
+    
+    // Rotate point by negative rotation (inverse transform)
+    const angleRad = (-rotation * Math.PI) / 180;
+    const rotatedX = translatedX * Math.cos(angleRad) - translatedY * Math.sin(angleRad);
+    const rotatedY = translatedX * Math.sin(angleRad) + translatedY * Math.cos(angleRad);
+    
+    // Check if rotated point is inside the non-rotated rectangle (centered at origin)
+    const halfWidth = rectWidth / 2;
+    const halfHeight = rectHeight / 2;
+    
+    return (
+      rotatedX >= -halfWidth &&
+      rotatedX <= halfWidth &&
+      rotatedY >= -halfHeight &&
+      rotatedY <= halfHeight
+    );
+  };
+
   // Handle clicks - find topmost clip at click position
   const handleOverlayClick = (event: React.MouseEvent) => {
     const rect = overlayRef.current?.getBoundingClientRect();
@@ -167,17 +202,25 @@ export function TransformOverlay({
         height: bounds.height * scaleY,
       };
       
+      const rotation = bounds.rotation || 0;
+      
       console.log(`Checking clip ${clip.id} (track ${trackIndex}):`, 
         'click:', clickX, clickY,
-        'bounds:', scaledBounds);
+        'bounds:', scaledBounds,
+        'rotation:', rotation);
       
-      // Check if click is within bounds
-      if (
-        clickX >= scaledBounds.x &&
-        clickX <= scaledBounds.x + scaledBounds.width &&
-        clickY >= scaledBounds.y &&
-        clickY <= scaledBounds.y + scaledBounds.height
-      ) {
+      // Check if click is within bounds (accounting for rotation)
+      const isInside = isPointInRotatedRect(
+        clickX,
+        clickY,
+        scaledBounds.x,
+        scaledBounds.y,
+        scaledBounds.width,
+        scaledBounds.height,
+        rotation
+      );
+      
+      if (isInside) {
         matchingClips.push(clip.id);
         if (!foundClip) {
           foundClip = clip.id;
@@ -363,6 +406,8 @@ export function TransformOverlay({
                   pointerEvents: 'auto',
                   zIndex: 1000,
                   background: 'transparent',
+                  transform: bounds.rotation ? `rotate(${bounds.rotation}deg)` : undefined,
+                  transformOrigin: 'center',
                 }}
                 onMouseDown={(e) => {
                   console.log('MouseDown on selection box:', clip.id);
@@ -380,6 +425,8 @@ export function TransformOverlay({
                   width: scaledBounds.width,
                   height: scaledBounds.height,
                   zIndex: 999,
+                  transform: bounds.rotation ? `rotate(${bounds.rotation}deg)` : undefined,
+                  transformOrigin: 'center',
                 }}
               />
               
@@ -392,6 +439,8 @@ export function TransformOverlay({
                   width: scaledBounds.width,
                   height: scaledBounds.height,
                   zIndex: 1001,
+                  transform: bounds.rotation ? `rotate(${bounds.rotation}deg)` : undefined,
+                  transformOrigin: 'center',
                 }}
               >
                 {/* Clip info label */}
