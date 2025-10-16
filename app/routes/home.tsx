@@ -152,14 +152,29 @@ export default function TimelineEditor() {
       }
     }
     
-    // Generate element code based on media type
-    let elementCode = '';
+    // Generate element strings based on media type
+    let elements: string[] = [];
+    const timestamp = Date.now();
+    
     if (mediaItem.mediaType === 'video') {
-      elementCode = `const { Video } = require('remotion'); return React.createElement('div', { style: { width: '100%', height: '100%', position: 'relative' } }, [ React.createElement(Video, { key: 'video', src: '${mediaItem.mediaUrlLocal || mediaItem.mediaUrlRemote}', style: { width: '100%', height: '100%', objectFit: 'cover' }, muted: true }) ]);`;
+      elements = [
+        `Video;id:video-${timestamp};parent:root;src:${mediaItem.mediaUrlLocal || mediaItem.mediaUrlRemote};width:100%;height:100%;muted:true;style:objectFit:cover`
+      ];
     } else if (mediaItem.mediaType === 'image') {
-      elementCode = `return React.createElement('div', { style: { width: '100%', height: '100%', position: 'relative' } }, [ React.createElement('img', { key: 'image', src: '${mediaItem.mediaUrlLocal || mediaItem.mediaUrlRemote}', style: { width: '100%', height: '100%', objectFit: 'cover' } }) ]);`;
+      elements = [
+        `Img;id:image-${timestamp};parent:root;src:${mediaItem.mediaUrlLocal || mediaItem.mediaUrlRemote};width:100%;height:100%;style:objectFit:cover`
+      ];
     } else if (mediaItem.mediaType === 'text') {
-      elementCode = `return React.createElement('div', { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '${mediaItem.text?.fontSize || 48}px', fontFamily: '${mediaItem.text?.fontFamily || 'Arial'}', color: '${mediaItem.text?.color || '#ffffff'}', fontWeight: '${mediaItem.text?.fontWeight || 'normal'}', textAlign: '${mediaItem.text?.textAlign || 'center'}' } }, '${mediaItem.text?.textContent || 'Text'}');`;
+      const fontSize = mediaItem.text?.fontSize || 48;
+      const fontFamily = mediaItem.text?.fontFamily || 'Arial';
+      const color = mediaItem.text?.color || '#ffffff';
+      const fontWeight = mediaItem.text?.fontWeight || 'normal';
+      const textAlign = mediaItem.text?.textAlign || 'center';
+      const textContent = mediaItem.text?.textContent || 'Text';
+      
+      elements = [
+        `div;id:text-container-${timestamp};parent:root;width:100%;height:100%;display:flex;alignItems:center;justifyContent:center;fontSize:${fontSize}px;fontFamily:${fontFamily};color:${color};fontWeight:${fontWeight};textAlign:${textAlign};text:${textContent}`
+      ];
     }
     
     // Create new clip
@@ -167,7 +182,9 @@ export default function TimelineEditor() {
       id: `dropped-${mediaItem.id}-${Date.now()}`,
       startTimeInSeconds: timeInSeconds,
       endTimeInSeconds: endTime,
-      element: elementCode
+      element: {
+        elements: elements
+      }
     };
     
     // Create updated composition
