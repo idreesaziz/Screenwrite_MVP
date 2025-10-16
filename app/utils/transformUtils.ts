@@ -369,14 +369,9 @@ export function calculateClipBounds(
       const transform = parseTransform(props.transform);
       const lastBound = bounds[bounds.length - 1];
       if (lastBound) {
-        console.log(`📐 calculateClipBounds for "${clip.id}" - Applying transform:`, transform);
-        console.log(`   Before: x=${lastBound.x}, y=${lastBound.y}`);
         lastBound.x += transform.translateX;
         lastBound.y += transform.translateY;
-        console.log(`   After: x=${lastBound.x}, y=${lastBound.y}`);
       }
-    } else {
-      console.log(`📐 calculateClipBounds for "${clip.id}" - No transform found in element "${props.id}"`);
     }
   }
   
@@ -384,10 +379,7 @@ export function calculateClipBounds(
     return null; // No selectable content found
   }
   
-  const finalBounds = getCombinedBounds(bounds);
-  console.log(`📐 calculateClipBounds for "${clip.id}" - Final bounds:`, finalBounds);
-  
-  return finalBounds;
+  return getCombinedBounds(bounds);
 }
 
 /**
@@ -431,26 +423,15 @@ export function updateClipTransform(
   clip: Clip,
   transform: Partial<TransformValues>
 ): Clip {
-  console.log('🔄 updateClipTransform called for clip:', clip.id);
-  console.log('🔄 Transform to apply:', transform);
-  
   const elements = clip.element.elements || [];
-  console.log('🔄 Total elements in clip:', elements.length);
   
-  let rootElementCount = 0;
-  
-  const updatedElements = elements.map((elementStr, index) => {
+  const updatedElements = elements.map((elementStr) => {
     const props = parseElementString(elementStr);
     
     // Only update root elements
     if (props.parent !== 'root') {
-      console.log(`  - Element ${index}: "${props.id}" (parent: ${props.parent}) - SKIPPED (not root)`);
       return elementStr;
     }
-    
-    rootElementCount++;
-    console.log(`  - Element ${index}: "${props.id}" (parent: root) - UPDATING`);
-    console.log(`    BEFORE: ${elementStr.substring(0, 100)}...`);
     
     // Parse existing transform or use defaults
     const currentTransform = props.transform
@@ -463,19 +444,14 @@ export function updateClipTransform(
           rotation: 0,
         };
     
-    console.log('    Current transform:', currentTransform);
-    
     // Merge with new transform values
     const newTransform: TransformValues = {
       ...currentTransform,
       ...transform,
     };
     
-    console.log('    New transform:', newTransform);
-    
     // Build new transform CSS
     const transformCSS = buildTransformCSS(newTransform);
-    console.log('    Transform CSS:', transformCSS);
     
     // Rebuild element string with updated transform
     const { tag, ...propsWithoutTag } = props;
@@ -485,13 +461,8 @@ export function updateClipTransform(
       .filter(([_, value]) => value !== undefined)
       .map(([key, value]) => `${key}:${value}`);
     
-    const updatedElementStr = [tag, ...propStrings].join(';');
-    console.log(`    AFTER: ${updatedElementStr.substring(0, 100)}...`);
-    
-    return updatedElementStr;
+    return [tag, ...propStrings].join(';');
   });
-  
-  console.log(`🔄 Updated ${rootElementCount} root elements`);
   
   return {
     ...clip,
