@@ -42,6 +42,14 @@ export function TransformOverlay({
   const [dragHandle, setDragHandle] = useState<HandleType>(null);
   const [hoveredClipId, setHoveredClipId] = useState<string | null>(null);
   const initialTransformRef = useRef<TransformValues | null>(null);
+  const scaleStartInfoRef = useRef<{
+    baseWidth: number;
+    baseHeight: number;
+    fixedCorner: { x: number; y: number }; // composition coords
+    initialCenter: { x: number; y: number }; // composition coords
+    rotationDeg: number;
+    initialTransform: TransformValues;
+  } | null>(null);
   const [displaySize, setDisplaySize] = useState({ 
     width: compositionWidth, 
     height: compositionHeight,
@@ -283,6 +291,40 @@ export function TransformOverlay({
           rotation: 0,
         };
       }
+      // If starting a corner scale, capture anchor and base dimensions
+      if (handle && handle !== 'rotate' && initialTransformRef.current) {
+        const init = initialTransformRef.current;
+        const bounds = clipData.bounds;
+        const baseWidth = Math.max(1, bounds.width / Math.max(0.0001, init.scaleX));
+        const baseHeight = Math.max(1, bounds.height / Math.max(0.0001, init.scaleY));
+        const rotationDeg = bounds.rotation || 0;
+        const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        const angle = (rotationDeg * Math.PI) / 180;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const halfW = bounds.width / 2;
+        const halfH = bounds.height / 2;
+        const oppositeSignMap: Record<'tl'|'tr'|'bl'|'br', { sx: number; sy: number }> = {
+          tl: { sx: 1, sy: 1 }, // opposite is br
+          tr: { sx: -1, sy: 1 }, // opposite is bl
+          bl: { sx: 1, sy: -1 }, // opposite is tr
+          br: { sx: -1, sy: -1 }, // opposite is tl
+        };
+        const { sx, sy } = oppositeSignMap[handle];
+        const fixedLocal = { x: sx * halfW, y: sy * halfH };
+        const fixedWorld = {
+          x: center.x + fixedLocal.x * cos - fixedLocal.y * sin,
+          y: center.y + fixedLocal.x * sin + fixedLocal.y * cos,
+        };
+        scaleStartInfoRef.current = {
+          baseWidth,
+          baseHeight,
+          fixedCorner: fixedWorld,
+          initialCenter: center,
+          rotationDeg,
+          initialTransform: { ...init },
+        };
+      }
     }
     
     // Select clip if not already selected
@@ -331,15 +373,62 @@ export function TransformOverlay({
           });
         }
       } else {
-        // Scaling from corner handle
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const scaleDelta = distance / 200;
-        const scaleMultiplier = (deltaX > 0 || deltaY > 0) ? 1 : -1;
-        const newScale = Math.max(0.1, initialTransform.scaleX + (scaleDelta * scaleMultiplier));
-        
+        // Geometric scaling using fixed opposite corner with rotation awareness
+        const info = scaleStartInfoRef.current;
+        if (!info || !dragHandle) return;
+
+        // Convert mouse to composition coords
+        const rect = overlayRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const mouseX = (event.clientX - rect.left - displaySize.offsetX) / scaleX;
+        const mouseY = (event.clientY - rect.top - displaySize.offsetY) / scaleY;
+
+        // World delta from fixed to mouse
+        const dx = mouseX - info.fixedCorner.x;
+        const dy = mouseY - info.fixedCorner.y;
+
+        // Rotate into local space (undo rotation)
+        const ang = (info.rotationDeg * Math.PI) / 180;
+        const cos = Math.cos(ang);
+        const sin = Math.sin(ang);
+        const lx = dx * cos + dy * sin;
+        const ly = -dx * sin + dy * cos;
+
+        // Prevent flipping: enforce expected sign
+        const expected: Record<'tl'|'tr'|'bl'|'br', { sx: number; sy: number }> = {
+          tl: { sx: -1, sy: -1 },
+          tr: { sx: 1, sy: -1 },
+          bl: { sx: -1, sy: 1 },
+          br: { sx: 1, sy: 1 },
+        };
+  const { sx, sy } = expected[dragHandle];
+  const MIN = 4;
+  // Enforce expected sign and a minimum magnitude to avoid flipping/jitter
+  const clampedLX = sx * Math.max(MIN, sx * lx);
+  const clampedLY = sy * Math.max(MIN, sy * ly);
+
+        // New width/height from fixed to dragged corner in local space
+        const width = Math.max(MIN, Math.abs(clampedLX));
+        const height = Math.max(MIN, Math.abs(clampedLY));
+        const newScaleX = Math.max(0.05, width / info.baseWidth);
+        const newScaleY = Math.max(0.05, height / info.baseHeight);
+
+        // Midpoint becomes new center in world space
+        const adjDx = clampedLX * cos - clampedLY * sin;
+        const adjDy = clampedLX * sin + clampedLY * cos;
+        const draggedX = info.fixedCorner.x + adjDx;
+        const draggedY = info.fixedCorner.y + adjDy;
+        const newCenterX = (info.fixedCorner.x + draggedX) / 2;
+        const newCenterY = (info.fixedCorner.y + draggedY) / 2;
+
+        const dcx = newCenterX - info.initialCenter.x;
+        const dcy = newCenterY - info.initialCenter.y;
+
         onUpdateTransform(selectedClipId, {
-          scaleX: newScale,
-          scaleY: newScale,
+          scaleX: newScaleX,
+          scaleY: newScaleY,
+          translateX: info.initialTransform.translateX + dcx,
+          translateY: info.initialTransform.translateY + dcy,
         });
       }
     };
@@ -349,6 +438,7 @@ export function TransformOverlay({
       setDragStart(null);
       setDragHandle(null);
       initialTransformRef.current = null;
+      scaleStartInfoRef.current = null;
     };
     
     window.addEventListener('mousemove', handleMouseMove);
@@ -527,13 +617,16 @@ function Handle({ position, onMouseDown }: HandleProps) {
   
   return (
     <div
-      className="absolute bg-background border-2 border-primary rounded"
+      className="absolute bg-background border-2 border-primary rounded pointer-events-auto"
       style={{
         width: 12,
         height: 12,
         ...positionStyles[position],
       }}
-      onMouseDown={onMouseDown}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        onMouseDown(e);
+      }}
     />
   );
 }

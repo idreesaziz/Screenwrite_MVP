@@ -370,8 +370,22 @@ export function calculateClipBounds(
       const transform = parseTransform(props.transform);
       const lastBound = bounds[bounds.length - 1];
       if (lastBound) {
-        lastBound.x += transform.translateX;
-        lastBound.y += transform.translateY;
+        // Store original dimensions before scaling
+        const origWidth = lastBound.width;
+        const origHeight = lastBound.height;
+        
+        // Apply scale to dimensions
+        lastBound.width *= transform.scaleX;
+        lastBound.height *= transform.scaleY;
+        
+        // When scaling from center, the top-left corner moves
+        // The element grows equally in all directions, so top-left shifts by half the growth
+        const widthGrowth = lastBound.width - origWidth;
+        const heightGrowth = lastBound.height - origHeight;
+        
+        lastBound.x += transform.translateX - widthGrowth / 2;
+        lastBound.y += transform.translateY - heightGrowth / 2;
+        
         lastBound.rotation = transform.rotation;
       }
     }
