@@ -87,7 +87,7 @@ export function parseDimension(
 
 /**
  * Parse CSS transform property into transform values
- * Format: "translate(100px, 50px) scale(1.2, 1.5) rotate(45deg)"
+ * Format: "translate(100px, 50px) rotate(45deg) scale(1.2, 1.5)"
  */
 export function parseTransform(transformStr: string): TransformValues {
   const defaults: TransformValues = {
@@ -125,10 +125,12 @@ export function parseTransform(transformStr: string): TransformValues {
 
 /**
  * Build CSS transform string from transform values
- * Format: "translate(Xpx, Ypx) scale(scaleX, scaleY) rotate(Rdeg)"
+ * Format: "translate(Xpx, Ypx) rotate(Rdeg) scale(scaleX, scaleY)"
  */
 export function buildTransformCSS(values: TransformValues): string {
-  return `translate(${values.translateX}px, ${values.translateY}px) scale(${values.scaleX}, ${values.scaleY}) rotate(${values.rotation}deg)`;
+  // Order matters: translate (world) -> rotate -> scale (local axes)
+  // Using this order avoids apparent skew when combining rotation with non-uniform scaling.
+  return `translate(${values.translateX}px, ${values.translateY}px) rotate(${values.rotation}deg) scale(${values.scaleX}, ${values.scaleY})`;
 }
 
 /**
