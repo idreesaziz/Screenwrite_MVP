@@ -188,27 +188,8 @@ async def agent_chat(
             for item in media_library:
                 logger.info(f"  - {item['name']}: {item['url'][:80]}...")
         
-        # Save full conversation to file for debugging
-        logs_dir = Path(__file__).parent.parent / "logs"
-        logs_dir.mkdir(exist_ok=True)
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = logs_dir / f"conversation_{session_id}_{timestamp}.json"
-        
-        with open(log_file, "w") as f:
-            json.dump({
-                "user_id": user_id,
-                "session_id": session_id,
-                "timestamp": timestamp,
-                "conversation_history": conversation_history,
-                "media_library_raw": [dict(media) for media in request.mediaLibrary] if request.mediaLibrary else None,
-                "media_library_processed": media_library,
-                "composition": composition_json
-            }, f, indent=2)
-        
-        logger.info(f"💾 Saved full conversation to: {log_file}")
-        
         # Call agent service (no user_message - it's in conversation_history)
+        # Exact messages sent to AI are now logged in invoke_agent.py as ai_request_{session_id}_{timestamp}.json
         result = await service.chat(
             conversation_history=conversation_history,
             composition_json=composition_json,

@@ -122,6 +122,42 @@ class AgentService:
             
             logger.info(f"🤖 Sending {len(messages)} total messages to AI (1 system + {len(messages)-1} conversation)")
             
+            # Save EXACTLY what we're sending to the AI to a file for debugging
+            from pathlib import Path
+            from datetime import datetime
+            
+            logs_dir = Path(__file__).parent.parent / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file = logs_dir / f"ai_request_{session_id}_{timestamp}.json"
+            
+            # Convert messages to serializable format
+            messages_for_log = []
+            for i, msg in enumerate(messages):
+                messages_for_log.append({
+                    "index": i,
+                    "role": msg.role,
+                    "content": msg.content if msg.role != "system" else "(system prompt - see below)",
+                    "content_length": len(msg.content)
+                })
+            
+            import json
+            with open(log_file, "w") as f:
+                json.dump({
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "timestamp": timestamp,
+                    "total_messages": len(messages),
+                    "messages_sent_to_ai": messages_for_log,
+                    "system_prompt": messages[0].content if messages and messages[0].role == "system" else None,
+                    "conversation_messages": [
+                        {"role": msg.role, "content": msg.content}
+                        for msg in messages[1:] if msg.role != "system"
+                    ]
+                }, f, indent=2)
+            
+            logger.info(f"💾 Saved exact AI request to: {log_file}")
+            
             # Define strict response schema for Gemini
             response_schema = {
                 "type": "object",

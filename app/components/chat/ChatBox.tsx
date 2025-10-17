@@ -211,13 +211,14 @@ export function ChatBox({
   // Handle retry button click
   const handleRetry = useCallback((message: Message) => {
     if (message.retryData?.originalMessage) {
-      console.log("🔄 Retrying with message:", message.retryData.originalMessage);
+      console.log("🔄 Retrying with existing conversation history");
       console.log("🔄 Current media bin items:", mediaBinItems.map(item => ({
         name: item.name,
         hasRemoteUrl: !!item.mediaUrlRemote,
         isUploading: item.isUploading
       })));
-      handleConversationalMessage(message.retryData.originalMessage);
+      // The message is already in the conversation history, just re-run the workflow
+      handleConversationalMessage();
     }
   }, [mediaBinItems]);
 
@@ -736,11 +737,15 @@ export function ChatBox({
     }
   };
 
-  const handleConversationalMessage = async (messageContent: string): Promise<void> => {
-    await handleConversationalMessageWithUpdatedMessages(messageContent, messages);
+  const handleConversationalMessage = async (): Promise<void> => {
+    await handleConversationalMessageWithUpdatedMessages(messages);
   };
 
-  const handleConversationalMessageWithUpdatedMessages = async (messageContent: string, currentMessages: Message[]): Promise<void> => {
+  const handleConversationalMessageWithUpdatedMessages = async (currentMessages: Message[]): Promise<void> => {
+    // Get the last user message from conversation history for logging
+    const lastUserMessage = [...currentMessages].reverse().find(m => m.isUser);
+    const messageContent = lastUserMessage?.content || '';
+    
     await logUserMessage(messageContent, mentionedItems.map(item => item.name));
     console.log("🧠 Processing conversational message with unified workflow:", messageContent);
 
@@ -764,19 +769,25 @@ export function ChatBox({
       
       try {
         // Build current conversation state (including all new messages from this workflow)
+        // IMPORTANT: Only include messages that should be in conversation history
+        // System messages with alreadyInUI=true are shown in UI but NOT sent to backend
         const conversationMessages: ConversationMessage[] = [
-          ...currentMessages.map(msg => ({
-            id: msg.id,
-            content: msg.content,
-            isUser: msg.isUser,
-            timestamp: msg.timestamp
-          })),
-          ...allResponseMessages.map(msg => ({
-            id: msg.id,
-            content: msg.content,
-            isUser: msg.isUser,
-            timestamp: msg.timestamp
-          }))
+          ...currentMessages
+            .filter(msg => !msg.alreadyInUI) // Exclude UI-only messages
+            .map(msg => ({
+              id: msg.id,
+              content: msg.content,
+              isUser: msg.isUser,
+              timestamp: msg.timestamp
+            })),
+          ...allResponseMessages
+            .filter(msg => !msg.alreadyInUI) // Exclude UI-only messages
+            .map(msg => ({
+              id: msg.id,
+              content: msg.content,
+              isUser: msg.isUser,
+              timestamp: msg.timestamp
+            }))
         ];
         
         console.log(`📚 Built conversation with ${conversationMessages.length} messages (${currentMessages.length} current + ${allResponseMessages.length} new):`,
@@ -929,37 +940,50 @@ export function ChatBox({
     } else if (synthResponse.type === 'generate') {
       // Generate request - create image or video
       console.log("🎨 Executing generation:", synthResponse.prompt, synthResponse.suggestedName);
-      
-      // Create feedback message to add to conversation history
+
       const contentTypeText = synthResponse.content_type === 'video' ? 'video' : 'image';
+
+      // 1) Add a concise assistant decision message that WILL be included in conversation history
+      //    This helps the agent see its own prior action on the next pass and avoid re-generating.
+      const proposedName = (synthResponse.suggestedName || '').trim();
+      const decisionMessage: Message = {
+        id: (Date.now()).toString() + '-dec',
+        content: proposedName
+          ? `Generating ${contentTypeText}: ${proposedName}`
+          : `Generating ${contentTypeText}`,
+        isUser: false,
+        timestamp: new Date(),
+        isSystemMessage: true, // Natural assistant/system-style line, included in history (no alreadyInUI flag)
+      };
+
+  // 2) Create a UI-only progress message so the user sees activity immediately (excluded from conversation)
       const generatingMessage: Message = {
         id: Date.now().toString(),
         content: `Generating ${contentTypeText}: ${synthResponse.prompt}`,
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
-        alreadyInUI: true, // Mark as already added to UI
+        alreadyInUI: true,
       };
-      
-      // Show generating message immediately in UI
       onMessagesChange(prevMessages => [...prevMessages, generatingMessage]);
-      
+
+  // 3) Perform generation
       const generateResults = await handleGenerateRequestInternal(
-        synthResponse.prompt!, 
-        synthResponse.suggestedName!, 
+        synthResponse.prompt!,
+        synthResponse.suggestedName!,
         synthResponse.content,
-        synthResponse.content_type || 'image', // Pass content type from AI response
-        synthResponse.seedImageFileName // Pass seed image filename for video generation
+        synthResponse.content_type || 'image',
+        synthResponse.seedImageFileName
       );
-      
+
       // Immediately update the ref with the new media item (no delay needed!)
       if (generateResults.newMediaItem) {
         mediaBinItemsRef.current = [...mediaBinItemsRef.current, generateResults.newMediaItem];
         console.log(`📦 Immediately added ${generateResults.newMediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
       }
-      
-      // Return BOTH the generating message AND the generation result for complete history
-      return [generatingMessage, ...generateResults.messages];
+
+  // Return decision message (included in history), UI-only generating line, and the success/failure message(s)
+      return [decisionMessage, generatingMessage, ...generateResults.messages];
       
     } else if (synthResponse.type === 'fetch') {
       // Fetch request - search stock videos
@@ -1093,7 +1117,7 @@ export function ChatBox({
         console.log("🎬 Standalone preview mode - using conversational synth");
         
         // Pass the updated messages directly to avoid async state issues
-        await handleConversationalMessageWithUpdatedMessages(messageContent, updatedMessages);
+        await handleConversationalMessageWithUpdatedMessages(updatedMessages);
         
         return;
       }
