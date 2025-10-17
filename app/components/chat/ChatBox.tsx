@@ -1427,8 +1427,12 @@ export function ChatBox({
                           ? "bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 mr-8"
                           : message.isAnalysisResult
                           ? "bg-slate-800 dark:bg-slate-900 text-white mr-8 cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-800 transition-colors"
-                          : "bg-muted mr-8"
+                          : "mr-8"
                       }`}
+                      style={!message.isUser && !message.isExplanationMode && !message.isAnalysisResult ? {
+                        backgroundColor: 'hsl(0, 0%, 9.9%)',
+                        color: 'hsl(0, 0%, 85%)'
+                      } : undefined}
                       onClick={message.isAnalysisResult ? () => toggleMessageCollapsed(message.id) : undefined}
                     >
                     <div className="flex items-start gap-2">
