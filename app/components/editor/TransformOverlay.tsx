@@ -461,9 +461,7 @@ export function TransformOverlay({
         pointerEvents: 'auto',
       }}
     >
-      {clipBounds.length === 0 && (
-        <div style={{ color: 'white', padding: 10 }}>No selectable clips at this frame</div>
-      )}
+  {/* When no selectable clips, render nothing (hide the message) */}
       {clipBounds.map(({ clip, bounds, trackIndex }) => {
         const isSelected = clip.id === selectedClipId;
         const isHovered = clip.id === hoveredClipId;
