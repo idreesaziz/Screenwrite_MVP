@@ -13,8 +13,12 @@ import {
   AlertCircle,
   X,
   Play,
+  Video,
+  Clock,
+  Music,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +69,11 @@ interface Message {
     duration: string;
     description: string;
     thumbnailUrl: string;
+    downloadUrl: string;
+    pexelsUrl: string;
+    width: number;
+    height: number;
+    durationInSeconds: number;
   }[]; // Video options for selection
   isWaitingForAnalysis?: boolean; // For messages waiting on analysis result
   fileName?: string; // Associated file name for analysis
@@ -151,7 +160,7 @@ export function ChatBox({
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
   const [isInSynthLoop, setIsInSynthLoop] = useState(false); // Track when unified workflow is active
-  const [previewVideo, setPreviewVideo] = useState<any>(null); // Track video being previewed
+  const [previewItem, setPreviewItem] = useState<MediaBinItem | null>(null); // Track media being previewed
 
   // Note: Gemini upload removed - backend GCS storage handles everything now
   // Stock videos are uploaded directly to GCS with signed URLs during fetch
@@ -590,12 +599,18 @@ export function ChatBox({
     try {
       // Debug: log what we're about to send
       console.log("🔍 About to call backend with query:", query);
-      console.log("🔍 Request body will be:", { query: query });
+      console.log("🔍 Request count parameter:", count);
+      console.log("🔍 Request body:", { 
+        query: query, 
+        media_type: "video",
+        orientation: "landscape",
+        max_results: count || 4,
+        per_page: 50
+      });
       
       // Debug: Log the full URL being called
       const fetchUrl = apiUrl("/api/v1/stock/search", true);
       console.log("🔍 Full fetch URL:", fetchUrl);
-      console.log("🔍 FastAPI base URL:", getApiBaseUrl(true));
       
       // Call the actual backend API to fetch stock videos
       const headers = await getAuthHeaders();
@@ -604,7 +619,10 @@ export function ChatBox({
         headers,
         body: JSON.stringify({
           query: query,
-          media_type: "video" // Explicitly specify video
+          media_type: "video",
+          orientation: "landscape",
+          max_results: count || 4,
+          per_page: 50
         }),
       });
 
@@ -614,61 +632,62 @@ export function ChatBox({
 
       const result = await response.json();
       console.log("🎬 Backend fetch result:", result);
+      console.log("🎬 Number of items returned:", result.items?.length || 0);
+      console.log("🎬 Total results from provider:", result.total_results);
+      console.log("🎬 AI curation explanation:", result.ai_curation_explanation);
 
-      if (!result.success || !result.videos || result.videos.length === 0) {
+      if (!result.success || !result.items || result.items.length === 0) {
         throw new Error(result.error_message || "No videos found");
       }
 
       // Transform backend response to UI format
-      const videoOptions = result.videos.map((video: any, index: number) => ({
-        id: video.id,
+      const videoOptions = result.items.map((item: any, index: number) => ({
+        id: item.id,
         title: `Option ${index + 1}`,
-        duration: `${video.duration}s`,
-        description: `${video.quality.toUpperCase()} quality - ${video.width}x${video.height} - by ${video.photographer}`,
-        thumbnailUrl: video.preview_image,
-        downloadUrl: video.download_url,
-        pexelsUrl: video.pexels_url
+        duration: item.duration ? `${item.duration}s` : 'N/A',
+        description: `${item.quality?.toUpperCase() || 'HD'} quality - ${item.width}x${item.height} - by ${item.creator_name}`,
+        thumbnailUrl: item.preview_url,
+        downloadUrl: item.storage_url,
+        pexelsUrl: item.provider_url,
+        width: item.width,
+        height: item.height,
+        durationInSeconds: item.duration
       }));
 
       // Add all fetched videos to the media library automatically
       if (onAddGeneratedImage) {
-        // Get FastAPI base URL for media files
-        const fastApiBaseUrl = getApiBaseUrl(true); // true for FastAPI
-        
         // First, add all media items to the bin
-        const mediaItemsToUpload: Array<{mediaItem: MediaBinItem, video: any, videoUrl: string}> = [];
+        const mediaItemsToUpload: Array<{mediaItem: MediaBinItem, item: any, videoUrl: string}> = [];
         
-        for (let index = 0; index < result.videos.length; index++) {
-          const video = result.videos[index];
+        for (let index = 0; index < result.items.length; index++) {
+          const item = result.items[index];
           console.log(`🎬 [VIDEO ${index}] Processing video:`, {
-            id: video.id,
-            idType: typeof video.id,
-            photographer: video.photographer,
-            quality: video.quality,
-            download_url: video.download_url
+            id: item.id,
+            idType: typeof item.id,
+            creator: item.creator_name,
+            quality: item.quality,
+            storage_url: item.storage_url
           });
           
-          // Create the full URL for the video
-          const videoUrl = video.download_url.startsWith('http') 
-            ? video.download_url 
-            : `${fastApiBaseUrl}${video.download_url}`;
+          // storage_url is already a full GCS URL from backend
+          const videoUrl = item.storage_url;
             
-          console.log(`🎬 [VIDEO ${index}] Video URL: ${video.download_url} -> ${videoUrl}`);
+          console.log(`🎬 [VIDEO ${index}] Video URL: ${videoUrl}`);
 
-          // Create descriptive title: "Query by Photographer - Option N"
-          const videoTitle = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${video.photographer} - Option ${index + 1}`;
+          // Create descriptive title: "Query by Creator - Option N"
+          const videoTitle = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${item.creator_name} - Option ${index + 1}`;
 
           // Create MediaBinItem for each video
           const mediaItem: MediaBinItem = {
             id: generateUUID(),
-            name: `pexels_${video.id}`,
+            name: `pexels_${item.id}`,
             title: videoTitle,
             mediaType: "video",
             mediaUrlLocal: null,
-            mediaUrlRemote: videoUrl, // Use the full URL
-            media_width: video.width,
-            media_height: video.height,
-            durationInSeconds: video.duration,
+            mediaUrlRemote: videoUrl,
+            media_width: item.width,
+            media_height: item.height,
+            durationInSeconds: item.duration,
             text: null,
             isUploading: false,
             uploadProgress: null,
@@ -679,7 +698,7 @@ export function ChatBox({
           console.log(`🎬 [VIDEO ${index}] Created MediaBinItem:`, {
             mediaItemId: mediaItem.id,
             mediaItemName: mediaItem.name,
-            videoId: video.id,
+            itemId: item.id,
             remoteUrl: mediaItem.mediaUrlRemote
           });
           
@@ -694,7 +713,7 @@ export function ChatBox({
       // Create the selection message with real video thumbnails
       const videoOptionsMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `I found ${result.videos.length} stock videos for "${query}". All videos have been added to your media library. Click to preview:`,
+        content: `I found ${result.items.length} stock videos for "${query}". All videos have been added to your media library. Click to preview:`,
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: false,
@@ -962,7 +981,7 @@ export function ChatBox({
       const fetchResults = await handleFetchRequestInternal(
         'pexels', // Default to pexels for now
         synthResponse.query!, 
-        parseInt(synthResponse.content, 10) || 1
+        4 // Default to 4 results (matches backend default)
       );
       
       // Return BOTH the fetching message AND the fetch results for complete history
@@ -1460,8 +1479,24 @@ export function ChatBox({
                                 key={video.id}
                                 className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                 onClick={() => {
-                                  // Open video preview modal
-                                  setPreviewVideo(video);
+                                  // Convert video to MediaBinItem format for preview
+                                  const mediaItem: MediaBinItem = {
+                                    id: generateUUID(),
+                                    name: video.title,
+                                    title: video.title,
+                                    mediaType: "video",
+                                    mediaUrlLocal: null,
+                                    mediaUrlRemote: video.downloadUrl,
+                                    media_width: video.width || 0,
+                                    media_height: video.height || 0,
+                                    durationInSeconds: video.durationInSeconds || 0,
+                                    text: null,
+                                    isUploading: false,
+                                    uploadProgress: null,
+                                    left_transition_id: null,
+                                    right_transition_id: null,
+                                  };
+                                  setPreviewItem(mediaItem);
                                 }}
                               >
                                 <div className="flex gap-3 items-center">
@@ -1712,56 +1747,78 @@ export function ChatBox({
         </div>
       </div>
 
-      {/* Video Preview Modal */}
-      {previewVideo && (
-        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Video Preview - {previewVideo.title}
-              </h3>
+      {/* Media Preview Modal - Using MediaBin style */}
+      {previewItem && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]"
+          onClick={() => setPreviewItem(null)}
+        >
+          <div 
+            className="bg-card border border-border rounded-lg shadow-2xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <Video className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {previewItem.title || previewItem.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="secondary" className="text-xs">
+                      {previewItem.mediaType}
+                    </Badge>
+                    {previewItem.media_width && previewItem.media_height && (
+                      <span className="text-xs text-muted-foreground">
+                        {previewItem.media_width} × {previewItem.media_height}
+                      </span>
+                    )}
+                    {previewItem.durationInSeconds > 0 && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {previewItem.durationInSeconds.toFixed(1)}s
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
               <button
-                onClick={() => setPreviewVideo(null)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                onClick={() => setPreviewItem(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            
-            {/* Video Player */}
-            <div className="mb-4">
-              <video
-                controls
-                autoPlay
-                className="w-full rounded-lg"
-                src={`http://localhost:8001${previewVideo.downloadUrl}`}
-              >
-                Your browser does not support the video tag.
-              </video>
-            </div>
-            
-            {/* Video Info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration:</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">{previewVideo.duration}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Description:</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">{previewVideo.description}</span>
-              </div>
-              {previewVideo.pexelsUrl && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Source:</span>
-                  <a 
-                    href={previewVideo.pexelsUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                  >
-                    View on Pexels
-                  </a>
+
+            {/* Preview Content */}
+            <div className="p-4 max-h-[calc(90vh-80px)] overflow-auto">
+              {previewItem.mediaType === 'video' && (
+                <video
+                  src={previewItem.mediaUrlLocal || previewItem.mediaUrlRemote || ''}
+                  controls
+                  autoPlay
+                  className="w-full rounded border border-border bg-black"
+                  style={{ maxHeight: 'calc(90vh - 200px)' }}
+                />
+              )}
+              {previewItem.mediaType === 'image' && (
+                <img
+                  src={previewItem.mediaUrlLocal || previewItem.mediaUrlRemote || ''}
+                  alt={previewItem.name}
+                  className="w-full rounded border border-border"
+                  style={{ maxHeight: 'calc(90vh - 200px)', objectFit: 'contain' }}
+                />
+              )}
+              {previewItem.mediaType === 'audio' && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Music className="h-16 w-16 text-muted-foreground mb-4" />
+                  <audio
+                    src={previewItem.mediaUrlLocal || previewItem.mediaUrlRemote || ''}
+                    controls
+                    autoPlay
+                    className="w-full max-w-md"
+                  />
                 </div>
               )}
             </div>
