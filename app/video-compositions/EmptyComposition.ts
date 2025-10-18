@@ -294,6 +294,251 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         }
       }
     ]
+  },
+  
+  // Track 2: Orphaned transition tests - all transitions with both from/to but no adjacent clips
+  {
+    clips: [
+      // 1. Orphaned fade (36-38s)
+      {
+        id: "orphan-fade",
+        startTimeInSeconds: 36,
+        endTimeInSeconds: 38,
+        element: {
+          elements: [
+            "div;id:orphan-fade-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-fade-text;parent:orphan-fade-bg;fontSize:40px;fontWeight:bold;color:#ffffff;text:ORPHAN FADE",
+          ]
+        },
+        transitionFromPrevious: { type: 'fade', durationInSeconds: 0.8 },
+        transitionToNext: { type: 'fade', durationInSeconds: 0.8 }
+      },
+      
+      // 2. Orphaned slide-left (40-42s)
+      {
+        id: "orphan-slide-left",
+        startTimeInSeconds: 40,
+        endTimeInSeconds: 42,
+        element: {
+          elements: [
+            "div;id:orphan-sl-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-sl-text;parent:orphan-sl-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN SLIDE-L",
+          ]
+        },
+        transitionFromPrevious: { type: 'slide-left', durationInSeconds: 0.6 },
+        transitionToNext: { type: 'slide-left', durationInSeconds: 0.6 }
+      },
+      
+      // 3. Orphaned slide-right (44-46s)
+      {
+        id: "orphan-slide-right",
+        startTimeInSeconds: 44,
+        endTimeInSeconds: 46,
+        element: {
+          elements: [
+            "div;id:orphan-sr-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-sr-text;parent:orphan-sr-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN SLIDE-R",
+          ]
+        },
+        transitionFromPrevious: { type: 'slide-right', durationInSeconds: 0.6 },
+        transitionToNext: { type: 'slide-right', durationInSeconds: 0.6 }
+      },
+      
+      // 4. Orphaned slide-top (48-50s)
+      {
+        id: "orphan-slide-top",
+        startTimeInSeconds: 48,
+        endTimeInSeconds: 50,
+        element: {
+          elements: [
+            "div;id:orphan-st-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-st-text;parent:orphan-st-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN SLIDE-T",
+          ]
+        },
+        transitionFromPrevious: { type: 'slide-top', durationInSeconds: 0.6 },
+        transitionToNext: { type: 'slide-top', durationInSeconds: 0.6 }
+      },
+      
+      // 5. Orphaned slide-bottom (52-54s)
+      {
+        id: "orphan-slide-bottom",
+        startTimeInSeconds: 52,
+        endTimeInSeconds: 54,
+        element: {
+          elements: [
+            "div;id:orphan-sb-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-sb-text;parent:orphan-sb-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN SLIDE-B",
+          ]
+        },
+        transitionFromPrevious: { type: 'slide-bottom', durationInSeconds: 0.6 },
+        transitionToNext: { type: 'slide-bottom', durationInSeconds: 0.6 }
+      },
+      
+      // 6. Orphaned wipe-left (56-58s)
+      {
+        id: "orphan-wipe-left",
+        startTimeInSeconds: 56,
+        endTimeInSeconds: 58,
+        element: {
+          elements: [
+            "div;id:orphan-wl-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-wl-text;parent:orphan-wl-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN WIPE-L",
+          ]
+        },
+        transitionFromPrevious: { type: 'wipe-left', durationInSeconds: 0.7 },
+        transitionToNext: { type: 'wipe-left', durationInSeconds: 0.7 }
+      },
+      
+      // 7. Orphaned wipe-right (60-62s)
+      {
+        id: "orphan-wipe-right",
+        startTimeInSeconds: 60,
+        endTimeInSeconds: 62,
+        element: {
+          elements: [
+            "div;id:orphan-wr-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-wr-text;parent:orphan-wr-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN WIPE-R",
+          ]
+        },
+        transitionFromPrevious: { type: 'wipe-right', durationInSeconds: 0.7 },
+        transitionToNext: { type: 'wipe-right', durationInSeconds: 0.7 }
+      },
+      
+      // 8. Orphaned wipe-top-left (64-66s)
+      {
+        id: "orphan-wipe-tl",
+        startTimeInSeconds: 64,
+        endTimeInSeconds: 66,
+        element: {
+          elements: [
+            "div;id:orphan-wtl-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-wtl-text;parent:orphan-wtl-bg;fontSize:32px;fontWeight:bold;color:#ffffff;text:ORPHAN WIPE-TL",
+          ]
+        },
+        transitionFromPrevious: { type: 'wipe-top-left', durationInSeconds: 0.7 },
+        transitionToNext: { type: 'wipe-top-left', durationInSeconds: 0.7 }
+      },
+      
+      // 9. Orphaned flip-left (68-70s)
+      {
+        id: "orphan-flip-left",
+        startTimeInSeconds: 68,
+        endTimeInSeconds: 70,
+        element: {
+          elements: [
+            "div;id:orphan-fl-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-fl-text;parent:orphan-fl-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN FLIP-L",
+          ]
+        },
+        transitionFromPrevious: { type: 'flip-left', durationInSeconds: 0.8 },
+        transitionToNext: { type: 'flip-left', durationInSeconds: 0.8 }
+      },
+      
+      // 10. Orphaned flip-right (72-74s)
+      {
+        id: "orphan-flip-right",
+        startTimeInSeconds: 72,
+        endTimeInSeconds: 74,
+        element: {
+          elements: [
+            "div;id:orphan-fr-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-fr-text;parent:orphan-fr-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN FLIP-R",
+          ]
+        },
+        transitionFromPrevious: { type: 'flip-right', durationInSeconds: 0.8 },
+        transitionToNext: { type: 'flip-right', durationInSeconds: 0.8 }
+      },
+      
+      // 11. Orphaned clock-wipe (76-78s)
+      {
+        id: "orphan-clock",
+        startTimeInSeconds: 76,
+        endTimeInSeconds: 78,
+        element: {
+          elements: [
+            "div;id:orphan-clock-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-clock-text;parent:orphan-clock-bg;fontSize:32px;fontWeight:bold;color:#ffffff;text:ORPHAN CLOCK",
+          ]
+        },
+        transitionFromPrevious: { type: 'clock-wipe', durationInSeconds: 0.9 },
+        transitionToNext: { type: 'clock-wipe', durationInSeconds: 0.9 }
+      },
+      
+      // 12. Orphaned iris (80-82s)
+      {
+        id: "orphan-iris",
+        startTimeInSeconds: 80,
+        endTimeInSeconds: 82,
+        element: {
+          elements: [
+            "div;id:orphan-iris-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-iris-text;parent:orphan-iris-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN IRIS",
+          ]
+        },
+        transitionFromPrevious: { type: 'iris', durationInSeconds: 0.9 },
+        transitionToNext: { type: 'iris', durationInSeconds: 0.9 }
+      },
+      
+      // 13. Orphaned zoom-in (84-86s)
+      {
+        id: "orphan-zoom-in",
+        startTimeInSeconds: 84,
+        endTimeInSeconds: 86,
+        element: {
+          elements: [
+            "div;id:orphan-zi-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-zi-text;parent:orphan-zi-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN ZOOM-IN",
+          ]
+        },
+        transitionFromPrevious: { type: 'zoom-in', durationInSeconds: 1.0 },
+        transitionToNext: { type: 'zoom-in', durationInSeconds: 1.0 }
+      },
+      
+      // 14. Orphaned zoom-out (88-90s)
+      {
+        id: "orphan-zoom-out",
+        startTimeInSeconds: 88,
+        endTimeInSeconds: 90,
+        element: {
+          elements: [
+            "div;id:orphan-zo-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-zo-text;parent:orphan-zo-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN ZOOM-OUT",
+          ]
+        },
+        transitionFromPrevious: { type: 'zoom-out', durationInSeconds: 1.0 },
+        transitionToNext: { type: 'zoom-out', durationInSeconds: 1.0 }
+      },
+      
+      // 15. Orphaned blur (92-94s)
+      {
+        id: "orphan-blur",
+        startTimeInSeconds: 92,
+        endTimeInSeconds: 94,
+        element: {
+          elements: [
+            "div;id:orphan-blur-bg;parent:root;width:100%;height:100%;background:#64748b;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-blur-text;parent:orphan-blur-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN BLUR",
+          ]
+        },
+        transitionFromPrevious: { type: 'blur', durationInSeconds: 0.8 },
+        transitionToNext: { type: 'blur', durationInSeconds: 0.8 }
+      },
+      
+      // 16. Orphaned glitch (96-98s)
+      {
+        id: "orphan-glitch",
+        startTimeInSeconds: 96,
+        endTimeInSeconds: 98,
+        element: {
+          elements: [
+            "div;id:orphan-glitch-bg;parent:root;width:100%;height:100%;background:#475569;display:flex;justifyContent:center;alignItems:center",
+            "h2;id:orphan-glitch-text;parent:orphan-glitch-bg;fontSize:36px;fontWeight:bold;color:#ffffff;text:ORPHAN GLITCH",
+          ]
+        },
+        transitionFromPrevious: { type: 'glitch', durationInSeconds: 0.6 },
+        transitionToNext: { type: 'glitch', durationInSeconds: 0.6 }
+      }
+    ]
   }
 ];
 

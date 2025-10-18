@@ -5,11 +5,11 @@ import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import { flip } from "@remotion/transitions/flip";
-import { clockWipe } from "@remotion/transitions/clock-wipe";
-import { iris } from "@remotion/transitions/iris";
 import { zoomIn, zoomOut } from "./presentations/zoom";
 import { blur } from "./presentations/blur";
 import { glitch } from "./presentations/glitch";
+import { clockWipe } from "./presentations/clock-wipe";
+import { iris } from "./presentations/iris";
 import { interp } from "../utils/animations";
 import type { 
   CompositionBlueprint, 

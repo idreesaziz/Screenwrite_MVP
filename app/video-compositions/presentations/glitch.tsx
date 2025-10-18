@@ -29,9 +29,9 @@ const GlitchPresentation: React.FC<
   });
   const intensity = burstActive ? baseIntensity : 0;
 
-  // Subtle per-lane jitter
-  const jitterX = (random(`glitch-jx-${tick}-${isEntering ? 'in' : 'out'}`) - 0.5) * (isEntering ? 4 : 2) * (0.5 + intensity);
-  const jitterY = (random(`glitch-jy-${tick}-${isEntering ? 'in' : 'out'}`) - 0.5) * (isEntering ? 2 : 1) * (0.5 + intensity);
+  // Subtle per-lane jitter (apply to both entering and exiting)
+  const jitterX = (random(`glitch-jx-${tick}-${isEntering ? 'in' : 'out'}`) - 0.5) * 4 * (0.5 + intensity);
+  const jitterY = (random(`glitch-jy-${tick}-${isEntering ? 'in' : 'out'}`) - 0.5) * 2 * (0.5 + intensity);
 
   const baseStyle: React.CSSProperties = useMemo(() => {
     return {
@@ -43,9 +43,9 @@ const GlitchPresentation: React.FC<
     };
   }, [laneOpacity, jitterX, jitterY]);
 
-  // Build horizontal slice offsets for entering lane during bursts
+  // Build horizontal slice offsets during bursts (apply to both directions)
   const slices = useMemo(() => {
-    if (!isEntering || intensity === 0) return null;
+    if (intensity === 0) return null;
 
     const count = 6;
     const elements: React.ReactNode[] = [];
@@ -77,11 +77,11 @@ const GlitchPresentation: React.FC<
       );
     }
     return elements;
-  }, [isEntering, intensity, tick, children]);
+  }, [intensity, tick, children]);
 
-  // Chromatic aberration: subtle RGB split during bursts (entering only)
+  // Chromatic aberration: subtle RGB split during bursts (both directions)
   const chromaLayers = useMemo(() => {
-    if (!isEntering || intensity === 0) return null;
+    if (intensity === 0) return null;
     const dx = 2 + intensity * 6; // 2-8px
     const common: React.CSSProperties = {
       mixBlendMode: 'screen',
@@ -106,11 +106,11 @@ const GlitchPresentation: React.FC<
         <AbsoluteFill style={cyanStyle}>{children}</AbsoluteFill>
       </>
     );
-  }, [isEntering, intensity, children]);
+  }, [intensity, children]);
 
-  // Scanline overlay
+  // Scanline overlay (both directions)
   const scanlines = useMemo(() => {
-    if (!isEntering || intensity === 0) return null;
+    if (intensity === 0) return null;
     return (
       <AbsoluteFill
         style={{
@@ -121,14 +121,14 @@ const GlitchPresentation: React.FC<
         }}
       />
     );
-  }, [isEntering, intensity]);
+  }, [intensity]);
 
   return (
     <AbsoluteFill>
       {/* Base lane content with controlled fade and subtle jitter */}
       <AbsoluteFill style={baseStyle}>{children}</AbsoluteFill>
 
-      {/* Entering lane glitch layers */}
+      {/* Glitch layers (apply to both entering and exiting) */}
       {slices}
       {chromaLayers}
       {scanlines}
