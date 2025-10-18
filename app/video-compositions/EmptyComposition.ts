@@ -212,16 +212,84 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         }
       },
       
-      // 13. Final clip - Fade out (24-26s)
+      // 13. Zoom In (24-26s)
       {
-        id: "clip-finale",
+        id: "clip-zoom-in",
         startTimeInSeconds: 24,
         endTimeInSeconds: 26,
         element: {
           elements: [
+            "div;id:zoom-in-bg;parent:root;width:100%;height:100%;background:#6366f1;display:flex;justifyContent:center;alignItems:center",
+            "h1;id:zoom-in-text;parent:zoom-in-bg;fontSize:72px;fontWeight:bold;color:#ffffff;text:ZOOM IN",
+          ]
+        },
+        transitionToNext: {
+          type: 'zoom-in',
+          durationInSeconds: 1.0
+        }
+      },
+      
+      // 14. Zoom Out (26-28s)
+      {
+        id: "clip-zoom-out",
+        startTimeInSeconds: 26,
+        endTimeInSeconds: 28,
+        element: {
+          elements: [
+            "div;id:zoom-out-bg;parent:root;width:100%;height:100%;background:#14b8a6;display:flex;justifyContent:center;alignItems:center",
+            "h1;id:zoom-out-text;parent:zoom-out-bg;fontSize:72px;fontWeight:bold;color:#ffffff;text:ZOOM OUT",
+          ]
+        },
+        transitionToNext: {
+          type: 'zoom-out',
+          durationInSeconds: 1.0
+        }
+      },
+      
+      // 15. Blur (28-30s)
+      {
+        id: "clip-blur",
+        startTimeInSeconds: 28,
+        endTimeInSeconds: 30,
+        element: {
+          elements: [
+            "div;id:blur-bg;parent:root;width:100%;height:100%;background:#f43f5e;display:flex;justifyContent:center;alignItems:center",
+            "h1;id:blur-text;parent:blur-bg;fontSize:72px;fontWeight:bold;color:#ffffff;text:BLUR",
+          ]
+        },
+        transitionToNext: {
+          type: 'blur',
+          durationInSeconds: 0.8
+        }
+      },
+      
+      // 16. Glitch (30-32s)
+      {
+        id: "clip-glitch",
+        startTimeInSeconds: 30,
+        endTimeInSeconds: 32,
+        element: {
+          elements: [
+            "div;id:glitch-bg;parent:root;width:100%;height:100%;background:#22c55e;display:flex;justifyContent:center;alignItems:center",
+            "h1;id:glitch-text;parent:glitch-bg;fontSize:72px;fontWeight:bold;color:#ffffff;text:GLITCH",
+          ]
+        },
+        transitionToNext: {
+          type: 'glitch',
+          durationInSeconds: 0.6
+        }
+      },
+      
+      // 17. Final clip - Fade out (32-34s)
+      {
+        id: "clip-finale",
+        startTimeInSeconds: 32,
+        endTimeInSeconds: 34,
+        element: {
+          elements: [
             "div;id:finale-bg;parent:root;width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;flexDirection:column;justifyContent:center;alignItems:center;gap:20px",
             "h1;id:finale-title;parent:finale-bg;fontSize:64px;fontWeight:bold;color:#ffffff;text:All Transitions",
-            "p;id:finale-subtitle;parent:finale-bg;fontSize:32px;color:#e0e7ff;text:With EaseInOut Timing",
+            "p;id:finale-subtitle;parent:finale-bg;fontSize:32px;color:#e0e7ff;text:With Custom Effects",
           ]
         }
       }

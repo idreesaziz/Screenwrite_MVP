@@ -25,7 +25,12 @@ export type TransitionType =
   | 'flip-left'
   | 'flip-right'
   | 'flip-top'
-  | 'flip-bottom';
+  | 'flip-bottom'
+  // Custom transitions
+  | 'zoom-in'
+  | 'zoom-out'
+  | 'blur'
+  | 'glitch';
 
 // Simplified transition config - only 2 parameters
 export interface TransitionConfig {

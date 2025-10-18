@@ -7,6 +7,9 @@ import { wipe } from "@remotion/transitions/wipe";
 import { flip } from "@remotion/transitions/flip";
 import { clockWipe } from "@remotion/transitions/clock-wipe";
 import { iris } from "@remotion/transitions/iris";
+import { zoomIn, zoomOut } from "./presentations/zoom";
+import { blur } from "./presentations/blur";
+import { glitch } from "./presentations/glitch";
 import { interp } from "../utils/animations";
 import type { 
   CompositionBlueprint, 
@@ -581,6 +584,16 @@ function getTransitionPresentation(
       
     case 'iris':
       return iris({ width, height });
+      
+    // Custom transitions
+    case 'zoom-in':
+      return zoomIn({ width, height });
+    case 'zoom-out':
+      return zoomOut({ width, height });
+    case 'blur':
+      return blur({ width, height });
+    case 'glitch':
+      return glitch({ width, height });
       
     default:
       return fade({ shouldFadeOutExitingScene: true });
