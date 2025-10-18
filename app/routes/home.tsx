@@ -724,7 +724,6 @@ export default function TimelineEditor() {
                             onChange={(e) =>
                               setWidth(Number(e.target.value))
                             }
-                            disabled={isAutoSize}
                             className="h-5 w-14 text-xs px-1 border-0 bg-muted/50"
                           />
                           <span>×</span>
@@ -734,27 +733,13 @@ export default function TimelineEditor() {
                             onChange={(e) =>
                               setHeight(Number(e.target.value))
                             }
-                            disabled={isAutoSize}
                             className="h-5 w-14 text-xs px-1 border-0 bg-muted/50"
                           />
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1">
-                        <div className="flex items-center gap-1">
-                          <Switch
-                            id="auto-size"
-                            checked={isAutoSize}
-                            onCheckedChange={handleAutoSizeChange}
-                            className="scale-75"
-                          />
-                          <Label htmlFor="auto-size" className="text-xs">
-                            Auto
-                          </Label>
-                        </div>
-
                         {/* Undo/Redo Controls */}
-                        <Separator orientation="vertical" className="h-4 mx-1" />
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -806,28 +791,6 @@ export default function TimelineEditor() {
                     <div
                       className="flex-1 bg-zinc-900 flex flex-col border border-border/50 rounded-lg overflow-hidden shadow-2xl relative"
                     >
-                      {/* AI Status Badge */}
-                      <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
-                        <Badge 
-                          variant={hasGeneratedContent ? "default" : "outline"} 
-                          className={`text-xs ${hasGeneratedContent ? "bg-green-600 text-white" : ""}`}
-                        >
-                          {hasGeneratedContent ? "AI Generated" : "Ready for AI"}
-                        </Badge>
-                        {hasGeneratedContent && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              undoRedoActions.set(emptyCompositionBlueprint, "Clear composition");
-                            }}
-                            className="text-xs h-6"
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </div>
-
                       <div className="flex-1 flex w-full">
                         {/* Always show video player - starts with empty composition */}
                         <DynamicVideoPlayer
