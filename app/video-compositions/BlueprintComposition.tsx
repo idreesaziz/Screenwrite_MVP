@@ -336,7 +336,7 @@ function SegmentRenderer({
             presentation={getTransitionPresentation(clip.transitionFromPrevious!, videoConfig)}
             timing={linearTiming({ 
               durationInFrames: transitionFromDuration,
-              easing: Easing.inOut(Easing.ease)
+              easing: Easing.inOut(Easing.cubic)
             })}
           />
         );
@@ -359,7 +359,7 @@ function SegmentRenderer({
             presentation={getTransitionPresentation(clip.transitionToNext!, videoConfig)}
             timing={linearTiming({ 
               durationInFrames: transitionToDuration,
-              easing: Easing.inOut(Easing.ease)
+              easing: Easing.inOut(Easing.cubic)
             })}
           />
         );
@@ -389,7 +389,7 @@ function SegmentRenderer({
             presentation={getTransitionPresentation(clip.transitionFromPrevious, videoConfig)}
             timing={linearTiming({ 
               durationInFrames: transitionFromDuration,
-              easing: Easing.inOut(Easing.ease)
+              easing: Easing.inOut(Easing.cubic)
             })}
           />
         );
@@ -429,7 +429,7 @@ function SegmentRenderer({
             presentation={getTransitionPresentation(clip.transitionToNext, videoConfig)}
             timing={linearTiming({ 
               durationInFrames: transitionToDuration,
-              easing: Easing.inOut(Easing.ease)
+              easing: Easing.inOut(Easing.cubic)
             })}
           />
         );
@@ -488,7 +488,7 @@ function SegmentRenderer({
               presentation={presentation}
               timing={linearTiming({ 
                 durationInFrames: transitionDuration,
-                easing: Easing.inOut(Easing.ease)
+                easing: Easing.inOut(Easing.cubic)
               })}
             />
           );
