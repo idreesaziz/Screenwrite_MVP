@@ -5,7 +5,6 @@ import logging
 import os
 import uuid
 from typing import List, Dict, Any, Optional
-import requests
 import httpx
 from google.cloud import storage
 
@@ -205,12 +204,12 @@ class PexelsMediaProvider(MediaProvider):
         logger.info(f"Searching Pexels for {request.media_type.value}: '{request.query}'")
         
         try:
-            response = requests.get(
-                endpoint,
-                headers=self._get_headers(),
-                params=params,
-                timeout=30
-            )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    endpoint,
+                    headers=self._get_headers(),
+                    params=params
+                )
             response.raise_for_status()
             data = response.json()
             
@@ -237,8 +236,12 @@ class PexelsMediaProvider(MediaProvider):
                 metadata=data
             )
             
-        except requests.exceptions.RequestException as e:
+        except httpx.HTTPStatusError as e:
             error_msg = f"Pexels API error: {str(e)}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        except httpx.RequestError as e:
+            error_msg = f"Pexels request error: {str(e)}"
             logger.error(error_msg)
             raise RuntimeError(error_msg)
     
@@ -521,11 +524,11 @@ Return JSON with only the selected {media_type_name} indices (0-based) and a bri
         logger.info(f"Fetching details for {media_type.value} ID: {media_id}")
         
         try:
-            response = requests.get(
-                endpoint,
-                headers=self._get_headers(),
-                timeout=30
-            )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    endpoint,
+                    headers=self._get_headers()
+                )
             response.raise_for_status()
             data = response.json()
             
@@ -534,7 +537,11 @@ Return JSON with only the selected {media_type_name} indices (0-based) and a bri
             else:
                 return self._parse_image_item(data)
                 
-        except requests.exceptions.RequestException as e:
+        except httpx.HTTPStatusError as e:
             error_msg = f"Pexels API error: {str(e)}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        except httpx.RequestError as e:
+            error_msg = f"Pexels request error: {str(e)}"
             logger.error(error_msg)
             raise RuntimeError(error_msg)

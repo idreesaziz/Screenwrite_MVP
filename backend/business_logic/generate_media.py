@@ -14,7 +14,7 @@ import asyncio
 from typing import Dict, Optional
 from datetime import datetime
 from PIL import Image
-import requests
+import httpx
 from io import BytesIO
 
 from services.base.ImageGenerationProvider import ImageGenerationProvider
@@ -208,7 +208,8 @@ class MediaGenerationService:
             if reference_image_url:
                 try:
                     logger.info(f"Downloading reference image: {reference_image_url[:80]}...")
-                    response = requests.get(reference_image_url, timeout=10)
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        response = await client.get(reference_image_url)
                     response.raise_for_status()
                     reference_image = Image.open(BytesIO(response.content))
                     logger.info(f"Reference image downloaded: {reference_image.size}")

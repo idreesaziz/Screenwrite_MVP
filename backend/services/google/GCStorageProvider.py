@@ -8,7 +8,7 @@ from typing import BinaryIO, Optional, List, Dict, Any
 from datetime import datetime
 from google.cloud import storage
 from google.cloud.exceptions import NotFound, Conflict
-import requests
+import httpx
 import asyncio
 from functools import wraps
 
@@ -209,25 +209,28 @@ class GCStorageProvider(StorageProvider):
         metadata: Optional[Dict[str, Any]] = None,
         **kwargs
     ) -> UploadResult:
-        """Download from URL and upload to GCS (streaming)."""
-        def _sync_upload_from_url():
-            start_time = time.time()
-            
-            # Extract filename from URL if not provided
-            if not filename:
-                extracted = url.split('/')[-1].split('?')[0]
-                final_filename = extracted if extracted else f"downloaded_{uuid.uuid4()}"
-            else:
-                final_filename = filename
-            
-            bucket = self._get_or_create_bucket()
-            blob_path = self._generate_blob_path(user_id, session_id, final_filename)
-            blob = bucket.blob(blob_path)
-            
-            logger.info(f"Streaming from URL to GCS: {url} -> {blob_path}")
-            
-            # Stream directly from URL to GCS
-            with requests.get(url, stream=True, timeout=60) as response:
+        """Download from URL and upload to GCS (streaming) - fully async."""
+        start_time = time.time()
+        
+        # Extract filename from URL if not provided
+        if not filename:
+            extracted = url.split('/')[-1].split('?')[0]
+            final_filename = extracted if extracted else f"downloaded_{uuid.uuid4()}"
+        else:
+            final_filename = filename
+        
+        # Get bucket (sync operation wrapped in executor)
+        loop = asyncio.get_event_loop()
+        bucket = await loop.run_in_executor(None, self._get_or_create_bucket)
+        
+        blob_path = self._generate_blob_path(user_id, session_id, final_filename)
+        blob = bucket.blob(blob_path)
+        
+        logger.info(f"Streaming from URL to GCS: {url} -> {blob_path}")
+        
+        # Stream directly from URL to GCS using async HTTP
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream('GET', url) as response:
                 response.raise_for_status()
                 
                 content_type = response.headers.get('Content-Type')
@@ -246,32 +249,39 @@ class GCStorageProvider(StorageProvider):
                     file_size_mb = content_length_int / 1024 / 1024
                     logger.info(f"File size: {file_size_mb:.2f} MB")
                 
-                # Upload directly from stream
-                blob.upload_from_file(response.raw, rewind=False, size=content_length_int)
-            
-            total_time = time.time() - start_time
-            logger.info(f"Upload completed in {total_time:.2f}s")
-            
-            # Generate signed URL
-            signed_url = blob.generate_signed_url(
+                # Read content and upload to GCS
+                content = await response.aread()
+                
+                # Upload from bytes (GCS SDK is sync, but we've minimized blocking by using async HTTP)
+                await loop.run_in_executor(
+                    None,
+                    lambda: blob.upload_from_string(content, content_type=content_type)
+                )
+        
+        total_time = time.time() - start_time
+        logger.info(f"Upload completed in {total_time:.2f}s")
+        
+        # Generate signed URL (sync operation wrapped)
+        signed_url = await loop.run_in_executor(
+            None,
+            lambda: blob.generate_signed_url(
                 version="v4",
                 expiration=self.signed_url_expiration_days * 24 * 60 * 60,
                 method="GET"
             )
-            
-            public_url = blob.public_url
-            size = blob.size or 0
-            
-            return UploadResult(
-                path=blob_path,
-                url=public_url,
-                signed_url=signed_url,
-                size=size,
-                content_type=content_type,
-                metadata=metadata
-            )
+        )
         
-        return await async_wrap(_sync_upload_from_url)()
+        public_url = blob.public_url
+        size = blob.size or 0
+        
+        return UploadResult(
+            path=blob_path,
+            url=public_url,
+            signed_url=signed_url,
+            size=size,
+            content_type=content_type,
+            metadata=metadata
+        )
     
     async def download_file(self, path: str, **kwargs) -> bytes:
         """Download file content as bytes."""

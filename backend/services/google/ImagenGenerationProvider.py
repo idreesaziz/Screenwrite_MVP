@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from typing import List, Dict, Any, Optional
-import requests
+import httpx
 from google.cloud import aiplatform
 from google.auth import default
 from google.auth.transport.requests import Request
@@ -176,7 +176,8 @@ class ImagenGenerationProvider(ImageGenerationProvider):
         
         logger.info(f"Generating {request.sample_count} images with model: {model}")
         
-        response = requests.post(endpoint_url, headers=headers, json=payload)
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(endpoint_url, headers=headers, json=payload)
         
         if response.status_code != 200:
             error_msg = f"Imagen API error: {response.status_code} - {response.text}"
@@ -274,7 +275,8 @@ class ImagenGenerationProvider(ImageGenerationProvider):
         
         logger.info(f"Upscaling image by {request.upscale_factor} with model: {model}")
         
-        response = requests.post(endpoint_url, headers=headers, json=payload)
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(endpoint_url, headers=headers, json=payload)
         
         if response.status_code != 200:
             error_msg = f"Imagen API error: {response.status_code} - {response.text}"
