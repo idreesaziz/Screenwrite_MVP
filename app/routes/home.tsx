@@ -739,32 +739,6 @@ export default function TimelineEditor() {
                       </div>
 
                       <div className="flex items-center gap-1">
-                        {/* Undo/Redo Controls */}
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={undoRedoActions.undo}
-                            disabled={!undoRedoActions.canUndo}
-                            className="h-6 w-6 p-0"
-                            title="Undo (Ctrl+Z)"
-                          >
-                            <Undo2 className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={undoRedoActions.redo}
-                            disabled={!undoRedoActions.canRedo}
-                            className="h-6 w-6 p-0"
-                            title="Redo (Ctrl+Y)"
-                          >
-                            <Redo2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-
-                        {/* TODO: Add blueprint-specific controls */}
-
                         {/* Show chat toggle when minimized */}
                         {isChatMinimized && (
                           <>
@@ -829,6 +803,7 @@ export default function TimelineEditor() {
                   onDeleteClip={handleDeleteClip}
                   selectedClipId={selectedClipId}
                   onSelectClip={setSelectedClipId}
+                  undoRedoActions={undoRedoActions}
                 />
               </div>
             </ResizablePanel>
