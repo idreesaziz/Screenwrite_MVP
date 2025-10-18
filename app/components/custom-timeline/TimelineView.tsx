@@ -2,7 +2,7 @@ import React from 'react';
 import type { CompositionBlueprint } from "~/video-compositions/BlueprintTypes";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Button } from "~/components/ui/button";
-import { Scissors, Trash2 } from "lucide-react";
+import { Scissors, Trash2, Undo2, Redo2 } from "lucide-react";
 import type { PlayerRef } from "@remotion/player";
 
 export interface TimelineViewProps {
@@ -18,6 +18,12 @@ export interface TimelineViewProps {
   onDeleteClip?: (clipId: string) => void;
   selectedClipId?: string | null;
   onSelectClip?: (clipId: string | null) => void;
+  undoRedoActions?: {
+    undo: () => void;
+    redo: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
+  };
 }
 
 // Fresh component name to avoid any stale Vite graph node collisions.
@@ -33,7 +39,8 @@ export default function TimelineView({
   onSplitClip,
   onDeleteClip,
   selectedClipId: controlledSelectedClipId,
-  onSelectClip
+  onSelectClip,
+  undoRedoActions
 }: TimelineViewProps) {
   const [zoomLevel, setZoomLevel] = React.useState(60); // pixels per second
   const [isDragging, setIsDragging] = React.useState(false);
@@ -88,6 +95,12 @@ export default function TimelineView({
     onDeleteClip(selectedClipId);
     setSelectedClipId(null); // Clear selection after deletion
   };
+
+  // Safe fallbacks for undo/redo actions
+  const canUndo = undoRedoActions?.canUndo ?? false;
+  const canRedo = undoRedoActions?.canRedo ?? false;
+  const handleUndo = () => undoRedoActions?.undo();
+  const handleRedo = () => undoRedoActions?.redo();
 
     // Slider styling for zoom control
   React.useEffect(() => {
@@ -152,6 +165,26 @@ export default function TimelineView({
           >
             <Trash2 className="w-3 h-3" />
             Delete Clip
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className="flex items-center gap-1"
+          >
+            <Undo2 className="w-3 h-3" />
+            Undo
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            className="flex items-center gap-1"
+          >
+            <Redo2 className="w-3 h-3" />
+            Redo
           </Button>
         </div>
         {selectedClipId && (
