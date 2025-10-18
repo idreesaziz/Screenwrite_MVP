@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, Freeze } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, Freeze, Easing, interpolate } from "remotion";
 import { TransitionSeries, linearTiming, springTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
@@ -334,7 +334,10 @@ function SegmentRenderer({
         sequences.push(
           <TransitionSeries.Transition
             presentation={getTransitionPresentation(clip.transitionFromPrevious!, videoConfig)}
-            timing={linearTiming({ durationInFrames: transitionFromDuration })}
+            timing={linearTiming({ 
+              durationInFrames: transitionFromDuration,
+              easing: Easing.inOut(Easing.ease)
+            })}
           />
         );
         
@@ -354,7 +357,10 @@ function SegmentRenderer({
         sequences.push(
           <TransitionSeries.Transition
             presentation={getTransitionPresentation(clip.transitionToNext!, videoConfig)}
-            timing={linearTiming({ durationInFrames: transitionToDuration })}
+            timing={linearTiming({ 
+              durationInFrames: transitionToDuration,
+              easing: Easing.inOut(Easing.ease)
+            })}
           />
         );
         
@@ -381,7 +387,10 @@ function SegmentRenderer({
         sequences.push(
           <TransitionSeries.Transition
             presentation={getTransitionPresentation(clip.transitionFromPrevious, videoConfig)}
-            timing={linearTiming({ durationInFrames: transitionFromDuration })}
+            timing={linearTiming({ 
+              durationInFrames: transitionFromDuration,
+              easing: Easing.inOut(Easing.ease)
+            })}
           />
         );
         
@@ -418,7 +427,10 @@ function SegmentRenderer({
         sequences.push(
           <TransitionSeries.Transition
             presentation={getTransitionPresentation(clip.transitionToNext, videoConfig)}
-            timing={linearTiming({ durationInFrames: transitionToDuration })}
+            timing={linearTiming({ 
+              durationInFrames: transitionToDuration,
+              easing: Easing.inOut(Easing.ease)
+            })}
           />
         );
         
@@ -474,7 +486,10 @@ function SegmentRenderer({
           sequences.push(
             <TransitionSeries.Transition
               presentation={presentation}
-              timing={linearTiming({ durationInFrames: transitionDuration })}
+              timing={linearTiming({ 
+                durationInFrames: transitionDuration,
+                easing: Easing.inOut(Easing.ease)
+              })}
             />
           );
         }
@@ -508,52 +523,67 @@ function calculateTransitionGroupDuration(clips: Clip[], fps: number): number {
 
 /**
  * Helper function to get Remotion presentation from transition configuration
+ * New simplified system: direction encoded in type name
  */
 function getTransitionPresentation(
   transitionConfig: import('./BlueprintTypes').TransitionConfig,
   videoConfig: { width: number; height: number }
 ): any {
   const { width, height } = videoConfig;
-  const { type, direction, perspective } = transitionConfig;
+  const { type } = transitionConfig;
   
   switch (type) {
     case 'fade':
       return fade({
-        shouldFadeOutExitingScene: true // Enable proper cross-fade
-      });
-      
-    case 'slide':
-      return slide({
-        direction: (direction as any) || 'from-left'
-      });
-      
-    case 'wipe':
-      return wipe({
-        direction: (direction as any) || 'from-left'
-      });
-      
-    case 'flip':
-      return flip({
-        direction: (direction as any) || 'from-left',
-        perspective: perspective || 1000
-      });
-      
-    case 'clockWipe':
-      return clockWipe({
-        width,
-        height
-      });
-      
-    case 'iris':
-      return iris({
-        width,
-        height
-      });
-      
-    default:
-      return fade({
         shouldFadeOutExitingScene: true
       });
+      
+    // Slide transitions
+    case 'slide-left':
+      return slide({ direction: 'from-left' });
+    case 'slide-right':
+      return slide({ direction: 'from-right' });
+    case 'slide-top':
+      return slide({ direction: 'from-top' });
+    case 'slide-bottom':
+      return slide({ direction: 'from-bottom' });
+      
+    // Wipe transitions
+    case 'wipe-left':
+      return wipe({ direction: 'from-left' });
+    case 'wipe-right':
+      return wipe({ direction: 'from-right' });
+    case 'wipe-top':
+      return wipe({ direction: 'from-top' });
+    case 'wipe-bottom':
+      return wipe({ direction: 'from-bottom' });
+    case 'wipe-top-left':
+      return wipe({ direction: 'from-top-left' });
+    case 'wipe-top-right':
+      return wipe({ direction: 'from-top-right' });
+    case 'wipe-bottom-left':
+      return wipe({ direction: 'from-bottom-left' });
+    case 'wipe-bottom-right':
+      return wipe({ direction: 'from-bottom-right' });
+      
+    // Flip transitions
+    case 'flip-left':
+      return flip({ direction: 'from-left', perspective: 1000 });
+    case 'flip-right':
+      return flip({ direction: 'from-right', perspective: 1000 });
+    case 'flip-top':
+      return flip({ direction: 'from-top', perspective: 1000 });
+    case 'flip-bottom':
+      return flip({ direction: 'from-bottom', perspective: 1000 });
+      
+    case 'clock-wipe':
+      return clockWipe({ width, height });
+      
+    case 'iris':
+      return iris({ width, height });
+      
+    default:
+      return fade({ shouldFadeOutExitingScene: true });
   }
 }
 

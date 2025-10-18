@@ -1,37 +1,42 @@
 // Blueprint-based composition system interfaces
 // Updated to match proper Remotion TransitionSeries implementation
 
-// Available transition types from Remotion
+// Available transition types - direction encoded in name for simplicity
 export type TransitionType = 
+  // Basic transitions (no direction)
   | 'fade'
-  | 'slide'
-  | 'wipe' 
-  | 'flip'
-  | 'clockWipe'
-  | 'iris';
+  | 'clock-wipe'
+  | 'iris'
+  // Slide transitions (4 directions)
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-top'
+  | 'slide-bottom'
+  // Wipe transitions (8 directions)
+  | 'wipe-left'
+  | 'wipe-right'
+  | 'wipe-top'
+  | 'wipe-bottom'
+  | 'wipe-top-left'
+  | 'wipe-top-right'
+  | 'wipe-bottom-left'
+  | 'wipe-bottom-right'
+  // Flip transitions (4 directions)
+  | 'flip-left'
+  | 'flip-right'
+  | 'flip-top'
+  | 'flip-bottom';
 
-// Direction options for slide and flip transitions
-export type SlideFlipDirection = 'from-left' | 'from-right' | 'from-top' | 'from-bottom';
+// Simplified transition config - only 2 parameters
+export interface TransitionConfig {
+  type: TransitionType;           // Direction encoded in name
+  durationInSeconds: number;      // Duration of transition
+}
 
-// Direction options for wipe transitions (includes diagonals)
-export type WipeDirection = 
-  | 'from-left'
-  | 'from-right' 
-  | 'from-top'
-  | 'from-bottom'
-  | 'from-top-left'
-  | 'from-top-right'
-  | 'from-bottom-left'
-  | 'from-bottom-right';
-
-// Union of all possible directions
-export type TransitionDirection = SlideFlipDirection | WipeDirection;
-
+// Simplified transition config - only type and duration
 export interface TransitionConfig {
   type: TransitionType;
   durationInSeconds: number;
-  direction?: TransitionDirection; // For slide, wipe, flip transitions
-  perspective?: number; // For flip transitions (default: 1000)
 }
 
 // Animated property: can be constant or timeline-based
