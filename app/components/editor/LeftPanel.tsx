@@ -16,6 +16,7 @@ interface LeftPanelProps {
     textAlign: "left" | "center" | "right",
     fontWeight: "normal" | "bold"
   ) => void;
+  onAddMediaClick: () => void;
   contextMenu: {
     x: number;
     y: number;
@@ -35,6 +36,7 @@ export default function LeftPanel({
   mediaBinItems,
   onAddMedia,
   onAddText,
+  onAddMediaClick,
   contextMenu,
   handleContextMenu,
   handleDeleteFromContext,
@@ -100,6 +102,7 @@ export default function LeftPanel({
               mediaBinItems,
               onAddMedia,
               onAddText,
+              onAddMediaClick,
               contextMenu,
               handleContextMenu,
               handleDeleteFromContext,

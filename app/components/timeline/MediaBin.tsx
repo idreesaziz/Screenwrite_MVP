@@ -6,6 +6,7 @@ import { OffthreadVideo, Img, Video } from 'remotion';
 import { type MediaBinItem } from "./types";
 import { Badge } from "~/components/ui/badge";
 import { Progress } from "~/components/ui/progress";
+import { Button } from "~/components/ui/button";
 
 interface MediaBinProps {
   mediaBinItems: MediaBinItem[];
@@ -18,6 +19,7 @@ interface MediaBinProps {
     textAlign: "left" | "center" | "right",
     fontWeight: "normal" | "bold"
   ) => void;
+  onAddMediaClick: () => void;
   contextMenu: {
     x: number;
     y: number;
@@ -68,6 +70,7 @@ export default function MediaBin() {
     mediaBinItems, 
     onAddMedia, 
     onAddText, 
+    onAddMediaClick,
     contextMenu, 
     handleContextMenu, 
     handleDeleteFromContext, 
@@ -162,9 +165,20 @@ export default function MediaBin() {
       <div className="p-2 border-b border-border/50">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-medium text-foreground">Media Library</h3>
-          <Badge variant="secondary" className="text-xs h-4 px-1.5 font-mono">
-            {mediaBinItems.length}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onAddMediaClick}
+              className="h-6 px-2 text-xs"
+            >
+              <Upload className="h-3 w-3 mr-1" />
+              Import
+            </Button>
+            <Badge variant="secondary" className="text-xs h-4 px-1.5 font-mono">
+              {mediaBinItems.length}
+            </Badge>
+          </div>
         </div>
       </div>
 

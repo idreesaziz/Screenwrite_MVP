@@ -3,16 +3,12 @@ import type { PlayerRef } from "@remotion/player";
 import axios from "axios";
 import { apiUrl } from "~/utils/api";
 import {
-  Moon,
-  Sun,
   Upload,
   ChevronLeft,
   Undo2,
   Redo2,
   LogOut,
 } from "lucide-react";
-
-import { useTheme } from "next-themes";
 
 // Components
 import LeftPanel from "~/components/editor/LeftPanel";
@@ -64,7 +60,6 @@ export default function TimelineEditor() {
   const playerRef = useRef<PlayerRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { theme, setTheme } = useTheme();
   const { signOut, user, getToken } = useAuth();
 
   const navigate = useNavigate();
@@ -682,33 +677,6 @@ export default function TimelineEditor() {
           >
             <LogOut className="h-3.5 w-3.5" />
           </Button>
-          
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-7 w-7 p-0 hover:bg-muted"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-3.5 w-3.5" />
-            ) : (
-              <Moon className="h-3.5 w-3.5" />
-            )}
-          </Button>
-
-          <Separator orientation="vertical" className="h-4 mx-1" />
-
-          {/* Import/Export */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAddMediaClick}
-            className="h-7 px-2 text-xs"
-          >
-            <Upload className="h-3 w-3 mr-1" />
-            Import
-          </Button>
         </div>
       </header>
 
@@ -727,6 +695,7 @@ export default function TimelineEditor() {
                       mediaBinItems={mediaBinItems}
                       onAddMedia={handleAddMediaToBin}
                       onAddText={handleAddTextToBin}
+                      onAddMediaClick={handleAddMediaClick}
                       contextMenu={contextMenu}
                       handleContextMenu={handleContextMenu}
                       handleDeleteFromContext={handleDeleteFromContext}
@@ -835,8 +804,7 @@ export default function TimelineEditor() {
 
                     {/* Video Preview */}
                     <div
-                      className={`flex-1 ${theme === "dark" ? "bg-zinc-900" : "bg-zinc-200/70"
-                        } flex flex-col border border-border/50 rounded-lg overflow-hidden shadow-2xl relative`}
+                      className="flex-1 bg-zinc-900 flex flex-col border border-border/50 rounded-lg overflow-hidden shadow-2xl relative"
                     >
                       {/* AI Status Badge */}
                       <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
