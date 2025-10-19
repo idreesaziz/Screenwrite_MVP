@@ -61,7 +61,7 @@ class PexelsMediaProvider(MediaProvider):
         
         # Initialize Gemini provider for AI curation (use Flash Lite for fast curation)
         self.gemini = gemini_provider or GeminiChatProvider(
-            default_model_name="gemini-flash-lite-latest",
+            default_model_name="gemini-2.5-flash-lite",
             default_temperature=0.1,
             default_thinking_budget=0
         )

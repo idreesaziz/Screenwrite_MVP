@@ -58,7 +58,6 @@ class CompositionGenerationService:
         session_id: str,
         media_library: Optional[List[Dict]] = None,
         current_composition: Optional[List[Dict]] = None,
-        conversation_history: Optional[List[Dict]] = None,
         preview_frame: Optional[str] = None,
         model_name: Optional[str] = None,
         temperature: float = 0.1
@@ -73,7 +72,6 @@ class CompositionGenerationService:
             session_id: Session identifier for logging
             media_library: Available media files
             current_composition: Current tracks array for incremental editing
-            conversation_history: Past interactions for context
             preview_frame: Base64 screenshot of current frame
             model_name: Override default AI model
             temperature: Generation temperature (0.0-2.0)
@@ -91,8 +89,7 @@ class CompositionGenerationService:
                 "user_request": user_request,
                 "preview_settings": preview_settings,
                 "media_library": media_library or [],
-                "current_composition": current_composition,
-                "conversation_history": conversation_history or []
+                "current_composition": current_composition
             }
             
             # Use the comprehensive prompt builder from old backend
@@ -120,6 +117,37 @@ class CompositionGenerationService:
             
             # Calculate duration from composition
             duration = self._calculate_duration(composition_json)
+            
+            # Save the edit request and generated code to logs
+            try:
+                from pathlib import Path
+                from datetime import datetime
+                
+                logs_dir = Path(__file__).parent.parent / "logs"
+                logs_dir.mkdir(exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                log_file = logs_dir / f"composition_edit_{session_id}_{timestamp}.json"
+                
+                edit_log = {
+                    "timestamp": datetime.now().isoformat(),
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "user_request": user_request,
+                    "model_name": model_name or self.provider.default_model_name,
+                    "temperature": temperature,
+                    "media_library_count": len(media_library) if media_library else 0,
+                    "had_current_composition": current_composition is not None,
+                    "generated_code": composition_json,
+                    "duration": duration,
+                    "tracks_count": len(result_dict)
+                }
+                
+                with open(log_file, "w") as f:
+                    json.dump(edit_log, f, indent=2)
+                
+                logger.info(f"💾 Saved composition edit to: {log_file}")
+            except Exception as log_error:
+                logger.warning(f"Failed to save composition edit log: {log_error}")
             
             # Log successful generation
             logger.info(

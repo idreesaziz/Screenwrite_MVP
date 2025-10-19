@@ -568,11 +568,31 @@ export default function TimelineEditor() {
   }, []); // Empty dependency array since we're accessing playerRef.current directly
 
   // AI Composition Generation Function
-  const handleGenerateComposition = useCallback(async (userRequest: string, mediaBinItems: MediaBinItem[], modelType: string = "gemini"): Promise<boolean> => {
-    console.log("🤖 AI Generation: Starting composition generation for:", userRequest, "using model:", modelType);
+  const handleGenerateComposition = useCallback(async (
+    userRequest: string, 
+    mediaBinItems: MediaBinItem[], 
+    modelType: string = "gemini"
+  ): Promise<boolean> => {
+    // Map frontend model names to backend model names
+    const modelNameMap: Record<string, string> = {
+      "gemini": "gemini-2.5-flash",
+      "openai": "gpt-4o-mini"
+    };
+    
+    const backendModelName = modelNameMap[modelType] || modelType;
+    
+    console.log("🤖 AI Generation: Starting composition generation for:", userRequest, "using model:", backendModelName);
     setIsAiGenerating(true);
     
     try {
+      // Get authentication token
+      const token = await getToken();
+      if (!token) {
+        console.error("🤖 AI Generation: No authentication token available");
+        toast.error("Authentication required. Please sign in.");
+        return false;
+      }
+      
       // Call the Python backend API with current composition
       const response = await axios.post(apiUrl("/api/v1/compositions/generate", true), {
         user_request: userRequest,
@@ -588,9 +608,13 @@ export default function TimelineEditor() {
           mediaUrlRemote: item.mediaUrlRemote,
         })),
         current_composition: currentComposition, // Send current composition for incremental editing
-        conversation_history: [],
         preview_frame: null,
-        model_type: modelType, // Add model selection
+        model_name: backendModelName, // Use mapped model name
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       console.log("🤖 AI Generation: Received response:", response.data);
@@ -632,7 +656,7 @@ export default function TimelineEditor() {
     } finally {
       setIsAiGenerating(false);
     }
-  }, [previewSettings, currentComposition]);
+  }, [previewSettings, currentComposition, getToken]);
 
   // Handle adding generated images to media bin
   const handleAddGeneratedImage = useCallback(async (item: MediaBinItem): Promise<void> => {

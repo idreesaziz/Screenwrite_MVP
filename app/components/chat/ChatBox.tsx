@@ -95,7 +95,11 @@ interface ChatBoxProps {
   timelineState: TimelineState;
   // New props for AI composition generation
   isStandalonePreview?: boolean;
-  onGenerateComposition?: (userRequest: string, mediaBinItems: MediaBinItem[], modelType?: string) => Promise<boolean>;
+  onGenerateComposition?: (
+    userRequest: string, 
+    mediaBinItems: MediaBinItem[], 
+    modelType?: string
+  ) => Promise<boolean>;
   isGeneratingComposition?: boolean;
   // Props for conversational edit system
   currentComposition?: string; // Current TSX composition code
@@ -1017,7 +1021,11 @@ export function ChatBox({
       await logEditExecution(synthResponse.content);
       
       if (onGenerateComposition) {
-        const success = await onGenerateComposition(synthResponse.content, mediaBinItems, selectedModel);
+        const success = await onGenerateComposition(
+          synthResponse.content, 
+          mediaBinItems, 
+          selectedModel
+        );
         await logEditResult(success);
         
         const resultMessage: Message = {

@@ -2,14 +2,6 @@ from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 
 
-class ConversationMessage(BaseModel):
-    """Past conversation message for context"""
-    user_request: str = Field(description="What the user asked for")
-    ai_response: str = Field(description="What the AI generated (explanation)")
-    generated_code: str = Field(description="The code that was generated")
-    timestamp: str = Field(description="When this interaction happened")
-
-
 class CompositionGenerationRequest(BaseModel):
     """Request to generate or modify a video composition"""
     
@@ -30,11 +22,6 @@ class CompositionGenerationRequest(BaseModel):
     current_composition: Optional[List[Dict[str, Any]]] = Field(
         default=None,
         description="Current composition blueprint (array of tracks) for incremental editing"
-    )
-    
-    conversation_history: Optional[List[ConversationMessage]] = Field(
-        default=[],
-        description="Past requests and responses for context"
     )
     
     preview_frame: Optional[str] = Field(

@@ -94,9 +94,6 @@ async def generate_composition(
             session_id=session_id,
             media_library=request.media_library,
             current_composition=request.current_composition,
-            conversation_history=[
-                msg.dict() for msg in request.conversation_history
-            ] if request.conversation_history else [],
             preview_frame=request.preview_frame,
             model_name=request.model_name,
             temperature=request.temperature
