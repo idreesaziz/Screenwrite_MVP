@@ -60,7 +60,12 @@ export function parseStringElement(elementString: string): FlatElement {
     }
     
     if (propName === 'parent') {
-      element.parentId = propValue === 'null' ? null : propValue;
+      // Auto-fix: treat null, "null", or "root" as root reference
+      if (propValue === 'null' || propValue === 'root') {
+        element.parentId = 'root';
+      } else {
+        element.parentId = propValue;
+      }
       continue;
     }
     
@@ -81,9 +86,9 @@ export function parseStringElement(elementString: string): FlatElement {
     throw new Error(`Missing required "id" property in element "${name}"`);
   }
   
-  // Validate that "parent" was specified (implicit root system requires this)
+  // Auto-fix: If parent wasn't specified, default to 'root'
   if (!parts.some(p => p.trim().startsWith('parent:'))) {
-    throw new Error(`Missing required "parent" property in element "${name}" (id: ${element.id}). Use parent:root for top-level elements.`);
+    element.parentId = 'root';
   }
   
   return element;

@@ -72,8 +72,12 @@ export function convertFlatToNested(flatContainer: FlatElementContainer): Elemen
     return nestedElement;
   }
   
-  // Find the root element (parentId === null or "null")
-  const rootElement = elements.find(el => el.parentId === null || el.parentId === "null");
+  // Find the root element (parentId === null or "null" or "root")
+  const rootElement = elements.find(el => 
+    el.parentId === null || 
+    el.parentId === "null" || 
+    el.id === "root"
+  );
   
   if (!rootElement) {
     throw new Error('No root element found (expected element with parentId: null)');
