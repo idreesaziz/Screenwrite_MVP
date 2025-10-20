@@ -183,15 +183,21 @@ export function renderElementObject(
     
     // Process each prop
     for (const [key, value] of Object.entries(element.props || {})) {
-      // SPECIAL CASE: Video/Audio startFrom/endAt are NOT composition timestamps
-      // They are frame numbers within the source video file - pass through as-is
+      // SPECIAL CASE: Video/Audio startFrom/endAt are in seconds - convert to frames
       const isMediaTimingProp = 
         (element.name === 'Video' || element.name === 'Audio' || element.name === 'OffthreadVideo') && 
         (key === 'startFrom' || key === 'endAt');
       
-      const resolvedValue = isMediaTimingProp 
-        ? value  // Pass through as-is for media timing props
-        : resolveAnimatedProperty(value, context);
+      let resolvedValue: any;
+      
+      if (isMediaTimingProp) {
+        // Convert seconds to frames for Video/Audio timing
+        const fps = (context as any).fps || 30; // Default to 30 FPS if not in context
+        const seconds = typeof value === 'number' ? value : parseFloat(value as string);
+        resolvedValue = Math.round(seconds * fps);
+      } else {
+        resolvedValue = resolveAnimatedProperty(value, context);
+      }
       
       // Determine if this prop goes to component or style
       if (shouldBeComponentProp(key, schema)) {

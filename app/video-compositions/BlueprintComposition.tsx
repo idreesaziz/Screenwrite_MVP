@@ -45,6 +45,7 @@ export function BlueprintComposition({ blueprint }: BlueprintCompositionProps) {
     },
     inSeconds: (seconds: number): number => Math.round(seconds * fps),
     sequenceStartTime: clipStartTime,
+    fps: fps,
   });
 
   // Ensure we have valid tracks array

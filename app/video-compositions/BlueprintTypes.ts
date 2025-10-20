@@ -111,5 +111,6 @@ export interface BlueprintExecutionContext {
   inSeconds: (seconds: number) => number;
   // Sequence timing context for proper interp calculations
   sequenceStartTime: number; // Start time of the current sequence in seconds
+  fps: number; // Frames per second for video timing conversions
   // Add more helper functions as needed
 }

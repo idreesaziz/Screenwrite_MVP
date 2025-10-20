@@ -126,9 +126,11 @@ COMPONENTS_REFERENCE = """**AVAILABLE COMPONENTS:**
 **MEDIA COMPONENTS:**
 - `Video` - Video playback
   Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds), `endAt` (seconds), `loop`
+  Note: `startFrom` and `endAt` specify which portion of the source video to play, in seconds
   
 - `Audio` - Audio playback (no visual)
-  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted`, `startFrom`, `endAt`, `loop`
+  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds), `endAt` (seconds), `loop`
+  Note: `startFrom` and `endAt` specify which portion of the source audio to play, in seconds
   
 - `Img` - Static image
   Props: `src` (URL), `alt`
@@ -342,7 +344,8 @@ Complex animation:
 
 **IMPORTANT NOTES:**
 - Text animation components (SplitText, BlurText, etc.) have built-in animations - don't use @animate on their `text` prop
-- Media timing props (Video startFrom/endAt) are NOT animated - they're frame numbers in the source file
+- Media timing props (Video/Audio startFrom/endAt) specify portions of source media in SECONDS - these are NOT animated
+- All timing values in this system are in SECONDS (composition timestamps, clip timing, media timing, animation keyframes)
 - Animations work on CSS properties and component props that accept numeric values
 """
 
