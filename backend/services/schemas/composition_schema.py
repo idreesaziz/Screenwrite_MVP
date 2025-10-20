@@ -15,9 +15,14 @@ def build_element_schema() -> Dict[str, Any]:
     Element DSL format:
     "TagName;id:value;parent:value;property:value;..."
     
+    IMPORTANT: The parser automatically prepends an implicit AbsoluteFill root element.
+    - Root has id='root', name='AbsoluteFill', parentId=null
+    - Use parent:root for top-level elements or omit parent field (defaults to root)
+    - Do NOT create the root element yourself
+    
     Example:
-    "AbsoluteFill;id:root;parent:null;backgroundColor:#ff0000"
-    "h1;id:title;parent:root;fontSize:48px;color:#fff;text:Hello World"
+    "div;id:bg;parent:root;backgroundColor:#ff0000;width:100%;height:100%"
+    "h1;id:title;fontSize:48px;color:#fff;text:Hello World"
     """
     return {
         "type": "object",
@@ -26,9 +31,9 @@ def build_element_schema() -> Dict[str, Any]:
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "description": "Element definition using DSL syntax: 'TagName;id:id;parent:parentId;prop:value;...'"
+                    "description": "Element definition using DSL syntax: 'TagName;id:id;parent:parentId;prop:value;...'. Parser adds implicit AbsoluteFill root - use parent:root for top-level."
                 },
-                "description": "Array of element strings defining the visual structure"
+                "description": "Array of element strings. Parser automatically prepends AbsoluteFill root element."
             }
         },
         "required": ["elements"]
@@ -40,25 +45,49 @@ def build_transition_schema() -> Dict[str, Any]:
     Build schema for transition objects.
     
     Transitions create smooth visual effects between clips.
-    Types: fade, slide, wipe, flip, clockWipe, iris
+    Direction is encoded in the type name (e.g., slide-left, wipe-top-right).
     """
     return {
         "type": "object",
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["fade", "slide", "wipe", "flip", "clockWipe", "iris"],
-                "description": "Type of transition effect"
+                "enum": [
+                    # Basic transitions (no direction)
+                    "fade",
+                    "clock-wipe",
+                    "iris",
+                    # Slide transitions (4 directions)
+                    "slide-left",
+                    "slide-right",
+                    "slide-top",
+                    "slide-bottom",
+                    # Wipe transitions (8 directions)
+                    "wipe-left",
+                    "wipe-right",
+                    "wipe-top",
+                    "wipe-bottom",
+                    "wipe-top-left",
+                    "wipe-top-right",
+                    "wipe-bottom-left",
+                    "wipe-bottom-right",
+                    # Flip transitions (4 directions)
+                    "flip-left",
+                    "flip-right",
+                    "flip-top",
+                    "flip-bottom",
+                    # Custom transitions
+                    "zoom-in",
+                    "zoom-out",
+                    "blur",
+                    "glitch"
+                ],
+                "description": "Type of transition effect (direction encoded in name)"
             },
             "durationInSeconds": {
                 "type": "number",
                 "minimum": 0.1,
                 "description": "Duration of the transition in seconds"
-            },
-            "direction": {
-                "type": "string",
-                "enum": ["left", "right", "up", "down"],
-                "description": "Direction for directional transitions (slide, wipe)"
             }
         },
         "required": ["type", "durationInSeconds"]
@@ -123,6 +152,10 @@ def build_composition_schema() -> Dict[str, Any]:
     Returns a JSON schema for an array of tracks (layers).
     This is used for structured output with AI models.
     
+    IMPORTANT: Parser automatically prepends AbsoluteFill root (id='root') to each clip.
+    - Use parent:root for top-level elements or omit parent (defaults to root)
+    - Do NOT create the root element yourself
+    
     Structure:
     [
       {
@@ -132,9 +165,12 @@ def build_composition_schema() -> Dict[str, Any]:
             "startTimeInSeconds": 0,
             "endTimeInSeconds": 5,
             "element": {
-              "elements": ["AbsoluteFill;id:root;parent:null;..."]
+              "elements": [
+                "div;id:bg;backgroundColor:#000;width:100%;height:100%",
+                "h1;id:title;parent:bg;fontSize:64px;color:#fff;text:Hello"
+              ]
             },
-            "transitionToNext": {...} (optional)
+            "transitionToNext": {"type": "fade", "durationInSeconds": 1}
           }
         ]
       }
