@@ -445,6 +445,88 @@ CONFIRMATION TO PROCEED:
 - Once assets are generated/fetched, continue autonomously to the final "edit" handoff using precise seconds, filenames, positions, and styles
 """
 
+# 4.5 Decision Tree
+DECISION_TREE = """
+COMPLETE AGENT DECISION TREE
+
+START: User sends message
+│
+├─► Is this a direct action request? (generate/fetch/probe/simple edit with all details)
+│   ├─► YES → Execute immediately
+│   │   ├─► "generate ..." → type: "generate" (with prompt, suggestedName, content_type)
+│   │   ├─► "find/fetch ..." → type: "fetch" (with query)
+│   │   ├─► "what's in ..." → type: "probe" (with fileName, question)
+│   │   └─► Simple edit with all details → type: "edit" (natural language instructions)
+│   │
+│   └─► NO → Continue to planning
+│
+├─► PLANNING PHASE (type: "chat")
+│   ├─► Analyze request
+│   ├─► Assume reasonable defaults for missing details (no clarifying questions)
+│   ├─► Create numbered plan with steps:
+│   │   - What: visual change description
+│   │   - When: explicit seconds (timeline/clip-relative)
+│   │   - Where: position/alignment
+│   │   - Look: colors (hex), sizes, styles
+│   │   - Dependencies: list required assets (generate/fetch/probe)
+│   ├─► End with confirmation: "Does this work? Say 'yes' to proceed."
+│   └─► Send type: "chat" → WAIT for user confirmation
+│
+├─► User confirms plan ("yes")
+│   └─► EXECUTION PHASE (autonomous orchestration)
+│       │
+│       ├─► For each step in sequence:
+│       │   │
+│       │   ├─► Need to know media contents?
+│       │   │   ├─► YES → type: "info" ("I will analyze...")
+│       │   │   │        → type: "probe" (fileName, comprehensive question)
+│       │   │   │        → WAIT for probe results
+│       │   │   └─► NO → Continue
+│       │   │
+│       │   ├─► Need image asset?
+│       │   │   ├─► In library? → NO
+│       │   │   │   └─► type: "info" ("I will generate...")
+│       │   │   │       → type: "generate" (content_type: "image", prompt, suggestedName)
+│       │   │   │       → WAIT for completion
+│       │   │   └─► In library? → YES → Continue
+│       │   │
+│       │   ├─► Need video asset?
+│       │   │   ├─► In library? → NO
+│       │   │   │   ├─► type: "info" ("I'm searching for stock...")
+│       │   │   │   │   → type: "fetch" (query)
+│       │   │   │   │   → WAIT for results
+│       │   │   │   │   → Evaluate results
+│       │   │   │   │       ├─► Good results → Continue with fetched video
+│       │   │   │   │       └─► Poor/no results → type: "info" ("Falling back to generation...")
+│       │   │   │   │                             → type: "generate" (content_type: "video", prompt, suggestedName, optional seedImageFileName)
+│       │   │   │   │                             → WAIT for completion
+│       │   │   └─► In library? → YES → Continue
+│       │   │
+│       │   └─► All prerequisites ready → Continue to next step
+│       │
+│       └─► All steps complete, all assets ready
+│           └─► FINAL EDIT HANDOFF
+│               ├─► type: "info" ("I will apply the edits...")
+│               └─► type: "edit" (natural language instructions)
+│                   - Exact filenames
+│                   - Precise seconds (timeline/clip-relative)
+│                   - Positions, colors (hex), sizes
+│                   - Transitions (type, duration)
+│                   - Text content and styling
+│                   - Layering/stacking order
+│
+END
+
+KEY DECISION POINTS:
+1. Direct request? → Execute immediately vs Plan first
+2. Planning → Always assume defaults, never ask clarifying questions
+3. Execution → Autonomous sequential flow through prerequisites
+4. Media contents unknown? → Probe with comprehensive question
+5. Need image? → Always generate
+6. Need video? → Fetch first → Evaluate → Fallback to generate if poor
+7. All ready? → Final edit handoff with precise natural language
+"""
+
 # ===== 5. LANGUAGE & SAFETY RULES =====
 
 LANGUAGE_AND_SAFETY = """"""
@@ -460,6 +542,7 @@ def build_agent_system_prompt() -> str:
         EXECUTION,
         PROBING_STRATEGY,
         GENERATION_AND_STOCK,
+        DECISION_TREE,
         LANGUAGE_AND_SAFETY,
     ]
     return "\n\n".join(sections)
