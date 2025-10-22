@@ -164,7 +164,7 @@ class AgentService:
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["chat", "sleep", "edit", "probe", "generate", "fetch"],
+                        "enum": ["info", "chat", "edit", "probe", "generate", "fetch"],
                         "description": "The action type for this response"
                     },
                     "content": {
@@ -221,10 +221,10 @@ class AgentService:
             logger.info(f"Agent response type: {agent_response.get('type')}")
             
             # Validate response type
-            valid_types = ["chat", "sleep", "edit", "probe", "generate", "fetch"]
+            valid_types = ["info", "chat", "edit", "probe", "generate", "fetch"]
             if agent_response.get("type") not in valid_types:
-                logger.warning(f"Invalid response type: {agent_response.get('type')}, defaulting to 'sleep'")
-                agent_response["type"] = "sleep"
+                logger.warning(f"Invalid response type: {agent_response.get('type')}, defaulting to 'chat'")
+                agent_response["type"] = "chat"
             
             # Add metadata placeholder (token usage would come from model if available)
             if "metadata" not in agent_response:
@@ -237,7 +237,7 @@ class AgentService:
         except Exception as e:
             logger.error(f"Unexpected error in agent chat: {str(e)}", exc_info=True)
             return {
-                "type": "sleep",
+                "type": "chat",
                 "content": "Something went wrong with the server. Would you like to retry or try something else?",
                 "error": str(e)
             }
@@ -251,8 +251,8 @@ class AgentService:
         """
         return {
             "action_types": {
-                "chat": "Informational messages, workflow continues automatically",
-                "sleep": "Messages requiring user input, workflow stops and waits",
+                "info": "Informational messages, workflow continues automatically",
+                "chat": "Conversational messages requiring user input, workflow pauses",
                 "edit": "Direct editing instructions for composition changes",
                 "probe": "Media content analysis requests",
                 "generate": "Media generation requests (images: 16:9 1920x1080, videos: 8s 16:9 1920x1080)",
@@ -269,7 +269,7 @@ class AgentService:
             ],
             "workflow_steps": [
                 "1. User requests edit",
-                "2. Agent creates detailed plan (type: sleep)",
+                "2. Agent creates detailed plan (type: chat)",
                 "3. User confirms plan",
                 "4. Agent executes with instructions (type: edit)",
                 "5. Implementation processes edit",

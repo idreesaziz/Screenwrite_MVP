@@ -13,8 +13,8 @@ class AgentResponse(BaseModel):
     
     type: str = Field(
         ...,
-        description="Response type: 'chat', 'sleep', 'edit', 'probe', 'generate', 'fetch'",
-        examples=["chat", "sleep", "edit", "probe", "generate", "fetch"]
+        description="Response type: 'info', 'chat', 'edit', 'probe', 'generate', 'fetch'",
+        examples=["info", "chat", "edit", "probe", "generate", "fetch"]
     )
     
     content: str = Field(
@@ -67,7 +67,7 @@ class AgentResponse(BaseModel):
         json_schema_extra = {
             "examples": [
                 {
-                    "type": "sleep",
+                    "type": "chat",
                     "content": "I'll add a welcome title at the beginning. The text will fade in at 0 seconds and stay visible until 3 seconds. Does this sound good? Say 'yes' to proceed.",
                     "metadata": {
                         "total_tokens": 1250

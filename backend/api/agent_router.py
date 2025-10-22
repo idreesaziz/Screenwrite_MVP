@@ -46,14 +46,14 @@ async def agent_chat(
     2. Agent responds with appropriate action type
     3. Frontend processes action based on type
     
+
     **Response Types:**
-    - `chat`: Informational message, workflow continues automatically
-    - `sleep`: Message requiring user input, workflow stops
-    - `edit`: Direct editing instructions for implementation
-    - `probe`: Request to analyze media content (includes fileName, question)
-    - `generate`: Request to generate media (includes content_type, prompt, suggestedName)
-    - `fetch`: Request to search stock media (includes query)
-    
+    - `info`: Informational response, workflow continues automatically
+    - `chat`: Conversational interaction requiring user input, workflow pauses
+    - `edit`: Direct editing instructions for composition changes
+    - `probe`: Media content analysis requests
+    - `generate`: Media generation requests (images or videos)
+    - `fetch`: Stock video search and selection requests
     **Context Fields:**
     - `messages`: Full conversation history (chronological)
     - `currentComposition`: Current timeline blueprint (tracks and clips)
@@ -77,10 +77,10 @@ async def agent_chat(
     }
     ```
     
-    **Example Response (Sleep - Plan):**
+    **Example Response (Chat - Plan):**
     ```json
     {
-      "type": "sleep",
+      "type": "chat",
       "content": "I'll add a 'Welcome' title at the beginning. The text will fade in at 0 seconds and stay visible until 3 seconds with large white text. Does this sound good? Say 'yes' to proceed.",
       "metadata": {
         "total_tokens": 1250,

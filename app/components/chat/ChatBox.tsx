@@ -840,8 +840,8 @@ export function ChatBox({
         console.log(`📚 Total messages in history for next iteration: ${conversationMessages.length + stepMessages.length}`);
 
         // Check if workflow should continue
-        if (synthResponse.type === 'sleep') {
-          console.log("💤 Sleep response - stopping unified workflow");
+        if (synthResponse.type === 'chat') {
+          console.log("� Chat response - stopping unified workflow");
           continueWorkflow = false;
         } else if (synthResponse.type === 'edit') {
           console.log("✅ Edit response - stopping unified workflow after implementation");
@@ -1047,9 +1047,9 @@ export function ChatBox({
         }];
       }
       
-    } else if (synthResponse.type === 'chat') {
-      // Chat response - just display
-      console.log("💬 Executing chat response");
+    } else if (synthResponse.type === 'info') {
+      // Info response - just display
+      console.log("ℹ️ Executing info response");
       await logChatResponse(synthResponse.content);
       
       return [{
@@ -1059,9 +1059,9 @@ export function ChatBox({
         timestamp: new Date(),
       }];
       
-    } else if (synthResponse.type === 'sleep') {
-      // Sleep response - display and mark end of workflow
-      console.log("💤 Executing sleep response");
+    } else if (synthResponse.type === 'chat') {
+      // Chat response - display and mark end of workflow
+      console.log("� Executing chat response");
       await logChatResponse(synthResponse.content);
       
       return [{

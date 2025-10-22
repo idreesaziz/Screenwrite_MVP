@@ -57,8 +57,8 @@ All dependencies were installed from scratch using `uv`:
 #### 2. Composition Generation
 - **POST** `/api/v1/compositions/generate`
 - Generate/modify video compositions with AI
-- Input: user_request, preview_settings, media_library, current_composition
-- Returns: composition_code (JSON), explanation, duration
+- Input: user message, conversation history, current composition state, media library
+- Returns: type (info/chat/edit/probe/generate/fetch), content, metadata
 
 #### 3. Media Analysis
 - **POST** `/api/v1/analysis/media`

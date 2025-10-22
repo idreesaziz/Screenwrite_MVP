@@ -38,7 +38,7 @@ export interface ConversationMessage {
 }
 
 export interface SynthResponse {
-  type: 'chat' | 'edit' | 'probe' | 'generate' | 'fetch' | 'sleep';
+  type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch';
   content: string;
   referencedFiles?: string[]; // @-mentioned files
   fileName?: string; // For probe responses - can be media file from library OR YouTube URL
@@ -149,8 +149,8 @@ Your job is to generate the next appropriate response based on the conversation 
       // Handle the structured response
       if (structuredResponse.type === 'edit') {
         console.log("🎬 Generated edit instructions:", structuredResponse.content);
-      } else if (structuredResponse.type === 'chat') {
-        console.log("💬 Generated chat response:", structuredResponse.content);
+      } else if (structuredResponse.type === 'info') {
+        console.log("💬 Generated info response:", structuredResponse.content);
       }
       
       return {
@@ -171,7 +171,7 @@ Your job is to generate the next appropriate response based on the conversation 
       
       // Always return API error and exit the loop - no retrying
       return {
-        type: 'sleep',
+        type: 'chat',
         content: "There was an API error. Please try again later.",
         referencedFiles
       };
@@ -322,7 +322,7 @@ Your job is to generate the next appropriate response based on the conversation 
   private async callGeminiAPIStructured(
     systemInstruction: string, 
     prompt: string
-  ): Promise<{ type: 'chat' | 'edit' | 'probe' | 'generate' | 'fetch'; content: string; fileName?: string; question?: string; prompt?: string; suggestedName?: string; content_type?: 'image' | 'video'; seedImageFileName?: string; query?: string }> {
+  ): Promise<{ type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch'; content: string; fileName?: string; question?: string; prompt?: string; suggestedName?: string; content_type?: 'image' | 'video'; seedImageFileName?: string; query?: string }> {
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment.");
     }
@@ -332,7 +332,7 @@ Your job is to generate the next appropriate response based on the conversation 
       properties: {
         "type": {
           "type": "STRING",
-          "enum": ["chat", "edit", "probe", "generate", "fetch", "sleep"]
+          "enum": ["info", "chat", "edit", "probe", "generate", "fetch"]
         },
         "fileName": {
           "type": "STRING"
@@ -420,7 +420,7 @@ Your job is to generate the next appropriate response based on the conversation 
       try {
         const parsedResponse = JSON.parse(responseText);
         
-        if (!parsedResponse.type || !parsedResponse.content || !["chat", "edit", "probe", "generate", "fetch", "sleep"].includes(parsedResponse.type)) {
+        if (!parsedResponse.type || !parsedResponse.content || !["info", "chat", "edit", "probe", "generate", "fetch"].includes(parsedResponse.type)) {
           throw new Error('Invalid structured response from Gemini API');
         }
 
@@ -437,9 +437,9 @@ Your job is to generate the next appropriate response based on the conversation 
         };
       } catch (e) {
         // If parsing fails, it might be a plain text response
-        console.warn("Failed to parse JSON, treating as chat response:", responseText);
+        console.warn("Failed to parse JSON, treating as info response:", responseText);
         return {
-          type: 'chat',
+          type: 'info',
           content: responseText
         };
       }
@@ -449,7 +449,7 @@ Your job is to generate the next appropriate response based on the conversation 
       
       // Provide fallback response
       return {
-        type: 'chat',
+        type: 'info',
         content: "I'm sorry, I'm having trouble processing your request right now. Could you try again?"
       };
     }

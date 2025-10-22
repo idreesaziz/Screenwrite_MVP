@@ -204,7 +204,7 @@ You can manipulate video compositions using these capabilities:
 
 **TEXT & TYPOGRAPHY:**
 - Basic text: headings (h1-h6), paragraphs, spans
-- Animated text: SplitText, BlurText, TypewriterText, DecryptedText, GlitchText, Shuffle
+- Animated text: SplitText, BlurText, TypewriterText, DecryptedText, GlitchText
 - Full CSS styling: fonts, colors, sizes, spacing, shadows, transforms
 
 **VISUAL STYLING:**
@@ -232,6 +232,7 @@ You can manipulate video compositions using these capabilities:
 - TypewriterText: Classic typewriter reveal effect
 - DecryptedText: Glitch-style character randomization before revealing final text
 - GlitchText: Digital glitch effects on text
+(This section will be updated as new custom elements are added)
 """
 
 # ===== 4. OPERATIONAL PLAYBOOKS =====

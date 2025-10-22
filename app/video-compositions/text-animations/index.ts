@@ -4,7 +4,6 @@ export { BlurText } from './BlurText';
 export type { BlurTextProps } from './BlurText';
 export { TypewriterText } from './TypewriterText';
 export type { TypewriterTextProps } from './TypewriterText';
-export { Shuffle } from './Shuffle';
 export { GradientText } from './GradientText';
 export type { GradientTextProps } from './GradientText';
 export { DecryptedText } from './DecryptedText';

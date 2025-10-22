@@ -9,7 +9,7 @@
 import type { ComponentSchema } from './BlueprintTypes';
 import * as Remotion from 'remotion';
 import React from 'react';
-import { SplitText, BlurText, TypewriterText, Shuffle, GradientText, DecryptedText, TrueFocus, GlitchText } from './text-animations';
+import { SplitText, BlurText, TypewriterText, GradientText, DecryptedText, TrueFocus, GlitchText } from './text-animations';
 
 export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   // Standard HTML elements - all props go to style
@@ -91,11 +91,6 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
     componentProps: ['text', 'typingSpeed', 'initialDelay', 'pauseDuration', 'deletingSpeed', 'loop', 'showCursor', 'cursorCharacter', 'cursorBlinkSpeed'],
     styleProps: '*'
   },
-  'Shuffle': {
-    type: 'component',
-    componentProps: ['text', 'shuffleDirection', 'duration', 'delay', 'stagger', 'shuffleTimes', 'animationMode', 'scrambleCharset', 'colorFrom', 'colorTo'],
-    styleProps: '*'
-  },
   'GradientText': {
     type: 'component',
     componentProps: ['text', 'colors', 'animationSpeed', 'showBorder'],
@@ -144,9 +139,6 @@ export function getComponent(componentName: string): any {
   }
   if (componentName === 'TypewriterText') {
     return TypewriterText;
-  }
-  if (componentName === 'Shuffle') {
-    return Shuffle;
   }
   if (componentName === 'GradientText') {
     return GradientText;

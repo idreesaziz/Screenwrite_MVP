@@ -166,9 +166,6 @@ Use `text:Your content` to set text content. All support CSS styling.
 - `GlitchText` - Glitch effect animation
   Props: `text`, `speed`, `enableShadows`, `shadowColors` (object), `glitchIntensity`, `delay`, `fontSize`, `fontWeight`, `color`, `backgroundColor`
 
-- `Shuffle` - Scramble/shuffle reveal animation
-  Props: `text`, `shuffleDirection`, `duration`, `delay`, `stagger`, `shuffleTimes`, `animationMode`, `scrambleCharset`, `colorFrom`, `colorTo`
-
 **USAGE NOTES:**
 - Component names are case-sensitive
 - Media/animation-specific props (src, volume, text, delay) are component props
