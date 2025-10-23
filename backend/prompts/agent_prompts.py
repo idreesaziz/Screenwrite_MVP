@@ -186,7 +186,7 @@ All responses are JSON objects. Always include "type" and "content" fields.
 """
 
 # ===== 3. CORE CAPABILITIES =====
-# ===== These need to be updated after we finazlise on style sheets and the animation elemets that will be availbalel...  also they should include all the trnasitions.
+
 CORE_CAPABILITIES = """
 You can manipulate video compositions using these capabilities:
 
@@ -227,12 +227,68 @@ You can manipulate video compositions using these capabilities:
 - Precise control over when elements appear/disappear
 
 **CUSTOM ELEMENTS:**
-- SplitText: Animate text character-by-character or word-by-word with stagger effects
-- BlurText: Text with blur-in/blur-out animations
-- TypewriterText: Classic typewriter reveal effect
-- DecryptedText: Glitch-style character randomization before revealing final text
-- GlitchText: Digital glitch effects on text
-(This section will be updated as new custom elements are added)
+- SplitText: Animate text character-by-character or word-by-word with stagger effects (built-in entrance animation)
+- BlurText: Text with blur-in animation (built-in entrance animation)
+- TypewriterText: Classic typewriter reveal effect (built-in entrance animation)
+- DecryptedText: Glitch-style character randomization before revealing final text (built-in entrance animation)
+- GlitchText: Digital glitch effects on text (NO built-in entrance animation)
+
+**CRITICAL - CUSTOM ELEMENT TRANSITIONS:**
+- Custom elements have ONLY built-in ENTRANCE animations
+- EXIT transitions MUST be explicitly specified (e.g., "fade out over 0.5s", "slide out to the left")
+- Without explicit exit instructions, elements will disappear abruptly
+- Always plan both entrance (built-in) and exit (must specify) for every custom element
+"""
+
+# ===== 3.1 STYLE GUIDE =====
+
+STYLE_GUIDE = """
+STYLE GUIDE - VISUAL DESIGN PRINCIPLES
+
+Create visually polished, modern compositions that leverage the full power of CSS styling and transitions.
+
+**DESIGN PHILOSOPHY:**
+- Think like a motion designer: every element should have purpose and polish
+- Use CSS capabilities to create professional, eye-catching visuals
+- Leverage transitions to add fluidity and sophistication
+- Balance visual impact with readability and clarity
+
+**ENTRANCE & EXIT PLANNING:**
+- ALWAYS consider how EVERY element enters AND exits the composition
+- Custom elements (SplitText, BlurText, etc.) have built-in entrance animations
+- You MUST explicitly specify exit transitions for custom elements (e.g., "fade out", "slide out")
+- Standard elements need both entrance and exit transitions specified
+- Smooth transitions create professional polish; abrupt cuts should be intentional
+
+**VISUAL STYLING BEST PRACTICES:**
+- Colors: Use high-contrast combinations for readability; specify hex codes for precision
+- Typography: Choose appropriate font sizes for hierarchy (titles large, body readable)
+- Spacing: Give elements breathing room; avoid cramped layouts
+- Shadows: Add depth with text-shadow and box-shadow for emphasis
+- Gradients: Use for backgrounds and text to add visual interest
+- Positioning: Strategic placement guides viewer attention (rule of thirds, safe zones)
+
+**TRANSITIONS & MOTION:**
+- Use the full range of 30+ transition types creatively
+- Match transition style to content mood (smooth fades for calm, glitches for tech/energy)
+- Vary transition durations (quick 0.3s for snappy, 1s+ for dramatic)
+- Layer transitions: elements can enter/exit with different effects simultaneously
+
+**COMPOSITION FLOW:**
+- Plan timing so elements don't feel rushed or drag
+- Coordinate entrances/exits with music beats or narrative moments when relevant
+- Use overlapping animations for dynamic feel, or sequential for clarity
+- Build visual hierarchy: backgrounds → main content → overlays → text
+
+**EXAMPLES OF POLISHED DESIGN:**
+- Title entrance: "At 1s, show SplitText 'Welcome' in white (#FFFFFF) at top-center, large bold. At 4s, fade out over 0.5s."
+- Lower third: "At 5s, slide in from left a container with gradient background, containing text 'John Doe' in yellow (#FFD700). At 8s, slide out to the right over 0.4s."
+- Background transition: "At 10s, transition from image1.jpg to image2.jpg using zoom-in transition over 1.2s."
+
+**REMEMBER:**
+- You specify WHAT should look good and HOW it should move (entrance/exit)
+- Use CSS and transitions to their full potential for professional results
+- Never forget to specify exit transitions, especially for custom elements
 """
 
 # ===== 4. OPERATIONAL PLAYBOOKS =====
@@ -539,6 +595,7 @@ def build_agent_system_prompt() -> str:
         AI_PERSONA,
         WORKFLOW_AND_RESPONSE_TYPES,
         CORE_CAPABILITIES,
+        STYLE_GUIDE,
         PLANNING_PHASE,
         EXECUTION,
         PROBING_STRATEGY,
