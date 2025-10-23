@@ -9,7 +9,7 @@
 import type { ComponentSchema } from './BlueprintTypes';
 import * as Remotion from 'remotion';
 import React from 'react';
-import { SplitText, BlurText, TypewriterText, GradientText, DecryptedText, TrueFocus, GlitchText } from './text-animations';
+import { SplitText, BlurText, TypewriterText, DecryptedText, GlitchText } from './text-animations';
 
 export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   // Standard HTML elements - all props go to style
@@ -91,19 +91,9 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
     componentProps: ['text', 'typingSpeed', 'initialDelay', 'pauseDuration', 'deletingSpeed', 'loop', 'showCursor', 'cursorCharacter', 'cursorBlinkSpeed'],
     styleProps: '*'
   },
-  'GradientText': {
-    type: 'component',
-    componentProps: ['text', 'colors', 'animationSpeed', 'showBorder'],
-    styleProps: '*'
-  },
   'DecryptedText': {
     type: 'component',
     componentProps: ['text', 'speed', 'sequential', 'revealDirection', 'useOriginalCharsOnly', 'characters', 'delay'],
-    styleProps: '*'
-  },
-  'TrueFocus': {
-    type: 'component',
-    componentProps: ['text', 'blurAmount', 'borderColor', 'glowColor', 'animationDuration', 'pauseBetweenAnimations', 'delay'],
     styleProps: '*'
   },
   'GlitchText': {
@@ -140,14 +130,8 @@ export function getComponent(componentName: string): any {
   if (componentName === 'TypewriterText') {
     return TypewriterText;
   }
-  if (componentName === 'GradientText') {
-    return GradientText;
-  }
   if (componentName === 'DecryptedText') {
     return DecryptedText;
-  }
-  if (componentName === 'TrueFocus') {
-    return TrueFocus;
   }
   if (componentName === 'GlitchText') {
     return GlitchText;
