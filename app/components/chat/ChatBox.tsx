@@ -1334,6 +1334,71 @@ export function ChatBox({
         )}
       </div>
 
+      {/* Provider Selectors */}
+      <div className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2">
+        <div className="flex items-center gap-4">
+          {/* Edit Engine Provider */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Edit Engine:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-6 text-xs">
+                  {selectedEditProvider === "gemini" ? "Gemini" : "Claude"}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="bottom" className="w-32">
+                <DropdownMenuItem 
+                  onClick={() => setSelectedEditProvider("gemini")}
+                  className="text-xs"
+                >
+                  Gemini
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedEditProvider("claude")}
+                  className="text-xs"
+                >
+                  Claude
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {/* Agent Provider */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Agent:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-6 text-xs">
+                  {selectedModel === "gemini" ? "Gemini" : selectedModel === "claude" ? "Claude" : "GPT-4.1"}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="bottom" className="w-32">
+                <DropdownMenuItem 
+                  onClick={() => setSelectedModel("gemini")}
+                  className="text-xs"
+                >
+                  Gemini
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedModel("claude")}
+                  className="text-xs"
+                >
+                  Claude
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedModel("openai")}
+                  className="text-xs"
+                >
+                  GPT-4.1
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
       {/* Content Area */}
       <div className="flex-1 flex flex-col">
         {messages.length === 0 ? (
@@ -1682,69 +1747,6 @@ export function ChatBox({
 
         {/* Input Area */}
         <div className="border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          {/* Provider Selectors */}
-          <div className="px-3 pt-2 pb-1 space-y-1">
-            {/* Edit Engine Provider */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground w-24">Edit Engine:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 text-xs">
-                    {selectedEditProvider === "gemini" ? "Gemini" : "Claude"}
-                    <ChevronDown className="w-3 h-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="w-32">
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedEditProvider("gemini")}
-                    className="text-xs"
-                  >
-                    Gemini
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedEditProvider("claude")}
-                    className="text-xs"
-                  >
-                    Claude
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            
-            {/* Agent Provider */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground w-24">Agent:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 text-xs">
-                    {selectedModel === "gemini" ? "Gemini" : selectedModel === "claude" ? "Claude" : "GPT-4.1"}
-                    <ChevronDown className="w-3 h-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="w-32">
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedModel("gemini")}
-                    className="text-xs"
-                  >
-                    Gemini
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedModel("claude")}
-                    className="text-xs"
-                  >
-                    Claude
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedModel("openai")}
-                    className="text-xs"
-                  >
-                    GPT-4.1
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          
           <div className="p-3 relative">
             <div className="relative">
               <textarea
