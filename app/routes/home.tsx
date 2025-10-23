@@ -47,6 +47,7 @@ import { useNavigate } from "react-router";
 // Custom Timeline
 import TimelineView from "../components/custom-timeline/TimelineView"; // direct relative path to bust alias cache
 import { ChatBox } from "~/components/chat/ChatBox";
+import { ProviderPairingModal } from "~/components/chat/ProviderPairingModal";
 
 interface Message {
   id: string;
@@ -68,6 +69,20 @@ export default function TimelineEditor() {
   const [height, setHeight] = useState<number>(1080);
   const [isAutoSize, setIsAutoSize] = useState<boolean>(false);
   const [isChatMinimized, setIsChatMinimized] = useState<boolean>(true);
+  
+  // Provider pairing state
+  const [showProviderModal, setShowProviderModal] = useState<boolean>(true);
+  const [selectedEditProvider, setSelectedEditProvider] = useState<"gemini" | "claude">("gemini");
+  const [selectedAgentProvider, setSelectedAgentProvider] = useState<"gemini" | "claude" | "openai">("gemini");
+  
+  const handleProviderPairingSelect = (
+    editProvider: "gemini" | "claude",
+    agentProvider: "gemini" | "claude" | "openai"
+  ) => {
+    setSelectedEditProvider(editProvider);
+    setSelectedAgentProvider(agentProvider);
+    setShowProviderModal(false);
+  };
 
   // Video playback state
   const [durationInFrames, setDurationInFrames] = useState<number>(90); // Start with 3 seconds (90 frames at 30fps) for empty composition
@@ -859,12 +874,20 @@ export default function TimelineEditor() {
                   onAddGeneratedImage={handleAddGeneratedImage}
                   onUpdateMediaItem={handleUpdateMediaItem}
                   getToken={getToken}
+                  initialEditProvider={selectedEditProvider}
+                  initialAgentProvider={selectedAgentProvider}
                 />
               </div>
             </ResizablePanel>
           </>
         )}
       </ResizablePanelGroup>
+
+      {/* Provider Pairing Modal */}
+      <ProviderPairingModal 
+        isOpen={showProviderModal}
+        onSelect={handleProviderPairingSelect}
+      />
 
       {/* Hidden file input */}
       <input

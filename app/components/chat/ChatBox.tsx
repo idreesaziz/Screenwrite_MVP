@@ -122,6 +122,9 @@ interface ChatBoxProps {
   onClearError?: () => void;
   // Authentication
   getToken: GetTokenFn;
+  // Provider selection
+  initialEditProvider?: "gemini" | "claude";
+  initialAgentProvider?: "gemini" | "claude" | "openai";
 }
 
 export function ChatBox({
@@ -144,6 +147,8 @@ export function ChatBox({
   onRetryFix,
   onClearError,
   getToken,
+  initialEditProvider = "gemini",
+  initialAgentProvider = "gemini",
 }: ChatBoxProps) {
   const [inputValue, setInputValue] = useState("");
   const [showMentions, setShowMentions] = useState(false);
@@ -160,8 +165,8 @@ export function ChatBox({
   useEffect(() => {
     mediaBinItemsRef.current = mediaBinItems;
   }, [mediaBinItems]);
-  const [selectedModel, setSelectedModel] = useState<string>("gemini"); // AI model selection (for agent)
-  const [selectedEditProvider, setSelectedEditProvider] = useState<string>("gemini"); // Edit engine provider
+  const [selectedModel, setSelectedModel] = useState<string>(initialAgentProvider); // AI model selection (for agent)
+  const [selectedEditProvider, setSelectedEditProvider] = useState<string>(initialEditProvider); // Edit engine provider
   const [sendWithMedia, setSendWithMedia] = useState(false); // Track send mode
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
