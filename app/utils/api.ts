@@ -39,6 +39,7 @@ export interface CompositionRequest {
   media_library?: any[]; // Optional list of available media files
   current_generated_code?: string; // Optional current AI-generated TSX code for context
   conversation_history?: ConversationMessage[]; // Past requests and responses for context
+  provider?: string; // AI provider ("gemini" or "claude")
 }
 
 export interface CompositionResponse {

@@ -137,6 +137,7 @@ class CompositionGenerationService:
                     "temperature": temperature,
                     "media_library_count": len(media_library) if media_library else 0,
                     "had_current_composition": current_composition is not None,
+                    "current_composition": current_composition,
                     "generated_code": composition_json,
                     "duration": duration,
                     "tracks_count": len(result_dict)

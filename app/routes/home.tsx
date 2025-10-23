@@ -571,7 +571,8 @@ export default function TimelineEditor() {
   const handleGenerateComposition = useCallback(async (
     userRequest: string, 
     mediaBinItems: MediaBinItem[], 
-    modelType: string = "gemini"
+    modelType: string = "gemini",
+    provider: string = "gemini"
   ): Promise<boolean> => {
     // Map frontend model names to backend model names
     const modelNameMap: Record<string, string> = {
@@ -610,6 +611,7 @@ export default function TimelineEditor() {
         current_composition: currentComposition, // Send current composition for incremental editing
         preview_frame: null,
         model_name: backendModelName, // Use mapped model name
+        provider: provider, // Send selected provider
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,

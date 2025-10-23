@@ -18,6 +18,8 @@ from services.base.VideoGenerationProvider import VideoGenerationProvider
 from services.google.GeminiMediaAnalysisProvider import GeminiMediaAnalysisProvider
 from services.google.GCStorageProvider import GCStorageProvider
 from services.google.GeminiChatProvider import GeminiChatProvider
+from services.anthropic.ClaudeChatProvider import ClaudeChatProvider
+from services.openai.OpenAIChatProvider import OpenAIChatProvider
 from services.pexels.PexelsMediaProvider import PexelsMediaProvider
 from services.google.ImagenGenerationProvider import ImagenGenerationProvider
 from services.google.VEOGenerationProvider import VEOGenerationProvider
@@ -71,7 +73,7 @@ def get_storage_provider() -> StorageProvider:
 @lru_cache()
 def get_chat_provider() -> ChatProvider:
     """
-    Factory function for ChatProvider.
+    Factory function for ChatProvider (default/agent provider).
     
     Returns a singleton instance of the configured chat provider.
     Uses @lru_cache() to ensure only one instance is created.
@@ -92,8 +94,63 @@ def get_chat_provider() -> ChatProvider:
             default_temperature=1.0,
             default_thinking_budget=8000
         )
+    elif provider_type == "claude":
+        return ClaudeChatProvider(
+            default_model_name=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
+            default_temperature=1.0,
+            default_thinking_budget=8000
+        )
+    elif provider_type == "openai":
+        return OpenAIChatProvider(
+            default_model_name=os.getenv("OPENAI_MODEL", "gpt-4.1"),
+            default_temperature=1.0,
+            default_reasoning_effort="medium"
+        )
     else:
         raise ValueError(f"Unsupported chat provider: {provider_type}")
+
+
+def get_chat_provider_by_name(provider_name: str, thinking_budget: int = 8000) -> ChatProvider:
+    """
+    Factory function for creating ChatProvider instances dynamically.
+    
+    This allows per-request provider selection (e.g., from frontend UI).
+    NOT cached - creates new instance each time for per-request flexibility.
+    
+    Args:
+        provider_name: Provider name ("gemini" or "claude")
+        thinking_budget: Thinking budget for extended thinking mode
+    
+    Returns:
+        ChatProvider instance (GeminiChatProvider or ClaudeChatProvider)
+    
+    Raises:
+        ValueError: If provider_name is not supported
+    """
+    provider_name = provider_name.lower()
+    
+    if provider_name == "gemini":
+        return GeminiChatProvider(
+            project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+            default_model_name=os.getenv("CHAT_MODEL", "gemini-2.5-flash"),
+            default_temperature=1.0,
+            default_thinking_budget=thinking_budget
+        )
+    elif provider_name == "claude":
+        return ClaudeChatProvider(
+            default_model_name=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
+            default_temperature=1.0,
+            default_thinking_budget=thinking_budget
+        )
+    elif provider_name == "openai":
+        return OpenAIChatProvider(
+            default_model_name=os.getenv("OPENAI_MODEL", "gpt-4.1"),
+            default_temperature=1.0,
+            default_reasoning_effort="medium"
+        )
+    else:
+        raise ValueError(f"Unsupported chat provider: {provider_name}")
 
 
 def get_media_analysis_service():

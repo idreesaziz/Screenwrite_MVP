@@ -98,7 +98,8 @@ interface ChatBoxProps {
   onGenerateComposition?: (
     userRequest: string, 
     mediaBinItems: MediaBinItem[], 
-    modelType?: string
+    modelType?: string,
+    provider?: string
   ) => Promise<boolean>;
   isGeneratingComposition?: boolean;
   // Props for conversational edit system
@@ -159,7 +160,8 @@ export function ChatBox({
   useEffect(() => {
     mediaBinItemsRef.current = mediaBinItems;
   }, [mediaBinItems]);
-  const [selectedModel, setSelectedModel] = useState<string>("gemini"); // AI model selection
+  const [selectedModel, setSelectedModel] = useState<string>("gemini"); // AI model selection (for agent)
+  const [selectedEditProvider, setSelectedEditProvider] = useState<string>("gemini"); // Edit engine provider
   const [sendWithMedia, setSendWithMedia] = useState(false); // Track send mode
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
@@ -1024,7 +1026,8 @@ export function ChatBox({
         const success = await onGenerateComposition(
           synthResponse.content, 
           mediaBinItems, 
-          selectedModel
+          selectedModel,
+          selectedEditProvider
         );
         await logEditResult(success);
         
@@ -1679,29 +1682,63 @@ export function ChatBox({
 
         {/* Input Area */}
         <div className="border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          {/* Model Selector */}
-          <div className="px-3 pt-2 pb-1">
+          {/* Provider Selectors */}
+          <div className="px-3 pt-2 pb-1 space-y-1">
+            {/* Edit Engine Provider */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">AI Model:</span>
+              <span className="text-xs text-muted-foreground w-24">Edit Engine:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-6 text-xs">
-                    {selectedModel === "gemini" ? "Gemini 2.5 Flash" : selectedModel === "openai" ? "GPT-5-mini" : selectedModel}
+                    {selectedEditProvider === "gemini" ? "Gemini" : "Claude"}
                     <ChevronDown className="w-3 h-3 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="w-40">
+                <DropdownMenuContent align="start" side="top" className="w-32">
+                  <DropdownMenuItem 
+                    onClick={() => setSelectedEditProvider("gemini")}
+                    className="text-xs"
+                  >
+                    Gemini
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSelectedEditProvider("claude")}
+                    className="text-xs"
+                  >
+                    Claude
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            {/* Agent Provider */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-24">Agent:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-6 text-xs">
+                    {selectedModel === "gemini" ? "Gemini" : selectedModel === "claude" ? "Claude" : "GPT-4.1"}
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="w-32">
                   <DropdownMenuItem 
                     onClick={() => setSelectedModel("gemini")}
                     className="text-xs"
                   >
-                    Gemini 2.5 Flash
+                    Gemini
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSelectedModel("claude")}
+                    className="text-xs"
+                  >
+                    Claude
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setSelectedModel("openai")}
                     className="text-xs"
                   >
-                    GPT-5-mini
+                    GPT-4.1
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -13,7 +13,7 @@ from models.requests.CompositionGenerationRequest import CompositionGenerationRe
 from models.responses.CompositionGenerationResponse import CompositionGenerationResponse
 from business_logic.generate_composition import CompositionGenerationService
 from core.security import get_current_user
-from core.dependencies import get_composition_service
+from core.dependencies import get_composition_service, get_chat_provider_by_name
 
 
 logger = logging.getLogger(__name__)
@@ -61,14 +61,15 @@ router = APIRouter()
 )
 async def generate_composition(
     request: CompositionGenerationRequest,
-    user: Dict = Depends(get_current_user),
-    service: CompositionGenerationService = Depends(get_composition_service)
+    user: Dict = Depends(get_current_user)
 ) -> CompositionGenerationResponse:
     """
     Generate or modify a video composition based on user request.
     
     Requires JWT authentication. User and session information is extracted
     from the JWT token for logging and tracking purposes.
+    
+    Supports dynamic provider selection (Gemini/Claude) via request.provider field.
     """
     try:
         # Extract user info from JWT
@@ -83,8 +84,15 @@ async def generate_composition(
         
         logger.info(
             f"Composition generation request from user {user_id}, "
-            f"session {session_id}: {request.user_request[:100]}"
+            f"session {session_id}, provider: {request.provider}: {request.user_request[:100]}"
         )
+        
+        # Get chat provider based on request (dynamic per-request selection)
+        chat_provider = get_chat_provider_by_name(request.provider or "gemini")
+        
+        # Create service with selected provider
+        # NOTE: Cannot use Depends() here since provider comes from request body
+        service = CompositionGenerationService(chat_provider=chat_provider)
         
         # Generate composition
         result = await service.generate_composition(

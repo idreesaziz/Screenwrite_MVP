@@ -34,6 +34,11 @@ class CompositionGenerationRequest(BaseModel):
         description="Override the default AI model (e.g., 'gemini-2.5-flash', 'gemini-2.0-flash-thinking-exp')"
     )
     
+    provider: Optional[str] = Field(
+        default="gemini",
+        description="AI provider to use for generation ('gemini' or 'claude')"
+    )
+    
     temperature: float = Field(
         default=0.1,
         ge=0.0,
