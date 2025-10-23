@@ -672,10 +672,15 @@ def build_composition_context(current_composition: list) -> str:
     if not current_composition or len(current_composition) == 0:
         return ""
     
+    import json
+    
     composition_context = f"\nEXISTING COMPOSITION: {len(current_composition)} tracks, "
     clip_count = sum(len(track.get('clips', [])) for track in current_composition)
     composition_context += f"{clip_count} clips total.\n"
-    composition_context += f"Add to or modify this composition based on the user request.\n"
+    composition_context += f"Add to or modify this composition based on the user request.\n\n"
+    composition_context += "CURRENT COMPOSITION DATA:\n"
+    composition_context += json.dumps(current_composition, indent=2)
+    composition_context += "\n"
     
     return composition_context
 
