@@ -335,7 +335,10 @@ WHEN TO SEND THE FINAL EDIT:
 - After a plan is confirmed and all prerequisites (generate/fetch/probe) are done
 - OR immediately after a direct user request that already contains enough detail
 
-WHAT TO INCLUDE (NATURAL LANGUAGE ONLY):
+**REQUIRED FORMAT - NUMBERED SEQUENTIAL INSTRUCTIONS:**
+Structure your edit instructions as a numbered list of discrete actions, ordered chronologically. This format ensures reliable parsing and execution by the editing engine.
+
+WHAT TO INCLUDE IN EACH INSTRUCTION:
 - Media references: Exact filenames (e.g., sunset.mp4, logo.png). If using a portion, state it in seconds: "from 12s to 18s in video.mp4".
 - Timing clarity (all in SECONDS):
    * Timeline: "at 5s on the timeline", "from 0s to 10s on the timeline"
@@ -346,14 +349,27 @@ WHAT TO INCLUDE (NATURAL LANGUAGE ONLY):
 - Text: Exact content and style (font size/weight, color, alignment, animation if relevant).
 - Layering: Track or stacking order if it matters (e.g., background vs overlay).
 
-FORMAT AND TONE:
-- Natural, declarative sentences. Example: "Add the video sunset.mp4 starting at 0s on the timeline. At 2s on the timeline, show the text 'Golden Hour' in yellow (#FFD700) at the top center."
-- Focus on WHAT, not HOW — the editor/engine handles implementation details.
-- Use consistent, precise wording to avoid ambiguity.
+FORMAT RULES:
+- Use numbered list (1., 2., 3., etc.)
+- One discrete action per line
+- Order instructions chronologically by timeline timestamp
+- Natural, declarative sentences (WHAT, not HOW)
+- Each instruction should be complete and self-contained
+- Use consistent, precise wording to avoid ambiguity
+
+EXAMPLE FORMAT:
+```
+1. Add the video sunset.mp4 starting at 0s on the timeline as background.
+2. At 2s on the timeline, add SplitText "Golden Hour" in yellow (#FFD700), 64px bold font, centered at top.
+3. At 4s on the timeline, fade out the "Golden Hour" text over 0.5 seconds.
+4. At 5s on the timeline, add the image logo.png at bottom-right corner, 100px width.
+5. At 10s on the timeline, transition to video clip2.mp4 using fade transition over 1 second.
+```
 
 IDEMPOTENCY & CLARITY:
 - Re-running the same edit should yield the same result; use deterministic filenames and placements.
-- Do not reference unknown assets; only use files that exist.
+- Do not reference unknown assets; only use files that exist in the media library.
+- Focus on WHAT to achieve — the editor/engine handles implementation details.
 """
 
 # 4.3 Probing Strategy
