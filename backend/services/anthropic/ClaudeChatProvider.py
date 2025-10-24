@@ -48,24 +48,31 @@ class ClaudeChatProvider(ChatProvider):
         self.client = AsyncAnthropic(api_key=self.api_key)
         logger.info(f"Initialized Anthropic client with model: {default_model_name}")
     
-    def _convert_messages(self, messages: List[ChatMessage]) -> tuple[Optional[str], List[MessageParam]]:
+    def _convert_messages(
+        self, 
+        messages: List[ChatMessage], 
+        enable_caching: bool = True
+    ) -> tuple[Optional[List[Dict[str, Any]]], List[MessageParam]]:
         """
-        Convert ChatMessage list to Claude format.
+        Convert ChatMessage list to Claude format with optional prompt caching.
         
         Claude expects:
-        - system: separate system parameter (not in messages)
+        - system: separate system parameter (can be string or list of content blocks)
         - messages: list of user/assistant messages
         
+        When caching is enabled, system prompts are converted to content blocks
+        with cache_control for 1-hour TTL.
+        
         Returns:
-            (system_prompt, messages_list)
+            (system_blocks, messages_list)
         """
-        system_prompt = None
+        system_content = []
         claude_messages = []
         
         for msg in messages:
             if msg.role == "system":
-                # Combine multiple system messages
-                system_prompt = msg.content if not system_prompt else system_prompt + "\n\n" + msg.content
+                # Collect system messages as content blocks
+                system_content.append(msg.content)
             else:
                 # Claude uses "user" and "assistant" roles directly
                 claude_messages.append({
@@ -73,7 +80,29 @@ class ClaudeChatProvider(ChatProvider):
                     "content": msg.content
                 })
         
-        return system_prompt, claude_messages
+        # Convert system content to format with caching
+        system_blocks = None
+        if system_content:
+            combined_system = "\n\n".join(system_content)
+            
+            if enable_caching:
+                # Use content blocks format with cache_control for 1-hour TTL
+                # This caches the entire system prompt (including schema instructions)
+                system_blocks = [
+                    {
+                        "type": "text",
+                        "text": combined_system,
+                        "cache_control": {
+                            "type": "ephemeral",
+                            "ttl": "1h"
+                        }
+                    }
+                ]
+            else:
+                # Return as simple string for non-cached requests
+                system_blocks = combined_system
+        
+        return system_blocks, claude_messages
     
     async def generate_chat_response(
         self,
@@ -84,11 +113,11 @@ class ClaudeChatProvider(ChatProvider):
         thinking_budget: Optional[int] = None,
         **kwargs
     ) -> ChatResponse:
-        """Generate a single chat response from Claude."""
+        """Generate a single chat response from Claude with 1-hour prompt caching enabled."""
         if not messages:
             raise ValueError("Messages cannot be empty")
         
-        system_prompt, claude_messages = self._convert_messages(messages)
+        system_blocks, claude_messages = self._convert_messages(messages, enable_caching=True)
         model = model_name or self.default_model_name
         temp = temperature if temperature is not None else self.default_temperature
         max_tok = max_tokens or self.default_max_tokens
@@ -103,8 +132,8 @@ class ClaudeChatProvider(ChatProvider):
             **kwargs
         }
         
-        if system_prompt:
-            request_params["system"] = system_prompt
+        if system_blocks:
+            request_params["system"] = system_blocks
         
         # Add extended thinking if thinking budget > 0
         # Claude 4.5 and later support extended thinking
@@ -122,7 +151,7 @@ class ClaudeChatProvider(ChatProvider):
             if isinstance(block, TextBlock):
                 content_text += block.text
         
-        # Build usage dict
+        # Build usage dict with cache metrics
         usage = None
         if response.usage:
             usage = {
@@ -130,6 +159,18 @@ class ClaudeChatProvider(ChatProvider):
                 "completion_tokens": response.usage.output_tokens,
                 "total_tokens": response.usage.input_tokens + response.usage.output_tokens
             }
+            
+            # Add cache metrics if available
+            if hasattr(response.usage, 'cache_creation_input_tokens'):
+                usage["cache_creation_input_tokens"] = response.usage.cache_creation_input_tokens
+            if hasattr(response.usage, 'cache_read_input_tokens'):
+                usage["cache_read_input_tokens"] = response.usage.cache_read_input_tokens
+            
+            # Log cache performance
+            if hasattr(response.usage, 'cache_read_input_tokens') and response.usage.cache_read_input_tokens > 0:
+                logger.info(f"Cache hit! Read {response.usage.cache_read_input_tokens} tokens from cache")
+            if hasattr(response.usage, 'cache_creation_input_tokens') and response.usage.cache_creation_input_tokens > 0:
+                logger.info(f"Cache write: {response.usage.cache_creation_input_tokens} tokens written to cache")
         
         return ChatResponse(
             content=content_text,
@@ -149,11 +190,11 @@ class ClaudeChatProvider(ChatProvider):
         max_tokens: Optional[int] = None,
         **kwargs
     ) -> AsyncIterator[str]:
-        """Stream chat response chunks from Claude."""
+        """Stream chat response chunks from Claude with 1-hour prompt caching enabled."""
         if not messages:
             raise ValueError("Messages cannot be empty")
         
-        system_prompt, claude_messages = self._convert_messages(messages)
+        system_blocks, claude_messages = self._convert_messages(messages, enable_caching=True)
         model = model_name or self.default_model_name
         temp = temperature if temperature is not None else self.default_temperature
         max_tok = max_tokens or self.default_max_tokens
@@ -166,8 +207,8 @@ class ClaudeChatProvider(ChatProvider):
             **kwargs
         }
         
-        if system_prompt:
-            request_params["system"] = system_prompt
+        if system_blocks:
+            request_params["system"] = system_blocks
         
         async with self.client.messages.stream(**request_params) as stream:
             async for text in stream.text_stream:
@@ -262,7 +303,8 @@ class ClaudeChatProvider(ChatProvider):
         if not messages or not response_schema:
             raise ValueError("Messages and schema required")
         
-        system_prompt, claude_messages = self._convert_messages(messages)
+        # Convert messages with caching enabled (this will cache the full system prompt)
+        system_blocks, claude_messages = self._convert_messages(messages, enable_caching=False)
         model = model_name or self.default_model_name
         temp = temperature if temperature is not None else self.default_temperature
         think = thinking_budget if thinking_budget is not None else self.default_thinking_budget
@@ -270,8 +312,21 @@ class ClaudeChatProvider(ChatProvider):
         # Convert schema to Claude-friendly text instructions
         schema_instructions = self._convert_schema_to_text(response_schema)
         
-        # Enhance system prompt with schema instructions
-        enhanced_system = (system_prompt or "") + f"\n\nYou must respond with valid JSON matching this exact structure:\n\n{schema_instructions}\n\nRespond with ONLY valid JSON, no explanations or markdown formatting."
+        # Build enhanced system content with schema instructions
+        base_system = system_blocks if isinstance(system_blocks, str) else (system_blocks[0]["text"] if system_blocks else "")
+        enhanced_system_text = base_system + f"\n\nYou must respond with valid JSON matching this exact structure:\n\n{schema_instructions}\n\nRespond with ONLY valid JSON, no explanations or markdown formatting."
+        
+        # Create system blocks with caching for the enhanced system prompt
+        enhanced_system_blocks = [
+            {
+                "type": "text",
+                "text": enhanced_system_text,
+                "cache_control": {
+                    "type": "ephemeral",
+                    "ttl": "1h"
+                }
+            }
+        ]
         
         # Prefill assistant response with opening brace
         prefilled_messages = claude_messages + [{"role": "assistant", "content": "{"}]
@@ -279,7 +334,7 @@ class ClaudeChatProvider(ChatProvider):
         request_params = {
             "model": model,
             "messages": prefilled_messages,
-            "system": enhanced_system,
+            "system": enhanced_system_blocks,
             "temperature": temp,
             "max_tokens": 8192,  # Structured output may need more tokens
             **kwargs
@@ -293,6 +348,12 @@ class ClaudeChatProvider(ChatProvider):
             }
         
         response = await self.client.messages.create(**request_params)
+        
+        # Log cache performance for structured responses
+        if hasattr(response.usage, 'cache_read_input_tokens') and response.usage.cache_read_input_tokens > 0:
+            logger.info(f"Cache hit in structured response! Read {response.usage.cache_read_input_tokens} tokens from cache")
+        if hasattr(response.usage, 'cache_creation_input_tokens') and response.usage.cache_creation_input_tokens > 0:
+            logger.info(f"Cache write in structured response: {response.usage.cache_creation_input_tokens} tokens written to cache")
         
         # Extract text content from response
         response_text = ""
