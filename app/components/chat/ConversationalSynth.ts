@@ -55,6 +55,7 @@ export interface SynthContext {
   currentComposition?: any; // Blueprint composition
   mediaLibrary: MediaBinItem[];
   compositionDuration?: number;
+  provider?: string; // AI provider to use ("gemini", "claude", or "openai")
 }
 
 export class ConversationalSynth {
@@ -124,6 +125,8 @@ Your job is to generate the next appropriate response based on the conversation 
         }))
       );
       
+      console.log(`🔍 DEBUG: Sending provider=${context.provider || "gemini"} to backend agent`);
+      
       const response = await fetch(apiUrl('/api/v1/agent/chat', true), {
         method: 'POST',
         headers,
@@ -136,7 +139,8 @@ Your job is to generate the next appropriate response based on the conversation 
           })),
           currentComposition: context.currentComposition,
           mediaLibrary: context.mediaLibrary,
-          compositionDuration: context.compositionDuration
+          compositionDuration: context.compositionDuration,
+          provider: context.provider || "gemini"
         })
       });
 

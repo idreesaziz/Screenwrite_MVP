@@ -815,7 +815,8 @@ export function ChatBox({
           messages: conversationMessages,
           currentComposition: currentComposition ? JSON.parse(currentComposition) : undefined,
           mediaLibrary: currentMediaBin, // Use ref to get latest state including newly generated items
-          compositionDuration: undefined
+          compositionDuration: undefined,
+          provider: selectedModel // Pass selected agent provider
         };
         
         console.log(`📚 Media library has ${currentMediaBin.length} items for iteration ${iterationCount}`);
@@ -1025,6 +1026,8 @@ export function ChatBox({
     } else if (synthResponse.type === 'edit') {
       // Edit instructions - send to backend
       console.log("🎬 Executing edit:", synthResponse.content);
+      console.log("🔍 DEBUG: selectedModel =", selectedModel);
+      console.log("🔍 DEBUG: selectedEditProvider =", selectedEditProvider);
       await logEditExecution(synthResponse.content);
       
       if (onGenerateComposition) {

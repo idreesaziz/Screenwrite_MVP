@@ -589,6 +589,9 @@ export default function TimelineEditor() {
     modelType: string = "gemini",
     provider: string = "gemini"
   ): Promise<boolean> => {
+    // DEBUG: Log incoming parameters
+    console.log("🔍 DEBUG handleGenerateComposition: modelType =", modelType, "provider =", provider);
+    
     // Map frontend model names to backend model names
     const modelNameMap: Record<string, string> = {
       "gemini": "gemini-2.5-flash",
@@ -634,6 +637,7 @@ export default function TimelineEditor() {
         }
       });
 
+      console.log("🔍 DEBUG: API request payload provider =", provider);
       console.log("🤖 AI Generation: Received response:", response.data);
 
       if (response.data.success && response.data.composition_code) {

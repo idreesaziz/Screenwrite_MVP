@@ -11,7 +11,7 @@ from typing import Dict
 from models.requests.AgentRequest import AgentRequest
 from models.responses.AgentResponse import AgentResponse
 from business_logic.invoke_agent import AgentService
-from core.dependencies import get_agent_service
+from core.dependencies import get_agent_service, get_chat_provider_by_name
 from core.security import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,7 @@ router = APIRouter(
 @router.post("/chat", response_model=AgentResponse)
 async def agent_chat(
     request: AgentRequest,
-    user: Dict = Depends(get_current_user),
-    service: AgentService = Depends(get_agent_service)
+    user: Dict = Depends(get_current_user)
 ) -> AgentResponse:
     """
     Chat with the AI video editing agent.
@@ -137,6 +136,15 @@ async def agent_chat(
             status_code=400,
             detail="Invalid JWT: missing user_id or session_id"
         )
+    
+    logger.info(f"Agent chat request from user={user_id}, session={session_id}, provider={request.provider}")
+    logger.info(f"🔍 DEBUG: Received provider={request.provider}")
+    
+    # Get chat provider based on request (dynamic per-request selection)
+    chat_provider = get_chat_provider_by_name(request.provider or "gemini")
+    
+    # Create service with selected provider
+    service = AgentService(chat_provider=chat_provider)
     
     logger.info(f"Agent chat request from user={user_id}, session={session_id}")
     

@@ -87,6 +87,9 @@ async def generate_composition(
             f"session {session_id}, provider: {request.provider}: {request.user_request[:100]}"
         )
         
+        # DEBUG: Log incoming provider and model name
+        logger.info(f"🔍 DEBUG: Received provider={request.provider}, model_name={request.model_name}")
+        
         # Get chat provider based on request (dynamic per-request selection)
         chat_provider = get_chat_provider_by_name(request.provider or "gemini")
         

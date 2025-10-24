@@ -58,6 +58,11 @@ class AgentRequest(BaseModel):
         ge=0
     )
     
+    provider: Optional[str] = Field(
+        default="gemini",
+        description="AI provider to use for agent chat ('gemini', 'claude', or 'openai')"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {
