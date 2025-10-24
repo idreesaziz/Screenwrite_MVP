@@ -5,7 +5,7 @@ Pydantic models for conversational agent API requests.
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 
 
 class AgentMessage(BaseModel):
@@ -25,6 +25,11 @@ class AgentMessage(BaseModel):
     isUser: bool = Field(
         ...,
         description="True if message is from user, False if from assistant"
+    )
+
+    sender: Optional[Literal['user', 'assistant', 'tool', 'system']] = Field(
+        None,
+        description="Optional explicit sender label propagated from frontend: 'user'|'assistant'|'tool'|'system'"
     )
     
     timestamp: str = Field(
@@ -71,6 +76,7 @@ class AgentRequest(BaseModel):
                         "id": "msg-1",
                         "content": "What's on my timeline?",
                         "isUser": True,
+                        "sender": "user",
                         "timestamp": "2025-10-11T10:30:00Z"
                     }
                 ],

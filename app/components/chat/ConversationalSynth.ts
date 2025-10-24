@@ -30,11 +30,14 @@ import {
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
+export type ConversationSender = 'user' | 'assistant' | 'tool' | 'system';
+
 export interface ConversationMessage {
   id: string;
   content: string;
   isUser: boolean;
   timestamp: Date;
+  sender?: ConversationSender;
 }
 
 export interface SynthResponse {
@@ -76,7 +79,9 @@ export class ConversationalSynth {
     console.log("🧠 ConversationalSynth: Processing conversation with", context.messages.length, "messages");
 
     // Get the last user message from conversation context for @filename detection
-    const lastUserMessage = context.messages.filter(msg => msg.isUser).pop();
+    const lastUserMessage = context.messages
+      .filter(msg => (msg.sender ?? (msg.isUser ? 'user' : 'assistant')) === 'user')
+      .pop();
     const messageForFileDetection = lastUserMessage ? lastUserMessage.content : "";
 
     // Detect @filename mentions
@@ -135,6 +140,7 @@ Your job is to generate the next appropriate response based on the conversation 
             id: msg.id,
             content: msg.content,
             isUser: msg.isUser,
+            sender: msg.sender ?? (msg.isUser ? 'user' : 'assistant'),
             timestamp: msg.timestamp.toISOString()
           })),
           currentComposition: context.currentComposition,
@@ -311,7 +317,15 @@ Your job is to generate the next appropriate response based on the conversation 
     conversationParts.push("");
     
     recent.forEach(msg => {
-      conversationParts.push(`${msg.isUser ? 'User' : 'Assistant'}: ${msg.content}`);
+      const sender = msg.sender ?? (msg.isUser ? 'user' : 'assistant');
+      const label = sender === 'user'
+        ? 'User'
+        : sender === 'assistant'
+          ? 'Assistant'
+          : sender === 'tool'
+            ? 'Tool'
+            : 'System';
+      conversationParts.push(`${label}: ${msg.content}`);
     });
     
     conversationParts.push("");

@@ -48,13 +48,14 @@ import {
 import { llmAddScrubberToTimeline } from "~/utils/llm-handler";
 
 // Conversational Synth
-import { ConversationalSynth, type SynthContext, type ConversationMessage, type SynthResponse } from "./ConversationalSynth";
+import { ConversationalSynth, type SynthContext, type ConversationMessage, type SynthResponse, type ConversationSender } from "./ConversationalSynth";
 
 interface Message {
   id: string;
   content: string;
   isUser: boolean;
   timestamp: Date;
+  sender?: ConversationSender;
   isExplanationMode?: boolean; // For post-edit explanations
   isAnalysisResult?: boolean; // For analysis results that appear in darker bubbles
   isSystemMessage?: boolean; // For system messages (analyzing, generating, etc.) that appear as raw text
@@ -351,6 +352,7 @@ export function ChatBox({
         isUser: false,
         timestamp: new Date(),
         isAnalysisResult: true,
+        sender: 'tool'
       };
 
       // Immediately add to collapsed state so it appears collapsed from the start
@@ -372,6 +374,7 @@ export function ChatBox({
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
+        sender: 'tool',
         hasRetryButton: true,
         retryData: {
           originalMessage: `analyze ${fileName}`
@@ -581,6 +584,7 @@ export function ChatBox({
         id: (Date.now() + 1).toString(),
         content: `Successfully generated ${contentType}: ${suggestedName || generatedFileName}. The ${contentType} has been added to your media library.`,
         isUser: false,
+        sender: 'tool',
         timestamp: new Date(),
         isSystemMessage: true, // Show as plain text
       };
@@ -593,6 +597,7 @@ export function ChatBox({
         id: (Date.now() + 1).toString(),
         content: `Failed to generate ${contentType}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         isUser: false,
+        sender: 'tool',
         timestamp: new Date(),
         isSystemMessage: true,
       };
@@ -727,6 +732,7 @@ export function ChatBox({
         id: (Date.now() + 1).toString(),
         content: `I found ${result.items.length} stock videos for "${query}". All videos have been added to your media library. Click to preview:`,
         isUser: false,
+        sender: 'tool',
         timestamp: new Date(),
         isSystemMessage: false,
         isVideoSelection: true,
@@ -741,6 +747,7 @@ export function ChatBox({
         id: (Date.now() + 1).toString(),
         content: `Failed to fetch stock videos: ${error instanceof Error ? error.message : 'Unknown error'}`,
         isUser: false,
+        sender: 'tool',
         timestamp: new Date(),
         isSystemMessage: true,
       };
@@ -754,7 +761,9 @@ export function ChatBox({
 
   const handleConversationalMessageWithUpdatedMessages = async (currentMessages: Message[]): Promise<void> => {
     // Get the last user message from conversation history for logging
-    const lastUserMessage = [...currentMessages].reverse().find(m => m.isUser);
+    const lastUserMessage = [...currentMessages]
+      .reverse()
+      .find(m => (m.sender ?? (m.isUser ? 'user' : 'assistant')) === 'user');
     const messageContent = lastUserMessage?.content || '';
     
     await logUserMessage(messageContent, mentionedItems.map(item => item.name));
@@ -789,7 +798,8 @@ export function ChatBox({
               id: msg.id,
               content: msg.content,
               isUser: msg.isUser,
-              timestamp: msg.timestamp
+              timestamp: msg.timestamp,
+              sender: msg.sender ?? (msg.isUser ? 'user' : 'assistant')
             })),
           ...allResponseMessages
             .filter(msg => !msg.alreadyInUI) // Exclude UI-only messages
@@ -797,7 +807,8 @@ export function ChatBox({
               id: msg.id,
               content: msg.content,
               isUser: msg.isUser,
-              timestamp: msg.timestamp
+              timestamp: msg.timestamp,
+              sender: msg.sender ?? (msg.isUser ? 'user' : 'assistant')
             }))
         ];
         
@@ -873,6 +884,7 @@ export function ChatBox({
           id: (Date.now() + iterationCount).toString(),
           content: "I'm having trouble processing your request. Let me try a different approach.",
           isUser: false,
+          sender: 'system',
           timestamp: new Date(),
         };
         
@@ -889,6 +901,7 @@ export function ChatBox({
         id: Date.now().toString(),
         content: "I've completed several steps but need to pause here. How can I help you next?",
         isUser: false,
+        sender: 'system',
         timestamp: new Date(),
       };
       allResponseMessages.push(maxIterationMessage);
@@ -907,6 +920,7 @@ export function ChatBox({
         id: Date.now().toString(),
         content: "I'm having trouble processing your request. Please try again.",
         isUser: false,
+        sender: 'system',
         timestamp: new Date(),
       };
       onMessagesChange(prevMessages => [...prevMessages, errorMessage]);
@@ -939,6 +953,7 @@ export function ChatBox({
         timestamp: new Date(),
         isSystemMessage: true,
         alreadyInUI: true, // Mark as already added to UI
+        sender: 'system'
       };
       
       // Show analyzing message immediately in UI
@@ -966,6 +981,7 @@ export function ChatBox({
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true, // Natural assistant/system-style line, included in history (no alreadyInUI flag)
+        sender: 'assistant'
       };
 
   // 2) Create a UI-only progress message so the user sees activity immediately (excluded from conversation)
@@ -976,6 +992,7 @@ export function ChatBox({
         timestamp: new Date(),
         isSystemMessage: true,
         alreadyInUI: true,
+        sender: 'system'
       };
       onMessagesChange(prevMessages => [...prevMessages, generatingMessage]);
 
@@ -1006,6 +1023,7 @@ export function ChatBox({
         id: Date.now().toString(),
         content: `Fetching stock videos: ${synthResponse.query}`,
         isUser: false,
+        sender: 'system',
         timestamp: new Date(),
         isSystemMessage: true,
         alreadyInUI: true, // Mark as already added to UI
@@ -1213,6 +1231,7 @@ export function ChatBox({
         id: (Date.now() + 1).toString(),
         content: `❌ Sorry, I encountered an error while processing your request. Please try again.`,
         isUser: false,
+        sender: 'system',
         timestamp: new Date(),
       };
       
@@ -1778,7 +1797,7 @@ export function ChatBox({
                     variant="ghost"
                     size="sm"
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground relative"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       setShowSendOptions(!showSendOptions);
                     }}

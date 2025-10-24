@@ -23,8 +23,8 @@ class ClaudeChatProvider(ChatProvider):
         api_key: Optional[str] = None,
         default_model_name: str = "claude-sonnet-4-5",
         default_temperature: float = 1.0,
-        default_max_tokens: int = 8192,
-        default_thinking_budget: int = 8000
+        default_max_tokens: int = 16384,
+        default_thinking_budget: int = 0
     ):
         """
         Initialize Anthropic client.
@@ -33,8 +33,8 @@ class ClaudeChatProvider(ChatProvider):
             api_key: Anthropic API key (optional, will use env var if not provided)
             default_model_name: Default model to use
             default_temperature: Default temperature (0.0-1.0)
-            default_max_tokens: Default max tokens for response
-            default_thinking_budget: Default thinking budget (extended thinking tokens)
+            default_max_tokens: Default max tokens for response (16K default, Claude Sonnet 4.5 supports up to 64K)
+            default_thinking_budget: Default thinking budget (extended thinking tokens, 0 = disabled)
         """
         self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY') or os.getenv('CLAUDE_API_KEY')
         if not self.api_key:
@@ -340,7 +340,7 @@ class ClaudeChatProvider(ChatProvider):
             "messages": prefilled_messages,
             "system": enhanced_system_blocks,
             "temperature": temp,
-            "max_tokens": 8192,  # Structured output may need more tokens
+            "max_tokens": 16384,  # Practical limit (Claude 4.5 supports up to 64K but SDK requires streaming for >10min responses)
             **kwargs
         }
         
