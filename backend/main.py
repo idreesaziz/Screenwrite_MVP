@@ -5,6 +5,7 @@ Aggregates all routers and configures CORS, middleware, and error handlers.
 """
 
 import os
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -18,6 +19,12 @@ from api.agent_router import router as agent_router
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Set required Vertex AI environment variables
 os.environ['GOOGLE_GENAI_USE_VERTEXAI'] = 'True'

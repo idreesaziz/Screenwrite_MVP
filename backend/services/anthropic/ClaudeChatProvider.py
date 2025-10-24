@@ -166,11 +166,15 @@ class ClaudeChatProvider(ChatProvider):
             if hasattr(response.usage, 'cache_read_input_tokens'):
                 usage["cache_read_input_tokens"] = response.usage.cache_read_input_tokens
             
-            # Log cache performance
+            # Log cache performance (using both logger and print for visibility)
             if hasattr(response.usage, 'cache_read_input_tokens') and response.usage.cache_read_input_tokens > 0:
-                logger.info(f"Cache hit! Read {response.usage.cache_read_input_tokens} tokens from cache")
+                msg = f"✅ CACHE HIT! Read {response.usage.cache_read_input_tokens} tokens from cache (90% cost savings!)"
+                logger.info(msg)
+                print(f"\n{'='*80}\n{msg}\n{'='*80}\n")
             if hasattr(response.usage, 'cache_creation_input_tokens') and response.usage.cache_creation_input_tokens > 0:
-                logger.info(f"Cache write: {response.usage.cache_creation_input_tokens} tokens written to cache")
+                msg = f"📝 Cache write: {response.usage.cache_creation_input_tokens} tokens written to 1-hour cache"
+                logger.info(msg)
+                print(f"\n{'='*80}\n{msg}\n{'='*80}\n")
         
         return ChatResponse(
             content=content_text,
@@ -349,11 +353,15 @@ class ClaudeChatProvider(ChatProvider):
         
         response = await self.client.messages.create(**request_params)
         
-        # Log cache performance for structured responses
+        # Log cache performance for structured responses (using both logger and print)
         if hasattr(response.usage, 'cache_read_input_tokens') and response.usage.cache_read_input_tokens > 0:
-            logger.info(f"Cache hit in structured response! Read {response.usage.cache_read_input_tokens} tokens from cache")
+            msg = f"✅ CACHE HIT (structured)! Read {response.usage.cache_read_input_tokens} tokens from cache"
+            logger.info(msg)
+            print(f"\n{'='*80}\n{msg}\n{'='*80}\n")
         if hasattr(response.usage, 'cache_creation_input_tokens') and response.usage.cache_creation_input_tokens > 0:
-            logger.info(f"Cache write in structured response: {response.usage.cache_creation_input_tokens} tokens written to cache")
+            msg = f"📝 Cache write (structured): {response.usage.cache_creation_input_tokens} tokens written to cache"
+            logger.info(msg)
+            print(f"\n{'='*80}\n{msg}\n{'='*80}\n")
         
         # Extract text content from response
         response_text = ""
