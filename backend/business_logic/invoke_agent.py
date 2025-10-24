@@ -96,25 +96,31 @@ class AgentService:
             if duration is not None:
                 context_parts.append(f"**Composition Duration:** {duration} seconds")
             
-            # Combine context (this goes in system message ONCE)
+            # Combine dynamic context (goes in first user message to preserve cache)
             full_context = "\n\n".join(context_parts)
             
             # Call chat provider with structured output schema
             logger.debug("Calling chat provider for agent response...")
             from services.base.ChatProvider import ChatMessage
             
-            # Build messages array: system message with context + conversation history as actual messages
-            # DO NOT add user_message again - it's already in conversation_history!
+            # Build messages array: static system prompt ONLY (cached) + conversation with dynamic context
             messages = [
-                ChatMessage(role="system", content=f"{system_prompt}\n\n{full_context}")
+                ChatMessage(role="system", content=system_prompt)
             ]
             
-            # Add conversation history as actual message turns (not as text)
+            # Add conversation history as actual message turns
+            # IMPORTANT: Prepend dynamic context to the FIRST user message to avoid cache invalidation
             if conversation_history:
                 logger.info(f"📚 Adding {len(conversation_history)} conversation messages as actual message turns")
-                for msg in conversation_history:
+                for i, msg in enumerate(conversation_history):
                     role = msg.get('role', 'user')
                     content = msg.get('content', '')
+                    
+                    # Prepend context to the first user message
+                    if i == 0 and role == 'user':
+                        content = f"{full_context}\n\n---\n\n{content}"
+                        logger.debug(f"  Prepended dynamic context to first user message")
+                    
                     messages.append(ChatMessage(role=role, content=content))
                     logger.debug(f"  Added {role} message: {content[:80]}...")
             else:
@@ -137,7 +143,7 @@ class AgentService:
                 messages_for_log.append({
                     "index": i,
                     "role": msg.role,
-                    "content": msg.content if msg.role != "system" else "(system prompt - see below)",
+                    "content": msg.content if msg.role != "system" else "(static system prompt - cached)",
                     "content_length": len(msg.content)
                 })
             
@@ -148,8 +154,9 @@ class AgentService:
                     "session_id": session_id,
                     "timestamp": timestamp,
                     "total_messages": len(messages),
+                    "note": "Dynamic context (composition, media library, duration) prepended to first user message to preserve cache",
                     "messages_sent_to_ai": messages_for_log,
-                    "system_prompt": messages[0].content if messages and messages[0].role == "system" else None,
+                    "system_prompt_static": messages[0].content if messages and messages[0].role == "system" else None,
                     "conversation_messages": [
                         {"role": msg.role, "content": msg.content}
                         for msg in messages[1:] if msg.role != "system"
