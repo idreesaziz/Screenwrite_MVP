@@ -45,7 +45,7 @@ def get_media_analysis_provider() -> MediaAnalysisProvider:
         return GeminiMediaAnalysisProvider(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            default_model=os.getenv("MEDIA_ANALYSIS_MODEL", "gemini-2.0-flash-exp")
+            default_model=os.getenv("MEDIA_ANALYSIS_MODEL", "gemini-2.5-flash")
         )
     else:
         raise ValueError(f"Unsupported media analysis provider: {provider_type}")
