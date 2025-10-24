@@ -97,6 +97,11 @@ async def generate_composition(
         # NOTE: Cannot use Depends() here since provider comes from request body
         service = CompositionGenerationService(chat_provider=chat_provider)
         
+        # If model_name is just the provider name (e.g., "claude", "gemini"), use None to get provider default
+        effective_model_name = None
+        if request.model_name and request.model_name.lower() not in ["gemini", "claude", "openai"]:
+            effective_model_name = request.model_name
+        
         # Generate composition
         result = await service.generate_composition(
             user_request=request.user_request,
@@ -106,7 +111,7 @@ async def generate_composition(
             media_library=request.media_library,
             current_composition=request.current_composition,
             preview_frame=request.preview_frame,
-            model_name=request.model_name,
+            model_name=effective_model_name,
             temperature=request.temperature
         )
         
