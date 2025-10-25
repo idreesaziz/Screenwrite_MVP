@@ -923,13 +923,10 @@ export function ChatBox({
 
         // Check if workflow should continue
         if (synthResponse.type === 'chat') {
-          console.log("� Chat response - stopping unified workflow");
+          console.log("💬 Chat response - stopping unified workflow");
           continueWorkflow = false;
         } else if (synthResponse.type === 'edit') {
           console.log("✅ Edit response - stopping unified workflow after implementation");
-          continueWorkflow = false;
-        } else if (synthResponse.type === 'fetch') {
-          console.log("🎬 Fetch response - stopping workflow after presenting video options");
           continueWorkflow = false;
         } else if (stepMessages.some(msg => msg.hasRetryButton)) {
           console.log("⏸️ Retry button message - stopping workflow until retry");
