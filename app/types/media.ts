@@ -1,12 +1,13 @@
 // MediaBinItem type definition compatible with existing code
 export interface MediaBinItem {
   id: string;
+  name: string; // Unique name derived from title, used for AI references (e.g., "Beach Video (2)")
+  title: string; // Human-readable display name, can be non-unique
   mediaType: "video" | "image" | "audio" | "text" | "element";
   mediaUrlLocal: string | null;
   mediaUrlRemote: string | null;
   media_width: number;
   media_height: number;
-  name: string;
   durationInSeconds: number;
   
   // Upload tracking properties

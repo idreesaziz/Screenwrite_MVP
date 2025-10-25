@@ -125,11 +125,11 @@ COMPONENTS_REFERENCE = """**AVAILABLE COMPONENTS:**
 
 **MEDIA COMPONENTS:**
 - `Video` - Video playback
-  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds), `endAt` (seconds), `loop`
+  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds), `endAt` (seconds)
   Note: `startFrom` and `endAt` specify which portion of the source video to play, in seconds
   
 - `Audio` - Audio playback (no visual)
-  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds), `endAt` (seconds), `loop`
+  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds), `endAt` (seconds)
   Note: `startFrom` and `endAt` specify which portion of the source audio to play, in seconds
   
 - `Img` - Static image
@@ -158,7 +158,7 @@ Use `text:Your content` to set text content. All support CSS styling.
   Props: `text`, `animateBy` (char/word), `direction`, `delay`, `duration`
   
 - `TypewriterText` - Typewriter effect with cursor
-  Props: `text`, `typingSpeed`, `initialDelay`, `pauseDuration`, `deletingSpeed`, `loop`, `showCursor`, `cursorCharacter`, `cursorBlinkSpeed`
+  Props: `text`, `typingSpeed`, `initialDelay`, `pauseDuration`, `deletingSpeed`, `showCursor`, `cursorCharacter`, `cursorBlinkSpeed`
   
 - `DecryptedText` - Decryption/hacker-style reveal
   Props: `text`, `speed`, `sequential`, `revealDirection`, `useOriginalCharsOnly`, `characters`, `delay`
@@ -636,33 +636,33 @@ def build_media_section(media_library: list) -> str:
     duration = media.get('durationInSeconds', 0)
     media_width = media.get('media_width', 0)
     media_height = media.get('media_height', 0)
-    media_url_local = media.get('mediaUrlLocal', '')
-    media_url_remote = media.get('mediaUrlRemote', '')
-        
-    actual_url = media_url_remote if media_url_remote else media_url_local
+    
+    # Skip items without name (shouldn't happen in normal flow)
+    if not name:
+      continue
         
     if media_type == 'video':
-      media_info = f"- {name}: Video"
+      media_info = f'- "{name}": Video'
       if media_width and media_height:
         media_info += f" ({media_width}x{media_height})"
       if duration:
         media_info += f" ({duration}s)"
-      media_info += f" - URL: {actual_url}\n"
+      media_info += "\n"
       media_section += media_info
     elif media_type == 'image':
-      media_info = f"- {name}: Image"
+      media_info = f'- "{name}": Image'
       if media_width and media_height:
         media_info += f" ({media_width}x{media_height})"
-      media_info += f" - URL: {actual_url}\n"
+      media_info += "\n"
       media_section += media_info
     elif media_type == 'audio':
-      media_info = f"- {name}: Audio"
+      media_info = f'- "{name}": Audio'
       if duration:
         media_info += f" ({duration}s)"
-      media_info += f" - URL: {actual_url}\n"
+      media_info += "\n"
       media_section += media_info
     
-  media_section += "\nUSE THE EXACT URLS PROVIDED ABOVE.\n"
+  media_section += '\nREFERENCE MEDIA BY NAME: Use the exact name in double quotes for the src property (e.g., src:"Beach by John Smith").\n'
     
   return media_section
 

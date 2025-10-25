@@ -36,13 +36,15 @@ export interface TextProperties {
 
 // state of the scrubber in the media bin
 export interface MediaBinItem extends BaseScrubber {
-  name: string;
-  title?: string; // User-friendly title for display and AI reference
+  name: string; // Unique name derived from title, used for AI references (e.g., "Beach Video (2)")
+  title: string; // Human-readable display name, can be non-unique
   durationInSeconds: number; // For media, to calculate initial width
 
   // GCS upload tracking properties
   uploadProgress: number | null; // 0-100, null when upload complete or not started
   isUploading: boolean; // True while upload to GCS is in progress
+  upload_status: "uploaded" | "not_uploaded" | "pending"; // Unified upload status
+  gemini_file_id: string | null; // Gemini API file reference for analysis
   
   // Upload is considered complete when:
   // - isUploading === false

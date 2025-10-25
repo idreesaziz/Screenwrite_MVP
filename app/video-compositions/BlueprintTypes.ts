@@ -112,5 +112,11 @@ export interface BlueprintExecutionContext {
   // Sequence timing context for proper interp calculations
   sequenceStartTime: number; // Start time of the current sequence in seconds
   fps: number; // Frames per second for video timing conversions
+  // Media library for resolving src names to URLs
+  mediaLibrary?: Array<{
+    name: string; // Unique name for referencing (e.g., "Beach Video (2)")
+    mediaUrlLocal: string | null;
+    mediaUrlRemote: string | null;
+  }>;
   // Add more helper functions as needed
 }

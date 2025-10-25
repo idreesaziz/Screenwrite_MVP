@@ -21,13 +21,18 @@ import { executeClipElement } from "./executeClipElement";
 
 export interface BlueprintCompositionProps {
   blueprint: CompositionBlueprint;
+  mediaLibrary?: Array<{
+    index: number;
+    mediaUrlLocal: string | null;
+    mediaUrlRemote: string;
+  }>;
 }
 
 /**
  * Main blueprint composition renderer using proper Remotion TransitionSeries
  * Implements the freeze technique for intuitive duration calculation
  */
-export function BlueprintComposition({ blueprint }: BlueprintCompositionProps) {
+export function BlueprintComposition({ blueprint, mediaLibrary }: BlueprintCompositionProps) {
   const { fps, width, height } = useVideoConfig();
   const videoConfig = { width, height };
 
@@ -46,6 +51,7 @@ export function BlueprintComposition({ blueprint }: BlueprintCompositionProps) {
     inSeconds: (seconds: number): number => Math.round(seconds * fps),
     sequenceStartTime: clipStartTime,
     fps: fps,
+    mediaLibrary: mediaLibrary,
   });
 
   // Ensure we have valid tracks array

@@ -27,20 +27,31 @@ export interface DynamicCompositionProps {
   blueprint?: CompositionBlueprint;
   backgroundColor?: string;
   fps?: number;
+  mediaLibrary?: Array<{
+    name: string;
+    mediaUrlLocal: string | null;
+    mediaUrlRemote: string | null;
+  }>;
 }
 
 // Dynamic composition that renders blueprint-based compositions only
 export function DynamicComposition({
   blueprint,
   backgroundColor = "#000000",
+  mediaLibrary,
 }: DynamicCompositionProps) {
 
   // Blueprint-based rendering
   if (blueprint) {
-    console.log("Rendering blueprint composition with", blueprint.length, "tracks");
+    console.log("🎬 [DynamicComposition] Rendering blueprint composition with", blueprint.length, "tracks");
+    console.log("🎬 [DynamicComposition] Media library:", mediaLibrary ? `${mediaLibrary.length} items` : 'not provided');
+    if (mediaLibrary) {
+      console.log("🎬 [DynamicComposition] Media library items:", mediaLibrary);
+    }
     return (
       <BlueprintComposition 
-        blueprint={blueprint} 
+        blueprint={blueprint}
+        mediaLibrary={mediaLibrary}
       />
     );
   }
@@ -77,6 +88,11 @@ export interface DynamicVideoPlayerProps {
   selectedClipId?: string | null;
   onSelectClip?: (clipId: string | null) => void;
   onUpdateTransform?: (clipId: string, transform: Partial<import("../utils/transformUtils").TransformValues>) => void;
+  mediaLibrary?: Array<{
+    name: string;
+    mediaUrlLocal: string | null;
+    mediaUrlRemote: string | null;
+  }>;
 }
 
 // The dynamic video player component
@@ -90,6 +106,7 @@ export function DynamicVideoPlayer({
   selectedClipId,
   onSelectClip,
   onUpdateTransform,
+  mediaLibrary,
 }: DynamicVideoPlayerProps) {
   console.log("DynamicVideoPlayer - Blueprint tracks:", blueprint?.length || 0);
 
@@ -187,6 +204,7 @@ export function DynamicVideoPlayer({
             inputProps={{
               blueprint,
               backgroundColor,
+              mediaLibrary,
             }}
             durationInFrames={Math.max(calculatedDuration, 1)} // Ensure minimum 1 frame
             compositionWidth={compositionWidth}

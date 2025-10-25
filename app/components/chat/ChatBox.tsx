@@ -31,6 +31,7 @@ import axios from "axios";
 import { apiUrl, getApiBaseUrl } from "~/utils/api";
 import { generateUUID } from "~/utils/uuid";
 import type { GetTokenFn } from "~/utils/authApi";
+import { generateUniqueName } from "~/utils/uniqueNameGenerator";
 import { 
   logUserMessage, 
   logSynthCall, 
@@ -555,10 +556,18 @@ export function ChatBox({
       
       console.log(`🎨 Final ${contentType} URL:`, mediaUrl);
 
+      // Calculate next index for generated media
+      // Generate a nice title for the generated content
+      const baseTitle = suggestedName || generatedFileName.replace(`.${fileExtension}`, '');
+      const title = `Generated ${contentType} - ${baseTitle}`;
+      
+      // Generate unique name from title
+      const name = generateUniqueName(title, mediaBinItems);
+
       const newMediaItem: MediaBinItem = {
         id: generateUUID(),
-        name: suggestedName || generatedFileName.replace(`.${fileExtension}`, ''),
-        title: `Generated ${contentType} - ${suggestedName || generatedFileName.replace(`.${fileExtension}`, '')}`,
+        name,
+        title,
         mediaType: contentType === 'video' ? "video" : "image",
         mediaUrlLocal: null, // Not a blob URL
         mediaUrlRemote: mediaUrl, // Use absolute URL
@@ -568,6 +577,8 @@ export function ChatBox({
         text: null,
         isUploading: false,
         uploadProgress: null,
+        upload_status: 'uploaded',
+        gemini_file_id: null,
         left_transition_id: null,
         right_transition_id: null,
       };
@@ -692,13 +703,16 @@ export function ChatBox({
           console.log(`🎬 [VIDEO ${index}] Video URL: ${videoUrl}`);
 
           // Create descriptive title: "Query by Creator - Option N"
-          const videoTitle = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${item.creator_name} - Option ${index + 1}`;
+          const title = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${item.creator_name} - Option ${index + 1}`;
+
+          // Generate unique name from title
+          const name = generateUniqueName(title, mediaBinItems);
 
           // Create MediaBinItem for each video
           const mediaItem: MediaBinItem = {
             id: generateUUID(),
-            name: `pexels_${item.id}`,
-            title: videoTitle,
+            name,
+            title,
             mediaType: "video",
             mediaUrlLocal: null,
             mediaUrlRemote: videoUrl,
@@ -708,6 +722,8 @@ export function ChatBox({
             text: null,
             isUploading: false,
             uploadProgress: null,
+            upload_status: 'uploaded',
+            gemini_file_id: null,
             left_transition_id: null,
             right_transition_id: null,
           };
@@ -1610,11 +1626,15 @@ export function ChatBox({
                                 key={video.id}
                                 className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                 onClick={() => {
+                                  // Generate unique name from video title
+                                  const title = video.title;
+                                  const name = generateUniqueName(title, mediaBinItems);
+
                                   // Convert video to MediaBinItem format for preview
                                   const mediaItem: MediaBinItem = {
                                     id: generateUUID(),
-                                    name: video.title,
-                                    title: video.title,
+                                    name,
+                                    title,
                                     mediaType: "video",
                                     mediaUrlLocal: null,
                                     mediaUrlRemote: video.downloadUrl,
@@ -1624,6 +1644,8 @@ export function ChatBox({
                                     text: null,
                                     isUploading: false,
                                     uploadProgress: null,
+                                    upload_status: 'uploaded',
+                                    gemini_file_id: null,
                                     left_transition_id: null,
                                     right_transition_id: null,
                                   };

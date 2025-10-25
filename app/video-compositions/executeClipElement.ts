@@ -181,8 +181,60 @@ export function renderElementObject(
     const componentProps: Record<string, any> = {};
     const styleProps: Record<string, any> = {};
     
+    // Apply sensible defaults for Video and Img to make them behave like block elements
+    const propsWithDefaults = { ...element.props };
+    
+    // Resolve src names to actual URLs for Video/Img/Audio elements
+    if ((element.name === 'Video' || element.name === 'Img' || element.name === 'Audio' || element.name === 'OffthreadVideo') && propsWithDefaults.src) {
+      const srcValue = propsWithDefaults.src;
+      
+      console.log(`🔍 [URL Resolver] Processing ${element.name} with src:`, srcValue, `(type: ${typeof srcValue})`);
+      console.log(`🔍 [URL Resolver] Media library available:`, context.mediaLibrary ? `yes (${context.mediaLibrary.length} items)` : 'no');
+      
+      // If src is a string (name reference), look up by name
+      if (typeof srcValue === 'string' && context.mediaLibrary) {
+        console.log(`🔍 [URL Resolver] Looking for name "${srcValue}" in media library...`);
+        console.log(`🔍 [URL Resolver] Media library contents:`, context.mediaLibrary);
+        
+        // Look up media item by exact name match
+        const mediaItem = context.mediaLibrary.find(item => item.name === srcValue);
+        
+        if (mediaItem) {
+          console.log(`🔍 [URL Resolver] Found media item:`, mediaItem);
+          // Resolve to actual URL (prefer remote, fallback to local)
+          const resolvedUrl = mediaItem.mediaUrlRemote || mediaItem.mediaUrlLocal;
+          if (resolvedUrl) {
+            propsWithDefaults.src = resolvedUrl;
+            console.log(`✅ [URL Resolver] Resolved src:"${srcValue}" → ${resolvedUrl}`);
+          } else {
+            console.warn(`⚠️ [URL Resolver] Media item with name "${srcValue}" has no URL`, mediaItem);
+          }
+        } else {
+          console.warn(`⚠️ [URL Resolver] No media item found with name "${srcValue}"`);
+          console.warn(`⚠️ [URL Resolver] Available names:`, context.mediaLibrary.map(item => item.name));
+        }
+      } else if (!context.mediaLibrary && typeof srcValue === 'string' && !srcValue.startsWith('http') && !srcValue.startsWith('blob:')) {
+        console.error(`❌ [URL Resolver] src appears to be a name reference ("${srcValue}") but no media library provided!`);
+      }
+    }
+    
+    if (element.name === 'Video') {
+      // Default Video to fill parent and be muted for autoplay
+      if (!propsWithDefaults.width) propsWithDefaults.width = '100%';
+      if (!propsWithDefaults.height) propsWithDefaults.height = '100%';
+      if (!propsWithDefaults.objectFit) propsWithDefaults.objectFit = 'cover';
+      if (!propsWithDefaults.muted) propsWithDefaults.muted = true;
+    }
+    
+    if (element.name === 'Img') {
+      // Default Img to fill parent
+      if (!propsWithDefaults.width) propsWithDefaults.width = '100%';
+      if (!propsWithDefaults.height) propsWithDefaults.height = '100%';
+      if (!propsWithDefaults.objectFit) propsWithDefaults.objectFit = 'cover';
+    }
+    
     // Process each prop
-    for (const [key, value] of Object.entries(element.props || {})) {
+    for (const [key, value] of Object.entries(propsWithDefaults)) {
       // SPECIAL CASE: Video/Audio startFrom/endAt are in seconds - convert to frames
       const isMediaTimingProp = 
         (element.name === 'Video' || element.name === 'Audio' || element.name === 'OffthreadVideo') && 

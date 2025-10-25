@@ -4,6 +4,7 @@ import { type MediaBinItem } from "~/components/timeline/types"
 import { generateUUID } from "~/utils/uuid"
 import { apiUrl } from "~/utils/api"
 import { uploadFileToGCS, type GetTokenFn } from "~/utils/authApi"
+import { generateUniqueName, cleanFilenameToTitle } from "~/utils/uniqueNameGenerator"
 
 // Delete media file from server (Node.js render server, port 8000)
 export const deleteMediaFile = async (filename: string): Promise<{ success: boolean; message?: string; error?: string }> => {
@@ -149,7 +150,13 @@ export const useMediaBin = (
 
   const handleAddMediaToBin = useCallback(async (file: File) => {
     const id = generateUUID();
-    const name = file.name;
+    
+    // Generate title from filename
+    const title = cleanFilenameToTitle(file.name);
+    
+    // Generate unique name from title
+    const name = generateUniqueName(title, mediaBinItems);
+    
     let mediaType: "video" | "image" | "audio";
     if (file.type.startsWith("video/")) mediaType = "video";
     else if (file.type.startsWith("image/")) mediaType = "image";
@@ -159,7 +166,7 @@ export const useMediaBin = (
       return;
     }
 
-    console.log("Adding to bin:", name, mediaType);
+    console.log("Adding to bin:", { title, name, mediaType });
 
     try {
       const mediaUrlLocal = URL.createObjectURL(file);
@@ -172,6 +179,7 @@ export const useMediaBin = (
       const newItem: MediaBinItem = {
         id,
         name,
+        title,
         mediaType,
         mediaUrlLocal,
         mediaUrlRemote: null, // Will be set after successful GCS upload
@@ -181,6 +189,8 @@ export const useMediaBin = (
         text: null,
         isUploading: true,
         uploadProgress: 0,
+        upload_status: 'pending',
+        gemini_file_id: null,
         left_transition_id: null,
         right_transition_id: null,
       };
@@ -256,17 +266,24 @@ export const useMediaBin = (
     }
   }, [getToken]);
 
-  const handleAddTextToBin = useCallback((
+    const handleAddTextToBin = useCallback((
     textContent: string,
-    fontSize: number,
-    fontFamily: string,
-    color: string,
-    textAlign: "left" | "center" | "right",
-    fontWeight: "normal" | "bold"
+    fontSize: number = 48,
+    fontFamily: string = "Arial",
+    color: string = "#ffffff",
+    textAlign: "left" | "center" | "right" = "center",
+    fontWeight: "normal" | "bold" = "normal"
   ) => {
+    // Use first 50 chars of text as title, or "Text" if empty
+    const title = textContent.trim().substring(0, 50) || "Text";
+    
+    // Generate unique name from title
+    const name = generateUniqueName(title, mediaBinItems);
+    
     const newItem: MediaBinItem = {
       id: generateUUID(),
-      name: textContent,
+      name,
+      title,
       mediaType: "text",
       media_width: 0,
       media_height: 0,
@@ -283,11 +300,13 @@ export const useMediaBin = (
       durationInSeconds: 0,
       isUploading: false,
       uploadProgress: null,
+      upload_status: 'not_uploaded',
+      gemini_file_id: null,
       left_transition_id: null,
       right_transition_id: null,
     };
     setMediaBinItems(prev => [...prev, newItem]);
-  }, []);
+  }, [mediaBinItems]);
 
   // Function to directly add a pre-created MediaBinItem (for generated content)
   const handleAddDirectMediaBinItem = useCallback((item: MediaBinItem) => {

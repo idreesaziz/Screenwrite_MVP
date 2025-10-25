@@ -821,6 +821,13 @@ export default function TimelineEditor() {
                           selectedClipId={selectedClipId}
                           onSelectClip={setSelectedClipId}
                           onUpdateTransform={handleUpdateClipTransform}
+                          mediaLibrary={mediaBinItems
+                            .filter((item: MediaBinItem) => item.name !== undefined)
+                            .map((item: MediaBinItem) => ({
+                              name: item.name,
+                              mediaUrlLocal: item.mediaUrlLocal,
+                              mediaUrlRemote: item.mediaUrlRemote,
+                            }))}
                         />
                       </div>
                     </div>
