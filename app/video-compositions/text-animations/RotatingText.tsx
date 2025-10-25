@@ -132,11 +132,13 @@ export const RotatingText: React.FC<RotatingTextProps> = ({
                   transform: `translateY(${translateY}px)`,
                 }}
               >
-                {char}
+                {/* Replace spaces with non-breaking spaces for inline-block */}
+                {char === ' ' ? '\u00A0' : char}
               </span>
             );
           })}
-          {wordObj.needsSpace && <span style={{ display: 'inline-block' }}> </span>}
+          {/* Add space between words */}
+          {wordObj.needsSpace && <span style={{ display: 'inline-block' }}>\u00A0</span>}
         </span>
       ))}
     </span>

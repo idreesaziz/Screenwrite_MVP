@@ -90,7 +90,8 @@ export const SplitText: React.FC<SplitTextProps> = ({
               whiteSpace: animateBy === 'words' ? 'pre' : 'normal',
             }}
           >
-            {part}
+            {/* Replace regular spaces with non-breaking spaces for letters mode */}
+            {part === ' ' && animateBy === 'letters' ? '\u00A0' : part}
             {/* Add space after each word except the last */}
             {animateBy === 'words' && index < parts.length - 1 && ' '}
           </span>

@@ -122,7 +122,8 @@ export const DecryptedText: React.FC<DecryptedTextProps> = ({
               opacity: isRevealed ? 1 : 0.7,
             }}
           >
-            {char}
+            {/* Replace spaces with non-breaking spaces for inline-block */}
+            {char === ' ' ? '\u00A0' : char}
           </span>
         );
       })}
