@@ -101,7 +101,8 @@ interface ChatBoxProps {
     userRequest: string, 
     mediaBinItems: MediaBinItem[], 
     modelType?: string,
-    provider?: string
+    provider?: string,
+    signal?: AbortSignal
   ) => Promise<boolean>;
   isGeneratingComposition?: boolean;
   // Props for conversational edit system
@@ -195,6 +196,10 @@ export function ChatBox({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mentionsRef = useRef<HTMLDivElement>(null);
   const sendOptionsRef = useRef<HTMLDivElement>(null);
+  // Controller used to cancel in-flight agent/analysis requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // Ref to control whether unified workflow should continue (accessible from stop button)
+  const continueWorkflowRef = useRef<boolean>(false);
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -315,8 +320,9 @@ export function ChatBox({
 
   // Simple internal probe handler - resolves name to URL if needed, then passes to backend
   const handleProbeRequestInternal = async (
-    fileName: string, 
-    question: string
+    fileName: string,
+    question: string,
+    signal?: AbortSignal
   ): Promise<Message[]> => {
     await logProbeStart(fileName, question);
     console.log("🔍 Executing probe request for:", fileName);
@@ -358,7 +364,8 @@ export function ChatBox({
         body: JSON.stringify({
           file_url: fileUrl, // Resolved URL (GCS, YouTube, etc.)
           question: question
-        })
+        }),
+        signal
       });
 
       if (!response.ok) {
@@ -423,7 +430,7 @@ export function ChatBox({
     return handleProbeRequestInternal(fileName, question);
   };
 
-  const analyzeMediaWithGemini = async (mediaFile: MediaBinItem, question: string): Promise<string> => {
+  const analyzeMediaWithGemini = async (mediaFile: MediaBinItem, question: string, signal?: AbortSignal): Promise<string> => {
     // All media analysis now goes through the backend API
     // Backend handles videos, images, audio, and documents via Gemini
     
@@ -463,7 +470,8 @@ export function ChatBox({
           file_url: fileUrl,  // GCS URI (gs://bucket/path) for Vertex AI
           question: question,
           temperature: 0.1
-        })
+        }),
+        signal
       });
 
       if (!response.ok) {
@@ -493,7 +501,8 @@ export function ChatBox({
     description: string,
     contentType: 'image' | 'video' = 'image', // Add content type parameter
     seedImageFileName?: string, // Add seed image parameter for video generation
-    generatedItemsArray?: MediaBinItem[] // Optional array to track generated items
+    generatedItemsArray?: MediaBinItem[], // Optional array to track generated items
+    signal?: AbortSignal
   ): Promise<{ messages: Message[], newMediaItem: MediaBinItem | null }> => {
     console.log("🎨 Executing generation request:", { prompt, suggestedName, description, contentType, seedImageFileName });
     
@@ -552,7 +561,8 @@ export function ChatBox({
       const response = await fetch(apiUrl('/api/v1/media/generate', true), {
         method: 'POST',
         headers,
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal
       });
 
       if (!response.ok) {
@@ -648,7 +658,8 @@ export function ChatBox({
   const handleFetchRequestInternal = async (
     provider: 'pexels' | 'shutterstock',
     query: string,
-    count: number
+    count: number,
+    signal?: AbortSignal
   ): Promise<Message[]> => {
     console.log("🎬 Executing stock video fetch request:", { provider, query, count });
     
@@ -680,6 +691,7 @@ export function ChatBox({
           max_results: count || 4,
           per_page: 50
         }),
+        signal
       });
 
       if (!response.ok) {
@@ -822,12 +834,19 @@ export function ChatBox({
     // Track generated items during this workflow (they won't appear in mediaBinItems prop until re-render)
     let generatedItemsThisWorkflow: MediaBinItem[] = [];
     
+    // Create AbortController for cancellation
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
+    // Reset the continuation control ref
+    continueWorkflowRef.current = true;
+    
     // Start the loading indicator for the entire workflow
     setIsInSynthLoop(true);
     
     try {
       // Unified workflow loop: synth → route → execute → check continuation → repeat until sleep
-      while (continueWorkflow && iterationCount < MAX_ITERATIONS) {
+      while (continueWorkflow && continueWorkflowRef.current && iterationCount < MAX_ITERATIONS) {
         iterationCount++;
         console.log(`🔄 Unified workflow iteration ${iterationCount}`);
       
@@ -879,13 +898,13 @@ export function ChatBox({
         // Call synth for decision
         await logSynthCall("conversation_analysis", synthContext);
         
-        const synthResponse = await synth.processMessage(synthContext);
+        const synthResponse = await synth.processMessage(synthContext, abortController.signal);
         await logSynthResponse(synthResponse);
         
         console.log(`🎯 Synth response type: ${synthResponse.type}`);
 
         // Route to appropriate handler and execute action
-        const stepMessages = await executeResponseAction(synthResponse, conversationMessages, synthContext);
+        const stepMessages = await executeResponseAction(synthResponse, conversationMessages, synthContext, abortController.signal);
         
         console.log(`📝 Step ${iterationCount} returned ${stepMessages.length} message(s):`, 
           stepMessages.map(m => ({ isSystem: m.isSystemMessage, content: m.content.substring(0, 50) + '...' }))
@@ -959,18 +978,33 @@ export function ChatBox({
     
     } catch (error) {
       console.error("❌ Unified workflow failed:", error);
-      // Add error message to UI
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        content: "I'm having trouble processing your request. Please try again.",
-        isUser: false,
-        sender: 'system',
-        timestamp: new Date(),
-      };
-      onMessagesChange(prevMessages => [...prevMessages, errorMessage]);
+      // Check if error is due to abort
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log("🛑 Workflow was cancelled by user");
+        const cancelMessage: Message = {
+          id: Date.now().toString(),
+          content: "Workflow cancelled.",
+          isUser: false,
+          sender: 'system',
+          timestamp: new Date(),
+        };
+        onMessagesChange(prevMessages => [...prevMessages, cancelMessage]);
+      } else {
+        // Add error message to UI
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          content: "I'm having trouble processing your request. Please try again.",
+          isUser: false,
+          sender: 'system',
+          timestamp: new Date(),
+        };
+        onMessagesChange(prevMessages => [...prevMessages, errorMessage]);
+      }
     } finally {
-      // Always clear the loading indicator when workflow ends
+      // Always clear the loading indicator and controller when workflow ends
       setIsInSynthLoop(false);
+      abortControllerRef.current = null;
+      continueWorkflowRef.current = false;
     }
     
     // Unified workflow handles all UI updates internally
@@ -981,7 +1015,8 @@ export function ChatBox({
   const executeResponseAction = async (
     synthResponse: SynthResponse,
     conversationMessages: ConversationMessage[],
-    synthContext: SynthContext
+    synthContext: SynthContext,
+    signal?: AbortSignal
   ): Promise<Message[]> => {
     console.log(`🎬 Executing action for response type: ${synthResponse.type}`);
     
@@ -1003,7 +1038,7 @@ export function ChatBox({
       // Show analyzing message immediately in UI
       onMessagesChange(prevMessages => [...prevMessages, analyzingMessage]);
       
-      const probeResults = await handleProbeRequestInternal(synthResponse.fileName!, synthResponse.question!);
+      const probeResults = await handleProbeRequestInternal(synthResponse.fileName!, synthResponse.question!, signal);
       
       // Return BOTH the analyzing message AND the analysis result for complete history
       return [analyzingMessage, ...probeResults];
@@ -1046,7 +1081,9 @@ export function ChatBox({
         synthResponse.suggestedName!,
         synthResponse.content,
         synthResponse.content_type || 'image',
-        synthResponse.seedImageFileName
+        synthResponse.seedImageFileName,
+        undefined,
+        signal
       );
 
       // Immediately update the ref with the new media item (no delay needed!)
@@ -1079,7 +1116,8 @@ export function ChatBox({
       const fetchResults = await handleFetchRequestInternal(
         'pexels', // Default to pexels for now
         synthResponse.query!, 
-        4 // Default to 4 results (matches backend default)
+        4, // Default to 4 results (matches backend default)
+        signal
       );
       
       // Return BOTH the fetching message AND the fetch results for complete history
@@ -1097,7 +1135,8 @@ export function ChatBox({
           synthResponse.content, 
           mediaBinItems, 
           selectedModel,
-          selectedEditProvider
+          selectedEditProvider,
+          signal
         );
         await logEditResult(success);
         
@@ -1842,7 +1881,7 @@ export function ChatBox({
               />
               
               <div className="absolute right-2 bottom-1 flex items-center gap-1">
-                {(inputValue.trim() || mentionedItems.length > 0) && (
+                {(inputValue.trim() || mentionedItems.length > 0) && !isInSynthLoop && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1856,15 +1895,31 @@ export function ChatBox({
                   </Button>
                 )}
                 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
-                  onClick={() => handleSendMessage(sendWithMedia)}
-                  disabled={!inputValue.trim() && mentionedItems.length === 0}
-                >
-                  <Send className="h-3 w-3" />
-                </Button>
+                {isInSynthLoop ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                    onClick={() => {
+                      console.log("⏹️ User clicked stop button - cancelling workflow");
+                      continueWorkflowRef.current = false;
+                      abortControllerRef.current?.abort();
+                    }}
+                    title="Stop agent workflow"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
+                    onClick={() => handleSendMessage(sendWithMedia)}
+                    disabled={!inputValue.trim() && mentionedItems.length === 0}
+                  >
+                    <Send className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
 

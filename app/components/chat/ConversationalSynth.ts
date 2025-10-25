@@ -74,7 +74,8 @@ export class ConversationalSynth {
    * Main entry point - analyze conversation and return appropriate response
    */
   async processMessage(
-    context: SynthContext
+    context: SynthContext,
+    signal?: AbortSignal
   ): Promise<SynthResponse> {
     console.log("🧠 ConversationalSynth: Processing conversation with", context.messages.length, "messages");
 
@@ -147,7 +148,8 @@ Your job is to generate the next appropriate response based on the conversation 
           mediaLibrary: context.mediaLibrary,
           compositionDuration: context.compositionDuration,
           provider: context.provider || "gemini"
-        })
+        }),
+        signal
       });
 
       if (!response.ok) {

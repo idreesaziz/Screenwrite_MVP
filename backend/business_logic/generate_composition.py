@@ -112,6 +112,12 @@ class CompositionGenerationService:
                 model_name=model_name
             )
             
+            # Handle both formats: {"tracks": [...]} or just [...]
+            # Some models wrap the array in a "tracks" object despite schema
+            if isinstance(result_dict, dict) and "tracks" in result_dict:
+                logger.info("Unwrapping 'tracks' wrapper from AI response")
+                result_dict = result_dict["tracks"]
+            
             # Convert dict back to JSON string
             composition_json = json.dumps(result_dict)
             

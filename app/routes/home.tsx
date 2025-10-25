@@ -587,7 +587,8 @@ export default function TimelineEditor() {
     userRequest: string, 
     mediaBinItems: MediaBinItem[], 
     modelType: string = "gemini",
-    provider: string = "gemini"
+    provider: string = "gemini",
+    signal?: AbortSignal
   ): Promise<boolean> => {
     // DEBUG: Log incoming parameters
     console.log("🔍 DEBUG handleGenerateComposition: modelType =", modelType, "provider =", provider);
@@ -634,7 +635,8 @@ export default function TimelineEditor() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal
       });
 
       console.log("🔍 DEBUG: API request payload provider =", provider);
