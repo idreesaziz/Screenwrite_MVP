@@ -16,6 +16,10 @@ ROLE_AND_CONTEXT = """You are a video composition editor. Your job is to modify 
 
 OUTPUT_STRUCTURE = """**OUTPUT FORMAT:**
 
+CRITICAL: Your response must be a JSON array directly, NOT wrapped in an object.
+CORRECT: [{...}, {...}]
+WRONG: {"tracks": [{...}]}
+
 Return JSON array of tracks:
 ```json
 [
@@ -74,7 +78,8 @@ Tracks = visual layers (like Photoshop):
 **CRITICAL RULES:**
 - Tracks render SIMULTANEOUSLY (not sequential)
 - Clips within same track CANNOT overlap in time
-- Clips on different tracks CAN overlap in time (they layer visually)"""
+- Clips on different tracks CAN overlap in time (they layer visually)
+- RETURN ARRAY DIRECTLY - DO NOT wrap response in {"tracks": [...]} object"""
 
 
 # ===== 3. ELEMENT SYSTEM =====
@@ -442,6 +447,7 @@ EDITING_RULES = """**EDITING RULES:**
 **MUST DO:**
 - Always return the COMPLETE composition with all tracks and all clips
 - Never return only the changed parts - return the full updated timeline
+- Return the array directly: [{...}, {...}] - DO NOT wrap in {"tracks": [...]} object
 - Preserve existing clips when adding new ones unless explicitly asked to remove/replace them
 - Maintain unique IDs across all elements in the entire composition
 - Use exact media URLs from the provided media library (no modifications)
@@ -487,6 +493,55 @@ EDITING_RULES = """**EDITING RULES:**
 # ===== 10. EXAMPLES =====
 
 EXAMPLES = """**EXAMPLES:**
+
+**EXAMPLE 0 - COMPLETE COMPOSITION (CORRECT FORMAT):**
+
+A complete video composition with background video and text overlay (notice the array format):
+```json
+[
+  {
+    "clips": [
+      {
+        "id": "bg-video",
+        "startTimeInSeconds": 0,
+        "endTimeInSeconds": 10,
+        "element": {
+          "elements": [
+            "Video;id:main-video;parent:root;src:\"beach-sunset.mp4\";width:100%;height:100%;objectFit:cover"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "clips": [
+      {
+        "id": "title-clip",
+        "startTimeInSeconds": 1,
+        "endTimeInSeconds": 5,
+        "element": {
+          "elements": [
+            "div;id:title-container;position:absolute;top:20%;left:50%;transform:translateX(-50%);textAlign:center",
+            "h1;id:main-title;parent:title-container;fontSize:72px;fontWeight:bold;color:#ffffff;textShadow:2px 2px 8px rgba(0,0,0,0.8);text:Summer Vibes"
+          ]
+        }
+      },
+      {
+        "id": "subtitle-clip",
+        "startTimeInSeconds": 5.5,
+        "endTimeInSeconds": 9,
+        "element": {
+          "elements": [
+            "div;id:subtitle-container;position:absolute;bottom:15%;left:50%;transform:translateX(-50%);textAlign:center",
+            "h2;id:subtitle;parent:subtitle-container;fontSize:32px;color:#ffffff;opacity:@animate[5.5,6,9]:[0,1,1];text:Relax and Enjoy"
+          ]
+        }
+      }
+    ]
+  }
+]
+```
+Note: Response is an ARRAY (starts with `[`), NOT an object with "tracks" key!
 
 **EXAMPLE 1 - POSITIONING ELEMENTS:**
 
