@@ -224,37 +224,42 @@ NOT: "I'll manually animate the opacity and position" (unless user specifically 
 export const PROBE_GUIDELINES = `
 MEDIA ANALYSIS GUIDELINES:
 
-CORE RULE: PROBE WHENEVER USER REQUEST REQUIRES KNOWLEDGE OF MEDIA CONTENT
+⚠️ CRITICAL DISTINCTION:
+- Probing = Analyzing VISUAL/AUDIO CONTENT (what's happening IN the media: scenes, objects, text, events)
+- NOT for file metadata (duration, resolution, format - you already have this from the media library)
 
-What Warrants Probing - Media Content Knowledge Needed For:
-- Visual characteristics: colors, composition, lighting, style, mood
-- Spatial information: where objects/subjects are positioned, what areas are occupied
-- Temporal information: when things happen, timing of events, scene changes
-- Content identification: what is shown, who/what is the main subject
-- Aesthetic properties: visual style, color schemes, artistic approach
-- Text or graphic elements: existing text, logos, overlays already present
-- Audio characteristics: speech timing, music beats, volume levels
+CORE RULE: PROBE ONLY WHEN YOU NEED TO KNOW WHAT'S ACTUALLY IN THE MEDIA
+
+What Warrants Probing - Content Analysis:
+- Visual characteristics: what objects/people/scenes appear, colors, composition, lighting
+- Spatial information: where objects/subjects are positioned in the frame
+- Temporal information: WHEN specific events happen (person appears at 0:15, text shows at 0:30)
+- Content identification: what is the main subject, what's happening
+- Text detection: what text/graphics already exist in the media
+- Audio content: what is being said, when music beats occur
+
+What DOES NOT Warrant Probing:
+- File metadata: duration, resolution, format (already in media library)
+- User gives explicit timestamps: "add text at 5 seconds" (no need to analyze)
+- Simple styling: "make it look good", "add a title" (use your design judgment)
+- Layout/positioning decisions you can make independently
 
 General Principle: If you cannot fulfill the user's request properly without knowing what's actually IN the media file, you must probe first
 
 Media Source Guidelines:
-- Uploaded Media Files (jpg, png, gif, webp, mp4, mov, avi, webm): PROBE LIBERALLY for content analysis
-  * Always probe for color schemes, composition, subject placement
-  * Probe for text detection, dominant elements, visual style
-  * Use probing to make smart positioning and styling decisions
+- Uploaded Media Files (jpg, png, gif, webp, mp4, mov, avi, webm): PROBE when content-aware decisions are needed
+  * Probe for: colors, composition, subject placement, text detection, timing of events
+  * Use probing to make smart positioning and timing decisions based on content
 
 - YouTube URLs: PROBE WHEN USER PROVIDES YOUTUBE LINKS
   * If user mentions or shares a YouTube URL (youtube.com/watch or youtu.be links)
   * When user says "analyze this video" and provides a YouTube link
-  * For content-aware decisions about YouTube video content
   * YouTube videos can be analyzed directly without uploading
 
-- Audio files: Minimal probing - focus on metadata (duration, format)
-
 Smart Probing Strategy:
-- If user asks for content-aware decisions: ALWAYS PROBE first
-- For images: Default to probing for better results  
-- For short videos (<30s): Probe when content-aware decisions needed
+- If user asks for content-aware decisions: PROBE first
+- For images: Probe when positioning/styling needs to match content
+- For short videos (<30s): Probe when timing depends on content events
 - For long videos (>30s): Only probe if absolutely critical
 - For YouTube URLs: Probe when user explicitly provides the URL for analysis
 - Always explain why you're probing in the question

@@ -81,14 +81,13 @@ class AgentService:
             else:
                 context_parts.append("**Current Composition:** No composition loaded (empty timeline)")
             
-            # Add media library context with URLs
-            # IMPORTANT: When creating probe requests, use the URL field (not the name)
+            # Add media library context with names (not URLs)
             if media_library:
                 media_list = "\n".join([
-                    f"- Name: {media['name']} ({media['type']}) → URL: {media['url']}"
+                    f'- "{media["name"]}": {media["type"]} ({media.get("duration", "N/A")}s)'
                     for media in media_library
                 ])
-                context_parts.append(f"**Available Media Files:**\n{media_list}\n\n**CRITICAL: For probe requests, the fileName field MUST be the full URL (e.g., gs://bucket/path or https://... or YouTube URL), NEVER just the name like 'unnamed.png'.**")
+                context_parts.append(f"**Available Media Files:**\n{media_list}\n\n**IMPORTANT: For probe requests, use the exact name in double quotes (e.g., fileName: \"Beach Video (2)\"). Frontend will resolve names to URLs.**")
             else:
                 context_parts.append("**Available Media Files:** No media files in library")
             
@@ -180,7 +179,7 @@ class AgentService:
                     },
                     "fileName": {
                         "type": "string",
-                        "description": "For probe type: MUST be the full URL from the media library (gs://, https://, or YouTube URL). NEVER use just the filename.",
+                        "description": "For probe type: the exact name from the media library (e.g., \"Beach Video (2)\"). Frontend resolves names to URLs automatically.",
                         "nullable": True
                     },
                     "question": {

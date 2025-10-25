@@ -254,9 +254,6 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         Returns:
             MIME type string
         """
-        # Extract extension
-        ext = file_url.lower().split('.')[-1].split('?')[0]  # Handle query params
-        
         # Map extensions to MIME types
         mime_types = {
             # Videos
@@ -295,7 +292,24 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
             'json': 'application/json',
         }
         
-        return mime_types.get(ext, 'application/octet-stream')
+        # Extract path without query parameters
+        url_path = file_url.split('?')[0]
+        
+        # Extract extension (handle URLs like /path/file.mp4)
+        if '.' in url_path:
+            ext = url_path.lower().rsplit('.', 1)[-1]
+            mime_type = mime_types.get(ext)
+            if mime_type:
+                logger.debug(f"Detected MIME type from extension '{ext}': {mime_type}")
+                return mime_type
+        
+        # Fallback: try to guess from common patterns
+        logger.warning(f"Could not determine MIME type from extension in URL: {file_url}")
+        logger.warning(f"Defaulting to video/mp4 for GCS URLs (most common case)")
+        
+        # Default to video/mp4 for GCS URLs (most common case in our app)
+        # This is safer than application/octet-stream which Gemini rejects
+        return 'video/mp4'
     
     async def is_file_ready(self, file_url: str) -> bool:
         """

@@ -313,14 +313,42 @@ export function ChatBox({
     }, 0);
   };
 
-  // Simple internal probe handler - just passes URL/filename to backend
+  // Simple internal probe handler - resolves name to URL if needed, then passes to backend
   const handleProbeRequestInternal = async (
     fileName: string, 
     question: string
   ): Promise<Message[]> => {
     await logProbeStart(fileName, question);
     console.log("🔍 Executing probe request for:", fileName);
-    console.log("🔍 Backend will handle this URL/file directly (GCS URL, YouTube URL, etc.)");
+    
+    // Resolve fileName to URL if it's a name reference instead of a URL
+    let fileUrl = fileName;
+    
+    // Check if fileName is a URL (starts with http, https, gs://, or youtube)
+    const isUrl = /^(https?:\/\/|gs:\/\/|youtube\.com|youtu\.be)/i.test(fileName);
+    
+    if (!isUrl) {
+      // fileName is a name reference - look it up in media library
+      console.log("🔍 fileName appears to be a name reference, looking up in media library...");
+      const mediaItem = mediaBinItems.find(item => item.name === fileName);
+      
+      if (mediaItem) {
+        // Prefer remote URL over GCS URI for better MIME type detection
+        // (signed URLs preserve the file extension)
+        fileUrl = mediaItem.mediaUrlRemote || mediaItem.gcsUri || '';
+        console.log(`🔍 Resolved name "${fileName}" → URL: ${fileUrl}`);
+        
+        if (!fileUrl) {
+          throw new Error(`Media item "${fileName}" has no URL available`);
+        }
+      } else {
+        console.warn(`⚠️ Media item with name "${fileName}" not found in library`);
+        console.warn(`⚠️ Available names:`, mediaBinItems.map(item => item.name));
+        throw new Error(`Media item "${fileName}" not found in library`);
+      }
+    } else {
+      console.log("🔍 fileName is already a URL, using directly");
+    }
     
     try {
       const headers = await getAuthHeaders();
@@ -328,7 +356,7 @@ export function ChatBox({
         method: 'POST',
         headers,
         body: JSON.stringify({
-          file_url: fileName, // AI provides the actual URL (GCS, YouTube, etc.)
+          file_url: fileUrl, // Resolved URL (GCS, YouTube, etc.)
           question: question
         })
       });

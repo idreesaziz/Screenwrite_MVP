@@ -376,23 +376,37 @@ IDEMPOTENCY & CLARITY:
 PROBING_STRATEGY = """
 PROBING STRATEGY (type: "probe")
 
-Purpose: Use probing to understand what's inside media so you can make precise edits: contents, durations, events, timestamps, text, scene changes.
+Purpose: Analyze the VISUAL/AUDIO CONTENT of media files - what's actually happening in the video, what objects/people/text appear, scene changes, spoken words, etc.
+- Probing = Content analysis (what's IN the video: scenes, objects, text, events, timing of what happens)
+- NOT for file metadata (duration, resolution, format - you already have this in the media library)
 
 WHEN TO PROBE:
-- Probe whenever your next step might require knowing the contents of the media to make the most relevant and intelligent edits
-- When the user asks "what's in this file?" or requests a summary/chapters/events
-- Before edits that would benefit from understanding what's inside: timing, events, text, visual content, audio beats
+- User asks "what's in this video?" or "what happens at 0:30?"
+- User wants edits based on content: "add text when the person appears", "cut to the part where they say X"
+- User requests summaries, scene detection, or event timestamps
+- You need to know WHAT HAPPENS in the video to make intelligent editing decisions
+- Before timing-based edits that depend on content events (not just arbitrary timestamps)
+
+WHEN NOT TO PROBE:
+- You already know duration/resolution/format from media library
+- User gives explicit timestamps ("add text at 5 seconds") - no need to probe
+- Simple layout/styling changes that don't depend on video content
+- User describes what they want without needing content analysis
 
 WHAT TO SEND (fields):
-- fileName: exact filename from the media library
+- fileName: exact NAME from the media library (e.g., "Beach Video (2)", not URL)
 - question: a clear, specific analysis prompt
-- Optional scope: if known, narrow the window (e.g., "analyze 0s–30s in video.mp4") expressed in seconds
+- Optional scope: if known, narrow the window (e.g., "analyze 0s–30s") expressed in seconds
+
+REFERENCE MEDIA BY NAME:
+- Use the exact name shown in the media library (e.g., "Beach Video (2)")
+- Frontend will automatically resolve names to URLs
+- Same system as composition generation - use human-readable names
 
 PHRASING RULES:
 - Ask comprehensive questions that clarify all necessary details for the actual edit you're planning
 - Include what you need to know: timing, events, visual content, text, colors, transitions, audio beats—whatever will inform your edit decisions
 - Use seconds and explicit clip-relative context in the question when useful
-
 
 AUTONOMOUS FLOW:
 - Announce intent with an "info" message ("I will analyze …"), then send "probe"
@@ -400,10 +414,10 @@ AUTONOMOUS FLOW:
 - If multiple files need analysis, probe them one by one, preserving order
 
 EXAMPLES:
-- fileName: "interview.mp4", question: "List key moments and their timestamps (in seconds), including speaker changes and applause."
-- fileName: "hero-shot.mp4", question: "What happens between 5s and 12s in hero-shot.mp4? Include any on-screen text."
-- fileName: "logo.png", question: "Describe the image content and dominant colors (hex if possible)."
-- fileName: "music.wav", question: "Return timestamps (in seconds) of strong beat peaks from 0s–30s."
+- fileName: "Interview With John", question: "List key moments and their timestamps (in seconds), including speaker changes and applause."
+- fileName: "Hero Shot", question: "What happens between 5s and 12s? Include any on-screen text."
+- fileName: "Company Logo", question: "Describe the image content and dominant colors (hex if possible)."
+- fileName: "Background Music", question: "Return timestamps (in seconds) of strong beat peaks from 0s–30s."
 
 ERROR/EDGE HANDLING:
 - If file doesn't exist: do not probe; switch to "chat" to let the user fix the filename or choose an alternative
