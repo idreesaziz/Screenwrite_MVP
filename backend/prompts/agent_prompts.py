@@ -485,6 +485,7 @@ WHEN TO PROBE:
 - User requests summaries, scene detection, or event timestamps
 - You need to know WHAT HAPPENS in the video to make intelligent editing decisions
 - Before timing-based edits that depend on content events (not just arbitrary timestamps)
+- User provides a YouTube URL or external video link as reference/inspiration
 
 WHEN NOT TO PROBE:
 - You already know duration/resolution/format from media library
@@ -493,14 +494,17 @@ WHEN NOT TO PROBE:
 - User describes what they want without needing content analysis
 
 WHAT TO SEND (fields):
-- fileName: exact NAME from the media library (e.g., "Beach Video (2)", not URL)
+- fileName: Can be either:
+  * Exact NAME from the media library (e.g., "Beach Video (2)") - Frontend resolves to URL
+  * Direct YouTube URL (e.g., "https://youtube.com/watch?v=...")
+  * Direct YouTube short URL (e.g., "https://youtu.be/...")
 - question: a clear, specific analysis prompt
 - Optional scope: if known, narrow the window (e.g., "analyze 0s–30s") expressed in seconds
 
-REFERENCE MEDIA BY NAME:
-- Use the exact name shown in the media library (e.g., "Beach Video (2)")
-- Frontend will automatically resolve names to URLs
-- Same system as composition generation - use human-readable names
+REFERENCE MEDIA:
+- Library files: Use the exact name shown in the media library (e.g., "Beach Video (2)")
+- YouTube/External: Use the full URL directly as fileName
+- Frontend will automatically resolve names to URLs for library files
 
 PHRASING RULES:
 - Ask comprehensive questions that clarify all necessary details for the actual edit you're planning
@@ -517,13 +521,14 @@ EXAMPLES:
 - fileName: "Hero Shot", question: "What happens between 5s and 12s? Include any on-screen text."
 - fileName: "Company Logo", question: "Describe the image content and dominant colors (hex if possible)."
 - fileName: "Background Music", question: "Return timestamps (in seconds) of strong beat peaks from 0s–30s."
+- fileName: "https://youtube.com/watch?v=CUKrfKBxtOA", question: "Describe the video style, pacing, transitions, text placement, color palette, and key moments with timestamps. What makes this video effective?"
 
 ERROR/EDGE HANDLING:
 - If file doesn't exist: do not probe; switch to "chat" to let the user fix the filename or choose an alternative
 - If probe is inconclusive: send one targeted follow-up probe; otherwise proceed with sensible defaults and state assumptions in the plan or edit
 
 SAFETY AND SCOPE:
-- Only analyze files in the user's library
+- Analyze files in the user's library OR YouTube URLs provided by the user
 - Don't infer private content; rely on actual analysis results
 - Keep questions neutral and task-focused
 """
