@@ -9,7 +9,7 @@
 import type { ComponentSchema } from './BlueprintTypes';
 import * as Remotion from 'remotion';
 import React from 'react';
-import { SplitText, BlurText, TypewriterText, GlitchText } from './text-animations';
+import { SplitText, BlurText, TypewriterText } from './text-animations';
 
 export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   // Standard HTML elements - all props go to style
@@ -91,11 +91,6 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
     componentProps: ['text', 'typingSpeed', 'initialDelay', 'pauseDuration', 'deletingSpeed', 'loop', 'showCursor', 'cursorCharacter', 'cursorBlinkSpeed'],
     styleProps: '*'
   },
-  'GlitchText': {
-    type: 'component',
-    componentProps: ['text', 'speed', 'enableShadows', 'shadowColors', 'glitchIntensity', 'delay', 'fontSize', 'fontWeight', 'color', 'backgroundColor'],
-    styleProps: '*'
-  },
 };
 
 /**
@@ -124,9 +119,6 @@ export function getComponent(componentName: string): any {
   }
   if (componentName === 'TypewriterText') {
     return TypewriterText;
-  }
-  if (componentName === 'GlitchText') {
-    return GlitchText;
   }
   
   // Check Remotion namespace

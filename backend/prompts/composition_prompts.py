@@ -174,9 +174,6 @@ Use `text:Your content` to set text content. All support CSS styling.
   Props: `text`, `typingSpeed` (characters per second, default 10), `initialDelay` (seconds), `pauseDuration` (seconds), `deletingSpeed` (chars/sec), `showCursor` (boolean), `cursorCharacter` (string), `cursorBlinkSpeed` (blinks per second)
   Example: typingSpeed:10 (types 10 characters per second)
 
-- `GlitchText` - Glitch effect animation
-  Props: `text`, `speed`, `enableShadows`, `shadowColors` (object), `glitchIntensity`, `delay`, `fontSize`, `fontWeight`, `color`, `backgroundColor`
-
 **USAGE NOTES:**
 - Component names are case-sensitive
 - Media/animation-specific props (src, volume, text, delay) are component props

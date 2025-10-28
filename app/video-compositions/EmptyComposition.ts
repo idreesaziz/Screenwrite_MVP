@@ -72,19 +72,6 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
           ]
         },
         transitionFromPrevious: { type: 'fade', durationInSeconds: 0.5 }
-      },
-      // 5. GlitchText (20-25s)
-      {
-        id: "glitch",
-        startTimeInSeconds: 20,
-        endTimeInSeconds: 25,
-        element: {
-          elements: [
-            "div;id:glitch-container;position:absolute;top:15%;left:50%;transform:translateX(-50%);width:80%;textAlign:center",
-            "GlitchText;id:glitch-text;parent:glitch-container;text:GLITCH EFFECT;fontSize:72px;fontWeight:bold;color:#ec4899;speed:0.3;enableShadows:true;glitchIntensity:0.8;delay:0.2"
-          ]
-        },
-        transitionFromPrevious: { type: 'fade', durationInSeconds: 0.5 }
       }
     ]
   },

@@ -8,5 +8,3 @@ export { GradientText } from './GradientText';
 export type { GradientTextProps } from './GradientText';
 export { TrueFocus } from './TrueFocus';
 export type { TrueFocusProps } from './TrueFocus';
-export { GlitchText } from './GlitchText';
-export type { GlitchTextProps } from './GlitchText';

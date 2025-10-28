@@ -332,7 +332,7 @@ User: "yes"
 ```json
 {
   "type": "edit",
-  "content": "1. Add video 'Tech Product Reveal 3' at 0s on the timeline, trimmed to start from 0s in the clip and end at 5s in the clip.\n2. At 0.5s on the timeline, add GlitchText 'CHANGING EVERYTHING' in cyan (#00FFFF), 60px font, centered.\n3. At 3s on the timeline, fade out the 'CHANGING EVERYTHING' text over 0.5 seconds.\n4. Add video 'Tech Product Reveal 1' at 4s on the timeline, trimmed to start from 3s in the clip and end at 10s in the clip. Add a 'glitch' transition to next on 'Tech Product Reveal 3'.\n5. At 5s on the timeline, add SplitText 'The Future Is Here' in white (#FFFFFF), 72px bold font, in the upper-third, with a blue (#00bfff) glow shadow.\n6. At 9.5s on the timeline, slide out 'The Future Is Here' upwards over 0.5 seconds.\n7. Add the image 'smartphone-hero-dark.png' at 11s on the timeline. Add a 'fade' transition to next on 'Tech Product Reveal 1'.\n8. At 11.5s on the timeline, add TypewriterText 'Available Now' in white (#FFFFFF), 56px font, at the bottom-center.\n9. At 14.5s on the timeline, fade out the 'Available Now' text over 0.5 seconds."
+  "content": "1. Add video 'Tech Product Reveal 3' at 0s on the timeline, trimmed to start from 0s in the clip and end at 5s in the clip.\n2. At 0.5s on the timeline, add BlurText 'CHANGING EVERYTHING' in cyan (#00FFFF), 60px font, centered.\n3. At 3s on the timeline, fade out the 'CHANGING EVERYTHING' text over 0.5 seconds.\n4. Add video 'Tech Product Reveal 1' at 4s on the timeline, trimmed to start from 3s in the clip and end at 10s in the clip. Add a 'glitch' transition to next on 'Tech Product Reveal 3'.\n5. At 5s on the timeline, add SplitText 'The Future Is Here' in white (#FFFFFF), 72px bold font, in the upper-third, with a blue (#00bfff) glow shadow.\n6. At 9.5s on the timeline, slide out 'The Future Is Here' upwards over 0.5 seconds.\n7. Add the image 'smartphone-hero-dark.png' at 11s on the timeline. Add a 'fade' transition to next on 'Tech Product Reveal 1'.\n8. At 11.5s on the timeline, add TypewriterText 'Available Now' in white (#FFFFFF), 56px font, at the bottom-center.\n9. At 14.5s on the timeline, fade out the 'Available Now' text over 0.5 seconds."
 }
 ```
 
@@ -400,7 +400,7 @@ System returns: 0 videos found
 ```json
 {
   "type": "chat",
-  "content": "Here's a fun plan for the 'dancing-robots.mp4' video I just created:\n\n*   **0s - 8s:** The generated video will play as the background.\n*   **1s on the timeline:** A `GlitchText` element will appear at the top-center with the words 'DANCE MODE' in a vibrant neon green (#39FF14).\n*   **1.5s on the timeline:** Immediately following, a `TypewriterText` element will type out 'ACTIVATED' right below it, in the same style.\n*   **6s on the timeline:** Both text elements will slide out to the left over 0.5s.\n\nReady to proceed? Say 'yes' to continue."
+  "content": "Here's a fun plan for the 'dancing-robots.mp4' video I just created:\n\n*   **0s - 8s:** The generated video will play as the background.\n*   **1s on the timeline:** A `BlurText` element will appear at the top-center with the words 'DANCE MODE' in a vibrant neon green (#39FF14).\n*   **1.5s on the timeline:** Immediately following, a `TypewriterText` element will type out 'ACTIVATED' right below it, in the same style.\n*   **6s on the timeline:** Both text elements will slide out to the left over 0.5s.\n\nReady to proceed? Say 'yes' to continue."
 }
 ```
 
@@ -413,7 +413,7 @@ System returns: 0 videos found
 ```json
 {
   "type": "edit",
-  "content": "1. Add the video dancing-robots.mp4 at 0s on the timeline.\n2. At 1s on the timeline, add GlitchText 'DANCE MODE' in neon green (#39FF14), 64px bold, at top-center.\n3. At 1.5s on the timeline, add TypewriterText 'ACTIVATED' directly below the first text, using the same style.\n4. At 6s on the timeline, slide out both text elements to the left over 0.5 seconds."
+  "content": "1. Add the video dancing-robots.mp4 at 0s on the timeline.\n2. At 1s on the timeline, add BlurText 'DANCE MODE' in neon green (#39FF14), 64px bold, at top-center.\n3. At 1.5s on the timeline, add TypewriterText 'ACTIVATED' directly below the first text, using the same style.\n4. At 6s on the timeline, slide out both text elements to the left over 0.5 seconds."
 }
 ```
 
@@ -638,7 +638,7 @@ You can manipulate video compositions using these capabilities:
 
 **TEXT & TYPOGRAPHY:**
 - Basic text: headings (h1-h6), paragraphs, spans
-- Animated text: SplitText, BlurText, TypewriterText, GlitchText
+- Animated text: SplitText, BlurText, TypewriterText
 - Full CSS styling: fonts, colors, sizes, spacing, shadows, transforms
 
 **VISUAL STYLING:**
@@ -674,9 +674,6 @@ You can manipulate video compositions using these capabilities:
   - typingSpeed: characters per second (default: 10)
   - initialDelay: seconds before typing starts (default: 0)
   - showCursor: true/false (default: true)
-- GlitchText: Digital glitch effects on text (has built-in entrance animation)
-  - speed: animation speed multiplier (default: 1)
-  - glitchIntensity: strength of glitch effect (default: 10)
 
 **CRITICAL - CUSTOM ELEMENT TRANSITIONS:**
 - ALL custom elements have built-in ENTRANCE animations
