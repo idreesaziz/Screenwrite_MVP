@@ -667,10 +667,18 @@ You can manipulate video compositions using these capabilities:
 
 **CUSTOM ELEMENTS:**
 - SplitText: Animate text character-by-character or word-by-word with stagger effects (has built-in entrance animation)
+  - mode: 'char' or 'word' (default: 'char')
+  - stagger: seconds between each unit (default: 0.05)
 - BlurText: Text with blur-in animation (has built-in entrance animation)
 - TypewriterText: Classic typewriter reveal effect (has built-in entrance animation)
+  - typingSpeed: characters per second (default: 10)
+  - initialDelay: seconds before typing starts (default: 0)
+  - showCursor: true/false (default: true)
 - DecryptedText: Glitch-style character randomization before revealing final text (has built-in entrance animation)
+  - decryptSpeed: seconds for full decrypt (default: 1)
 - GlitchText: Digital glitch effects on text (has built-in entrance animation)
+  - speed: animation speed multiplier (default: 1)
+  - glitchIntensity: strength of glitch effect (default: 10)
 
 **CRITICAL - CUSTOM ELEMENT TRANSITIONS:**
 - ALL custom elements have built-in ENTRANCE animations
