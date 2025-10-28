@@ -335,8 +335,10 @@ export function ChatBox({
     
     if (!isUrl) {
       // fileName is a name reference - look it up in media library
+      // Use ref instead of prop to get latest state during async workflows
       console.log("🔍 fileName appears to be a name reference, looking up in media library...");
-      const mediaItem = mediaBinItems.find(item => item.name === fileName);
+      console.log(`🔍 Media library has ${mediaBinItemsRef.current.length} items`);
+      const mediaItem = mediaBinItemsRef.current.find(item => item.name === fileName);
       
       if (mediaItem) {
         // Prefer remote URL over GCS URI for better MIME type detection
@@ -349,7 +351,7 @@ export function ChatBox({
         }
       } else {
         console.warn(`⚠️ Media item with name "${fileName}" not found in library`);
-        console.warn(`⚠️ Available names:`, mediaBinItems.map(item => item.name));
+        console.warn(`⚠️ Available names:`, mediaBinItemsRef.current.map(item => item.name));
         throw new Error(`Media item "${fileName}" not found in library`);
       }
     } else {
@@ -775,8 +777,10 @@ export function ChatBox({
             remoteUrl: mediaItem.mediaUrlRemote
           });
           
-          // GCS URLs are already available - no separate upload needed
+          // Update parent state (async) AND ref (immediate) for consistent state across iterations
           await onAddGeneratedImage(mediaItem);
+          mediaBinItemsRef.current = [...mediaBinItemsRef.current, mediaItem];
+          console.log(`📦 Immediately added ${mediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
         }
         
         // Note: All videos are already uploaded to GCS by the backend

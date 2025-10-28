@@ -225,6 +225,33 @@ class AgentService:
             )
             
             logger.info(f"Agent response type: {agent_response.get('type')}")
+            # Write a paired response log for correlation with the request
+            try:
+                ai_response_log = logs_dir / f"ai_response_{session_id}_{timestamp}.json"
+                response_for_log = {
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "timestamp": timestamp,
+                    "request_log_file": str(log_file),
+                    "response": agent_response,
+                    "metadata": {
+                        "model_used": agent_response.get("metadata", {}).get("model_used") or (model_name or "gemini-2.0-flash-exp"),
+                        "message_count": len(messages)
+                    }
+                }
+                with open(ai_response_log, "w") as f:
+                    json.dump(response_for_log, f, indent=2)
+                logger.info(f"💾 Saved AI response log to: {ai_response_log}")
+            except Exception as log_err:
+                logger.warning(f"Could not write ai_response log: {log_err}")
+            
+            # Emit explicit probe details to logs for quick forensics
+            if agent_response.get("type") == "probe":
+                logger.info(
+                    "Probe emission: fileName=%s | question=%s",
+                    agent_response.get("fileName"),
+                    (agent_response.get("question") or "")[:200]
+                )
             
             # Validate response type
             valid_types = ["info", "chat", "edit", "probe", "generate", "fetch"]

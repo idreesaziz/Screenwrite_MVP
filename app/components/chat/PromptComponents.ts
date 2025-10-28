@@ -192,11 +192,7 @@ Available Components:
    Note: One-time reveal animation at start
    Best For: Tech content, cyberpunk aesthetic, dramatic reveals
 
-6. **DecryptedText** - Matrix-style character randomization reveal
-   Visual Effect: Characters cycle through random values before settling
-   Use When: You want matrix/hacker/decryption style text
-
-7. **TrueFocus** - Sequential word highlighting with blur
+6. **TrueFocus** - Sequential word highlighting with blur
    Visual Effect: Words blur out except one in focus, cycling through
    Use When: You want to emphasize different words in sequence
    Note: Loops through all words continuously

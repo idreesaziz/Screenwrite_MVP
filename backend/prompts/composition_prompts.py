@@ -173,9 +173,6 @@ Use `text:Your content` to set text content. All support CSS styling.
 - `TypewriterText` - Typewriter effect with cursor
   Props: `text`, `typingSpeed` (characters per second, default 10), `initialDelay` (seconds), `pauseDuration` (seconds), `deletingSpeed` (chars/sec), `showCursor` (boolean), `cursorCharacter` (string), `cursorBlinkSpeed` (blinks per second)
   Example: typingSpeed:10 (types 10 characters per second)
-  
-- `DecryptedText` - Decryption/hacker-style reveal
-  Props: `text`, `speed`, `sequential`, `revealDirection`, `useOriginalCharsOnly`, `characters`, `delay`
 
 - `GlitchText` - Glitch effect animation
   Props: `text`, `speed`, `enableShadows`, `shadowColors` (object), `glitchIntensity`, `delay`, `fontSize`, `fontWeight`, `color`, `backgroundColor`

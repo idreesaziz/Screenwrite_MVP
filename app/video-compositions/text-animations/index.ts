@@ -6,8 +6,6 @@ export { TypewriterText } from './TypewriterText';
 export type { TypewriterTextProps } from './TypewriterText';
 export { GradientText } from './GradientText';
 export type { GradientTextProps } from './GradientText';
-export { DecryptedText } from './DecryptedText';
-export type { DecryptedTextProps } from './DecryptedText';
 export { TrueFocus } from './TrueFocus';
 export type { TrueFocusProps } from './TrueFocus';
 export { GlitchText } from './GlitchText';

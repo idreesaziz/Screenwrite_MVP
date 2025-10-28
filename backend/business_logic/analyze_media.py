@@ -7,6 +7,7 @@ using AI-powered multimodal analysis.
 """
 
 import logging
+import time
 from typing import Optional
 from dataclasses import dataclass
 
@@ -87,7 +88,7 @@ class MediaAnalysisService:
             )
         """
         logger.info(f"Starting media analysis for user={user_id}, session={session_id}")
-        logger.debug(f"File URL: {file_url[:80]}...")
+        logger.debug(f"File URL: {file_url[:120]}...")
         logger.debug(f"Question: {question}")
         
         try:
@@ -112,24 +113,53 @@ class MediaAnalysisService:
                 except Exception as e:
                     logger.warning(f"Could not verify file existence: {e}")
             
-            # Perform analysis using the provider
+            # Perform analysis using the provider with duration tracking
+            t0 = time.monotonic()
             result = await self.media_provider.analyze_media(
                 file_url=file_url,
                 question=question,
                 model_name=model_name,
                 temperature=temperature
             )
+            duration_s = round(time.monotonic() - t0, 3)
             
             if result.success:
                 logger.info(
                     f"Analysis successful for user={user_id}, session={session_id}, "
-                    f"tokens={result.metadata.get('total_tokens', 0)}"
+                    f"tokens={result.metadata.get('total_tokens', 0)}, duration_s={duration_s}"
                 )
             else:
                 logger.warning(
                     f"Analysis failed for user={user_id}, session={session_id}: "
-                    f"{result.error_message}"
+                    f"{result.error_message} (duration_s={duration_s})"
                 )
+            
+            # Persist a JSON log entry for this analysis for end-to-end tracing
+            try:
+                from pathlib import Path
+                from datetime import datetime
+                logs_dir = Path(__file__).parent.parent / "logs"
+                logs_dir.mkdir(exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                analysis_log = logs_dir / f"media_analysis_{session_id}_{timestamp}.json"
+                with open(analysis_log, "w") as f:
+                    import json as _json
+                    _json.dump({
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "timestamp": timestamp,
+                        "file_url": file_url,
+                        "question": question,
+                        "model_used": result.model_used,
+                        "temperature": temperature,
+                        "success": result.success,
+                        "error_message": result.error_message,
+                        "metadata": result.metadata,
+                        "duration_seconds": duration_s
+                    }, f, indent=2)
+                logger.info(f"💾 Saved media analysis log to: {analysis_log}")
+            except Exception as log_err:
+                logger.warning(f"Could not write media analysis log: {log_err}")
             
             return result
         

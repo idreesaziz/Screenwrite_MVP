@@ -308,7 +308,7 @@ Internal decision: I will combine the abstract intro from Video 3 with the produ
 ```json
 {
   "type": "chat",
-  "content": "Here is my proposed plan for your 15-second tech product launch video:\n\nI will create a dynamic sequence by combining clips from two different stock videos, bookended by the custom product image I generated. The overall aesthetic will be dark, futuristic, and energetic, with blue and cyan highlights.\n\n**Timeline Breakdown (15 seconds):**\n\n*   **0s - 4s: The Hook.** We'll start with the abstract glowing lines from 'Tech Product Reveal 3'.\n    *   At **0.5s on the timeline**, a `DecryptedText` element will reveal the words 'CHANGING EVERYTHING' in cyan (#00FFFF), centered.\n    *   At **3.0s on the timeline**, this text will fade out over 0.5s.\n*   **4s - 11s: The Reveal.** A fast 'Glitch' transition will take us into the slow product zoom from 'Tech Product Reveal 1'.\n    *   At **5.0s on the timeline**, a `SplitText` element will animate 'The Future Is Here' word-by-word in bold white text, positioned in the clear upper-third, enhanced with a blue glow.\n    *   At **9.5s on the timeline**, the text will slide out to the top over 0.5s.\n*   **11s - 15s: The Product.** We will transition to the 'smartphone-hero-dark.png' image using a smooth fade.\n    *   At **11.5s on the timeline**, a `TypewriterText` element will type out 'Available Now' in a crisp white font at the bottom-center.\n    *   At **14.5s on the timeline**, the text will fade out over 0.5s before final fade to black.\n\nDoes this detailed plan look good to you? If so, say 'yes' to proceed."
+  "content": "Here is my proposed plan for your 15-second tech product launch video:\n\nI will create a dynamic sequence by combining clips from two different stock videos, bookended by the custom product image I generated. The overall aesthetic will be dark, futuristic, and energetic, with blue and cyan highlights.\n\n**Timeline Breakdown (15 seconds):**\n\n*   **0s - 4s: The Hook.** We'll start with the abstract glowing lines from 'Tech Product Reveal 3'.\n    *   At **0.5s on the timeline**, a `GlitchText` element will reveal the words 'CHANGING EVERYTHING' in cyan (#00FFFF), centered.\n    *   At **3.0s on the timeline**, this text will fade out over 0.5s.\n*   **4s - 11s: The Reveal.** A fast 'Glitch' transition will take us into the slow product zoom from 'Tech Product Reveal 1'.\n    *   At **5.0s on the timeline**, a `SplitText` element will animate 'The Future Is Here' word-by-word in bold white text, positioned in the clear upper-third, enhanced with a blue glow.\n    *   At **9.5s on the timeline**, the text will slide out to the top over 0.5s.\n*   **11s - 15s: The Product.** We will transition to the 'smartphone-hero-dark.png' image using a smooth fade.\n    *   At **11.5s on the timeline**, a `TypewriterText` element will type out 'Available Now' in a crisp white font at the bottom-center.\n    *   At **14.5s on the timeline**, the text will fade out over 0.5s before final fade to black.\n\nDoes this detailed plan look good to you? If so, say 'yes' to proceed."
 }
 ```
 
@@ -332,7 +332,7 @@ User: "yes"
 ```json
 {
   "type": "edit",
-  "content": "1. Add video 'Tech Product Reveal 3' at 0s on the timeline, trimmed to start from 0s in the clip and end at 5s in the clip.\n2. At 0.5s on the timeline, add DecryptedText 'CHANGING EVERYTHING' in cyan (#00FFFF), 60px font, centered.\n3. At 3s on the timeline, fade out the 'CHANGING EVERYTHING' text over 0.5 seconds.\n4. Add video 'Tech Product Reveal 1' at 4s on the timeline, trimmed to start from 3s in the clip and end at 10s in the clip. Add a 'glitch' transition to next on 'Tech Product Reveal 3'.\n5. At 5s on the timeline, add SplitText 'The Future Is Here' in white (#FFFFFF), 72px bold font, in the upper-third, with a blue (#00bfff) glow shadow.\n6. At 9.5s on the timeline, slide out 'The Future Is Here' upwards over 0.5 seconds.\n7. Add the image 'smartphone-hero-dark.png' at 11s on the timeline. Add a 'fade' transition to next on 'Tech Product Reveal 1'.\n8. At 11.5s on the timeline, add TypewriterText 'Available Now' in white (#FFFFFF), 56px font, at the bottom-center.\n9. At 14.5s on the timeline, fade out the 'Available Now' text over 0.5 seconds."
+  "content": "1. Add video 'Tech Product Reveal 3' at 0s on the timeline, trimmed to start from 0s in the clip and end at 5s in the clip.\n2. At 0.5s on the timeline, add GlitchText 'CHANGING EVERYTHING' in cyan (#00FFFF), 60px font, centered.\n3. At 3s on the timeline, fade out the 'CHANGING EVERYTHING' text over 0.5 seconds.\n4. Add video 'Tech Product Reveal 1' at 4s on the timeline, trimmed to start from 3s in the clip and end at 10s in the clip. Add a 'glitch' transition to next on 'Tech Product Reveal 3'.\n5. At 5s on the timeline, add SplitText 'The Future Is Here' in white (#FFFFFF), 72px bold font, in the upper-third, with a blue (#00bfff) glow shadow.\n6. At 9.5s on the timeline, slide out 'The Future Is Here' upwards over 0.5 seconds.\n7. Add the image 'smartphone-hero-dark.png' at 11s on the timeline. Add a 'fade' transition to next on 'Tech Product Reveal 1'.\n8. At 11.5s on the timeline, add TypewriterText 'Available Now' in white (#FFFFFF), 56px font, at the bottom-center.\n9. At 14.5s on the timeline, fade out the 'Available Now' text over 0.5 seconds."
 }
 ```
 
@@ -638,7 +638,7 @@ You can manipulate video compositions using these capabilities:
 
 **TEXT & TYPOGRAPHY:**
 - Basic text: headings (h1-h6), paragraphs, spans
-- Animated text: SplitText, BlurText, TypewriterText, DecryptedText, GlitchText
+- Animated text: SplitText, BlurText, TypewriterText, GlitchText
 - Full CSS styling: fonts, colors, sizes, spacing, shadows, transforms
 
 **VISUAL STYLING:**
@@ -674,8 +674,6 @@ You can manipulate video compositions using these capabilities:
   - typingSpeed: characters per second (default: 10)
   - initialDelay: seconds before typing starts (default: 0)
   - showCursor: true/false (default: true)
-- DecryptedText: Glitch-style character randomization before revealing final text (has built-in entrance animation)
-  - decryptSpeed: seconds for full decrypt (default: 1)
 - GlitchText: Digital glitch effects on text (has built-in entrance animation)
   - speed: animation speed multiplier (default: 1)
   - glitchIntensity: strength of glitch effect (default: 10)
