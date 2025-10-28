@@ -113,6 +113,13 @@ function parsePropertyValue(value: string, propName: string): AnimatedProperty<a
     return parseObjectValue(value);
   }
   
+  // Strip surrounding quotes from string values
+  // Handles both double quotes ("...") and single quotes ('...')
+  if ((value.startsWith('"') && value.endsWith('"')) || 
+      (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1);
+  }
+  
   // Check for boolean
   if (value === 'true') return true;
   if (value === 'false') return false;
