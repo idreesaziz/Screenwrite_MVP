@@ -130,15 +130,23 @@ COMPONENTS_REFERENCE = """**AVAILABLE COMPONENTS:**
 
 **MEDIA COMPONENTS:**
 - `Video` - Video playback
-  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds), `endAt` (seconds)
+  Props: `src` (media name), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds), `endAt` (seconds)
+  **CRITICAL**: For `src`, use the EXACT quoted name from AVAILABLE MEDIA ASSETS section
+  Example: If media shows - "beach-sunset.mp4": Video (10s)
+           Then use: src:"beach-sunset.mp4"
+  The frontend resolves media names to actual URLs automatically.
   Note: `startFrom` and `endAt` specify which portion of the source video to play, in seconds
   
 - `Audio` - Audio playback (no visual)
-  Props: `src` (URL), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds), `endAt` (seconds)
+  Props: `src` (media name), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds), `endAt` (seconds)
+  **CRITICAL**: For `src`, use the EXACT quoted name from AVAILABLE MEDIA ASSETS section
+  The frontend resolves media names to actual URLs automatically.
   Note: `startFrom` and `endAt` specify which portion of the source audio to play, in seconds
   
 - `Img` - Static image
-  Props: `src` (URL), `alt`
+  Props: `src` (media name), `alt`
+  **CRITICAL**: For `src`, use the EXACT quoted name from AVAILABLE MEDIA ASSETS section
+  The frontend resolves media names to actual URLs automatically.
 
 **CONTAINER COMPONENTS:**
 - `AbsoluteFill` - Full-screen positioned container
