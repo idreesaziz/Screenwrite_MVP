@@ -6,6 +6,7 @@ export interface MediaBinItem {
   mediaType: "video" | "image" | "audio" | "text" | "element";
   mediaUrlLocal: string | null;
   mediaUrlRemote: string | null;
+  gcsUri?: string; // GCS URI (gs://bucket/path) for Vertex AI backend access
   media_width: number;
   media_height: number;
   durationInSeconds: number;

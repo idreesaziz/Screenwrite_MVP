@@ -11,6 +11,7 @@ class GeneratedAsset(BaseModel):
     content_type: Literal["image", "video"] = Field(description="Type of generated content")
     file_path: str = Field(description="Storage path (user_id/session_id/filename)")
     file_url: str = Field(description="Public URL to access the file")
+    gcs_uri: str = Field(description="GCS URI for Vertex AI access (gs://bucket/path)")
     prompt: str = Field(description="Generation prompt used")
     width: int = Field(description="Asset width in pixels")
     height: int = Field(description="Asset height in pixels")

@@ -647,6 +647,7 @@ export function ChatBox({
         mediaType: contentType === 'video' ? "video" : "image",
         mediaUrlLocal: null, // Not a blob URL
         mediaUrlRemote: mediaUrl, // Use absolute URL
+        gcsUri: generatedAsset.gcs_uri, // GCS URI for Vertex AI analysis
         media_width: generatedAsset.width,
         media_height: generatedAsset.height,
         durationInSeconds: contentType === 'video' ? (generatedAsset.duration_seconds || 8.0) : 0,

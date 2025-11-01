@@ -36,6 +36,7 @@ class GeneratedAssetResult:
         content_type: str,
         file_path: str,
         file_url: str,
+        gcs_uri: str,
         prompt: str,
         width: int,
         height: int,
@@ -46,6 +47,7 @@ class GeneratedAssetResult:
         self.content_type = content_type
         self.file_path = file_path
         self.file_url = file_url
+        self.gcs_uri = gcs_uri
         self.prompt = prompt
         self.width = width
         self.height = height
@@ -154,11 +156,16 @@ class MediaGenerationService:
             img = Image.open(BytesIO(image_bytes))
             width, height = img.size
             
+            # Build GCS URI for Vertex AI access
+            bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
+            gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
+            
             return GeneratedAssetResult(
                 asset_id=asset_id,
                 content_type="image",
                 file_path=upload_result.path,
                 file_url=upload_result.signed_url or upload_result.url,  # Use signed URL for secure browser access
+                gcs_uri=gcs_uri,
                 prompt=prompt,
                 width=width,
                 height=height,
@@ -318,12 +325,17 @@ class MediaGenerationService:
             
             logger.info(f"✅ Video uploaded: {upload_result.url[:80]}...")
             
+            # Build GCS URI for Vertex AI access
+            bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
+            gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
+            
             # Build result
             result = GeneratedAssetResult(
                 asset_id=asset_id,
                 content_type="video",
                 file_path=upload_result.path,
                 file_url=upload_result.signed_url or upload_result.url,  # Use signed URL for secure browser access
+                gcs_uri=gcs_uri,
                 prompt=prompt,
                 width=generated_video.width,
                 height=generated_video.height,

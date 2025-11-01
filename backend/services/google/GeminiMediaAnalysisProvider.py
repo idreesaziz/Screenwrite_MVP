@@ -18,6 +18,7 @@ Authentication is handled via Application Default Credentials (ADC):
 import os
 import logging
 from typing import Optional, Dict, Any
+from urllib.parse import urlparse
 from google import genai
 from google.genai.types import HttpOptions, Part
 
@@ -136,20 +137,27 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         model = model_name or self.default_model
         
         try:
-            logger.info(f"Analyzing media: {file_url[:80]}...")
+            normalized_url = self._normalize_file_url(file_url)
+
+            logger.info(f"Analyzing media: {normalized_url[:80]}...")
+            if normalized_url != file_url:
+                logger.debug(
+                    f"Normalized file URL for Vertex AI access: original={file_url[:80]}..., "
+                    f"normalized={normalized_url[:80]}..."
+                )
             logger.debug(f"Question: {question}")
             logger.debug(f"Model: {model}, Temperature: {temperature}")
-            
+
             # Check if it's a YouTube URL (special handling)
-            is_youtube = 'youtube.com/watch' in file_url or 'youtu.be/' in file_url
-            
+            is_youtube = 'youtube.com/watch' in normalized_url or 'youtu.be/' in normalized_url
+
             if is_youtube:
                 # YouTube URLs: Use FileData pattern with video/mp4 MIME type
                 # Vertex AI requires mimeType even for YouTube URLs
                 # See: https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference
-                logger.info(f"Detected YouTube URL, using FileData pattern with video/mp4")
+                logger.info("Detected YouTube URL, using FileData pattern with video/mp4")
                 from google.genai import types
-                
+
                 response = self.client.models.generate_content(
                     model=model,
                     contents=types.Content(
@@ -157,7 +165,7 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                         parts=[
                             types.Part(
                                 file_data=types.FileData(
-                                    file_uri=file_url,
+                                    file_uri=normalized_url,
                                     mime_type="video/mp4"
                                 )
                             ),
@@ -165,16 +173,16 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                         ]
                     )
                 )
-            elif file_url.startswith("gs://") or file_url.startswith("http://") or file_url.startswith("https://"):
+            elif normalized_url.startswith("gs://") or normalized_url.startswith("http://") or normalized_url.startswith("https://"):
                 # GCS or HTTP URLs: Use Part.from_uri() with MIME type
-                mime_type = self._get_mime_type(file_url)
+                mime_type = self._get_mime_type(normalized_url)
                 logger.debug(f"Using Part.from_uri() with mime_type={mime_type}")
-                
+
                 response = self.client.models.generate_content(
                     model=model,
                     contents=[
                         Part.from_uri(
-                            file_uri=file_url,
+                            file_uri=normalized_url,
                             mime_type=mime_type
                         ),
                         question
@@ -372,3 +380,38 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
             "text/javascript",
             "application/json",
         ]
+
+    def _normalize_file_url(self, file_url: str) -> str:
+        """Normalize known GCS HTTPS URLs to gs:// URIs for Vertex AI access."""
+        if not file_url:
+            return file_url
+
+        stripped = file_url.strip()
+
+        # Already a gs:// URI
+        if stripped.startswith("gs://"):
+            return stripped
+
+        try:
+            parsed = urlparse(stripped)
+        except Exception:
+            logger.debug(f"Could not parse URL for normalization: {stripped}")
+            return stripped
+
+        host = parsed.netloc.lower()
+
+        # Pattern: https://storage.googleapis.com/<bucket>/<object>
+        if host == "storage.googleapis.com":
+            path = parsed.path.lstrip('/')
+            bucket, _, object_path = path.partition('/')
+            if bucket and object_path:
+                return f"gs://{bucket}/{object_path}"
+
+        # Pattern: <bucket>.storage.googleapis.com/<object>
+        if host.endswith(".storage.googleapis.com"):
+            bucket = host[:-len(".storage.googleapis.com")]
+            object_path = parsed.path.lstrip('/')
+            if bucket and object_path:
+                return f"gs://{bucket}/{object_path}"
+
+        return stripped
