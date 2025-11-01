@@ -522,39 +522,23 @@ export function ChatBox({
         requestBody.aspect_ratio = "16:9";
         requestBody.resolution = "720p";
         
-        // Handle seed image for video generation
+        // Handle seed image for video generation (universal pattern: name → URL resolution)
         if (seedImageFileName) {
-          try {
-            // Find the seed image in media library
-            const seedImage = mediaBinItems.find((item: MediaBinItem) => item.name === seedImageFileName);
-            if (seedImage) {
-              // Use the best available URL for the image
-              const imageUrl = seedImage.mediaUrlLocal || seedImage.mediaUrlRemote;
-              if (imageUrl) {
-                // Convert image to base64
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
-                const base64 = await new Promise<string>((resolve) => {
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const base64String = reader.result as string;
-                    // Remove the data:image/...;base64, prefix
-                    const base64Data = base64String.split(',')[1];
-                    resolve(base64Data);
-                  };
-                  reader.readAsDataURL(blob);
-                });
-                
-                requestBody.reference_image = base64;
-                console.log(`🖼️ Added seed image: ${seedImageFileName}`);
-              } else {
-                console.warn(`⚠️ Seed image ${seedImageFileName} has no valid URL`);
-              }
+          // Find the seed image in media library by name
+          const seedImage = mediaBinItems.find((item: MediaBinItem) => item.name === seedImageFileName);
+          if (seedImage) {
+            // Resolve name to URL (prefer remote, fallback to local)
+            const imageUrl = seedImage.mediaUrlRemote || seedImage.mediaUrlLocal;
+            if (imageUrl) {
+              // Send URL to backend (backend will download it)
+              requestBody.reference_image_url = imageUrl;
+              console.log(`🖼️ Resolved seed image "${seedImageFileName}" → ${imageUrl.substring(0, 60)}...`);
             } else {
-              console.warn(`⚠️ Seed image ${seedImageFileName} not found in media library`);
+              console.warn(`⚠️ Seed image "${seedImageFileName}" has no valid URL`);
             }
-          } catch (error) {
-            console.error(`❌ Failed to process seed image ${seedImageFileName}:`, error);
+          } else {
+            console.warn(`⚠️ Seed image "${seedImageFileName}" not found in media library`);
+            console.warn(`📋 Available media:`, mediaBinItems.map(item => item.name));
           }
         }
       }
@@ -578,8 +562,60 @@ export function ChatBox({
         throw new Error(result.error_message || 'Generation failed');
       }
 
-      // Extract the generated asset info
-      const generatedAsset = result.generated_asset;
+      // Handle async video generation (polling required)
+      let generatedAsset;
+      
+      if (result.status === 'processing' && result.operation_id) {
+        // Video generation is async - poll for completion
+        console.log(`🎥 Video generation started, polling operation: ${result.operation_id}`);
+        
+        const maxAttempts = 120; // 10 minutes max
+        let attempts = 0;
+        let delay = 5000; // Start with 5 seconds
+        
+        while (attempts < maxAttempts) {
+          // Wait before polling
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Check status
+          const statusHeaders = await getAuthHeaders();
+          const statusResponse = await fetch(
+            apiUrl(`/api/v1/media/status/${encodeURIComponent(result.operation_id)}`, true),
+            {
+              method: 'GET',
+              headers: statusHeaders,
+              signal
+            }
+          );
+          
+          if (!statusResponse.ok) {
+            throw new Error(`Status check failed: ${statusResponse.status}`);
+          }
+          
+          const statusResult = await statusResponse.json();
+          console.log(`🎥 Video generation status (attempt ${attempts + 1}):`, statusResult.status);
+          
+          if (statusResult.status === 'completed') {
+            generatedAsset = statusResult.generated_asset;
+            console.log(`✅ Video generation completed:`, generatedAsset);
+            break;
+          } else if (statusResult.status === 'failed') {
+            throw new Error(statusResult.error_message || 'Video generation failed');
+          }
+          
+          // Still processing - continue polling with exponential backoff
+          attempts++;
+          delay = Math.min(delay * 1.2, 30000); // Cap at 30 seconds
+        }
+        
+        if (!generatedAsset) {
+          throw new Error('Video generation timed out after 10 minutes');
+        }
+      } else {
+        // Image generation completes immediately
+        generatedAsset = result.generated_asset;
+      }
+      
       console.log(`🎨 Generated ${contentType} asset:`, generatedAsset);
       
       const fileExtension = contentType === 'video' ? 'mp4' : 'png';
@@ -601,8 +637,8 @@ export function ChatBox({
       const baseTitle = suggestedName || generatedFileName.replace(`.${fileExtension}`, '');
       const title = `Generated ${contentType} - ${baseTitle}`;
       
-      // Generate unique name from title
-      const name = generateUniqueName(title, mediaBinItems);
+      // Generate unique name from title (use ref for latest state)
+      const name = generateUniqueName(title, mediaBinItemsRef.current);
 
       const newMediaItem: MediaBinItem = {
         id: generateUUID(),
@@ -747,8 +783,8 @@ export function ChatBox({
           // Create descriptive title: "Query by Creator - Option N"
           const title = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${item.creator_name} - Option ${index + 1}`;
 
-          // Generate unique name from title
-          const name = generateUniqueName(title, mediaBinItems);
+          // Generate unique name from title (use ref for latest state)
+          const name = generateUniqueName(title, mediaBinItemsRef.current);
 
           // Create MediaBinItem for each video
           const mediaItem: MediaBinItem = {
@@ -1694,9 +1730,9 @@ export function ChatBox({
                                 key={video.id}
                                 className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                 onClick={() => {
-                                  // Generate unique name from video title
+                                  // Generate unique name from video title (use ref for latest state)
                                   const title = video.title;
-                                  const name = generateUniqueName(title, mediaBinItems);
+                                  const name = generateUniqueName(title, mediaBinItemsRef.current);
 
                                   // Convert video to MediaBinItem format for preview
                                   const mediaItem: MediaBinItem = {
