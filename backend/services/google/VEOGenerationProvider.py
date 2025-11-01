@@ -68,9 +68,9 @@ class VEOGenerationProvider(VideoGenerationProvider):
         self.model_name = model_name
         self.gcs_bucket = gcs_bucket or os.getenv('GCS_BUCKET_NAME', 'screenwrite-media')
         
-        # Initialize Vertex AI client using v1beta API (supports latest features)
+        # Initialize Vertex AI client using v1 API (Veo is on stable v1 now)
         self.client = genai.Client(
-            http_options=types.HttpOptions(api_version="v1beta")
+            http_options=types.HttpOptions(api_version="v1")
         )
         
         # Initialize GCS client for optional uploads
@@ -110,10 +110,14 @@ class VEOGenerationProvider(VideoGenerationProvider):
         """Start async video generation with Veo."""
         def _sync_generate():
             try:
-                # Build generation config - only negative_prompt goes in config
-                config = None
-                if negative_prompt:
-                    config = types.GenerateVideosConfig(negative_prompt=negative_prompt)
+                # Build generation config - include output_gcs_uri to ensure Vertex writes to our bucket
+                config = types.GenerateVideosConfig(
+                    output_gcs_uri=f"gs://{self.gcs_bucket}/tmp/veo/",
+                    negative_prompt=negative_prompt,
+                    aspect_ratio=aspect_ratio,
+                    resolution=resolution,
+                    number_of_videos=1
+                )
                 
                 # Format reference image if provided
                 formatted_image = None
@@ -166,7 +170,7 @@ class VEOGenerationProvider(VideoGenerationProvider):
                     raise ValueError("Operation object not found")
                 
                 # Refresh operation status
-                updated_op = self.client.operations.get(internal_op)
+                updated_op = self.client.operations.get(operation=internal_op)
                 
                 # Update operation status
                 if updated_op.done:
@@ -226,11 +230,11 @@ class VEOGenerationProvider(VideoGenerationProvider):
                 if not internal_op:
                     raise ValueError("Operation object not found")
                 
-                # Get generated video from response
-                if not hasattr(internal_op.response, 'generated_videos'):
-                    raise ValueError("No generated videos found in response")
-                
-                generated_videos = internal_op.response.generated_videos
+                # Get generated videos from result (preferred) or response (fallback)
+                container = getattr(internal_op, 'result', None) or getattr(internal_op, 'response', None)
+                if not container or not hasattr(container, 'generated_videos'):
+                    raise ValueError("No generated videos found in operation result")
+                generated_videos = container.generated_videos
                 if not generated_videos or len(generated_videos) == 0:
                     raise ValueError("No generated videos found")
                 
@@ -238,21 +242,33 @@ class VEOGenerationProvider(VideoGenerationProvider):
                 
                 logger.info(f"Downloading generated video: {operation.operation_id}")
                 
-                # Download video to temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
-                    # Download file
-                    self.client.files.download(file=generated_video.video)
-                    generated_video.video.save(tmp_file.name)
-                    
-                    # Read video bytes
-                    with open(tmp_file.name, 'rb') as f:
-                        video_data = f.read()
-                    
-                    # Get file size
-                    file_size = os.path.getsize(tmp_file.name)
-                    
-                    # Cleanup temp file
-                    os.unlink(tmp_file.name)
+                # The SDK wraps the response - access the video object
+                video_obj = generated_video.video if hasattr(generated_video, 'video') else generated_video
+                
+                video_data: bytes
+                # Prefer downloading from GCS URI if present
+                gcs_uri = getattr(video_obj, 'uri', None)
+                if gcs_uri:
+                    logger.info(f"Video available at: {gcs_uri}")
+                    if not gcs_uri.startswith('gs://'):
+                        raise ValueError(f"Invalid GCS URI format: {gcs_uri}")
+                    parts = gcs_uri[5:].split('/', 1)  # Remove gs:// and split
+                    source_bucket_name = parts[0]
+                    source_blob_name = parts[1] if len(parts) > 1 else ''
+                    # Download from GCS
+                    logger.info(f"Downloading from GCS: {source_bucket_name}/{source_blob_name}")
+                    source_bucket = self.storage_client.bucket(source_bucket_name)
+                    source_blob = source_bucket.blob(source_blob_name)
+                    video_data = source_blob.download_as_bytes()
+                else:
+                    # Fallback: Use inline bytes if provided by SDK
+                    video_bytes = getattr(video_obj, 'video_bytes', None)
+                    if not video_bytes:
+                        raise ValueError("No URI or inline video bytes present in generated video response")
+                    video_data = video_bytes
+                file_size = len(video_data)
+                
+                logger.info(f"Video downloaded successfully: {file_size} bytes")
                 
                 # Get dimensions from metadata
                 resolution = operation.metadata.get("resolution", "720p")
