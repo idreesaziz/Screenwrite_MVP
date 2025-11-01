@@ -273,11 +273,13 @@ def get_video_generation_provider() -> VideoGenerationProvider:
     )
 
 
+@lru_cache()
 def get_media_generation_service():
     """
     Factory function for MediaGenerationService.
     
-    Creates a new MediaGenerationService instance with injected dependencies.
+    Returns a singleton instance to maintain active_operations state.
+    Uses @lru_cache() to ensure only one instance is created.
     
     Returns:
         MediaGenerationService instance

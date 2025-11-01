@@ -149,7 +149,7 @@ Do we have all required assets?
     │    │   │   ├─ Found results → Ask: analyze all or user picks?
     │    │   │   │   ├─ Analyze all → PROBE each → Select best/Combine
     │    │   │   │   └─ User picks → PROBE selected → Continue
-    │    │   │   └─ No results → Ask: GENERATE video instead?
+    │    │   │   └─ No (good/suitable)results → Ask: GENERATE video instead?
     │    │   └─ User has library file → PROBE it
     │    └─ Need image?
     │         └─ Always GENERATE (no stock images)
