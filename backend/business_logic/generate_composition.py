@@ -22,6 +22,79 @@ from prompts.composition_prompts import build_blueprint_prompt
 logger = logging.getLogger(__name__)
 
 
+def resolve_track_overlaps(tracks: List[Dict]) -> List[Dict]:
+    """
+    Resolve overlapping clips on the same track by shifting clips to the right.
+    
+    Algorithm:
+    - For each track, sort clips by startTimeInSeconds
+    - For each consecutive pair of clips (clip[i], clip[i+1]):
+      - If clip[i].endTimeInSeconds > clip[i+1].startTimeInSeconds (overlap detected):
+        - Calculate shift_amount = clip[i].endTimeInSeconds - clip[i+1].startTimeInSeconds
+        - Add shift_amount to startTimeInSeconds and endTimeInSeconds of clip[i+1] and ALL subsequent clips
+    
+    Args:
+        tracks: List of track dictionaries with 'clips' arrays
+        
+    Returns:
+        Modified tracks with overlaps resolved
+    """
+    overlap_count = 0
+    
+    for track_idx, track in enumerate(tracks):
+        clips = track.get('clips', [])
+        
+        if len(clips) <= 1:
+            continue  # No overlaps possible with 0 or 1 clip
+        
+        # Sort clips by start time to ensure correct ordering
+        clips.sort(key=lambda c: c.get('startTimeInSeconds', 0))
+        
+        # Check for overlaps and resolve them
+        i = 0
+        while i < len(clips) - 1:
+            current_clip = clips[i]
+            next_clip = clips[i + 1]
+            
+            current_end = current_clip.get('endTimeInSeconds', 0)
+            next_start = next_clip.get('startTimeInSeconds', 0)
+            
+            # Check for overlap
+            if current_end > next_start:
+                overlap_count += 1
+                shift_amount = current_end - next_start
+                
+                logger.warning(
+                    f"⚠️ Overlap detected on track {track_idx}: "
+                    f"clip '{current_clip.get('id')}' (ends at {current_end}s) overlaps with "
+                    f"clip '{next_clip.get('id')}' (starts at {next_start}s). "
+                    f"Shifting by {shift_amount}s"
+                )
+                
+                # Shift the next clip and all subsequent clips
+                for j in range(i + 1, len(clips)):
+                    clips[j]['startTimeInSeconds'] = clips[j].get('startTimeInSeconds', 0) + shift_amount
+                    clips[j]['endTimeInSeconds'] = clips[j].get('endTimeInSeconds', 0) + shift_amount
+                    
+                    logger.info(
+                        f"  ↪️ Shifted clip '{clips[j].get('id')}' to "
+                        f"{clips[j]['startTimeInSeconds']}s - {clips[j]['endTimeInSeconds']}s"
+                    )
+                
+                # Don't increment i - check the same pair again in case the shift created new overlaps
+                # (Though with proper shifting, this shouldn't happen, but being safe)
+            else:
+                i += 1
+        
+        # Update track with sorted and fixed clips
+        track['clips'] = clips
+    
+    if overlap_count > 0:
+        logger.info(f"✅ Resolved {overlap_count} overlap(s) across all tracks")
+    
+    return tracks
+
+
 @dataclass
 class CompositionGenerationResult:
     """Result from composition generation"""
@@ -117,6 +190,9 @@ class CompositionGenerationService:
             if isinstance(result_dict, dict) and "tracks" in result_dict:
                 logger.info("Unwrapping 'tracks' wrapper from AI response")
                 result_dict = result_dict["tracks"]
+            
+            # Safety check: Resolve any overlapping clips on the same track
+            result_dict = resolve_track_overlaps(result_dict)
             
             # Convert dict back to JSON string
             composition_json = json.dumps(result_dict)
