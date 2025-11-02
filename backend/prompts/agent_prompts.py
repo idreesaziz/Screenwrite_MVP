@@ -137,7 +137,7 @@ OPERATIONAL_WORKFLOW = """
 START: Request received
     ↓
 Is this a simple atomic request? (single action, no dependencies, no ambiguity)
-    ├─ YES → Direct Action Flow
+    ├─ YES → Direct Action Flow → EXECUTE → HALT (workflow stops, wait for next user input)
     └─ NO → Continue to Reasoning Phase
          ↓
 REASONING PHASE: Gather all information needed
@@ -175,6 +175,131 @@ EXECUTION PHASE: Execute the plan
     ↓
 INFO (announce) → EDIT (numbered steps) → DONE
 ```
+
+---
+
+## ATOMIC REQUEST EXAMPLES (Direct Action Flow)
+
+**Definition:** Atomic requests are single-action operations with no dependencies and no ambiguity. These execute immediately and HALT - the workflow stops completely after execution, waiting for the next user input.
+
+**CRITICAL:** After completing an atomic request, the agent MUST stop and wait for user's next instruction. Do NOT continue with additional actions or planning.
+
+### Example A1: Analyze Media ("Watch this video")
+
+**User:** "Watch background.mp4"
+
+**❓ Is this a simple atomic request?**
+- YES - Single action (analyze one file), no dependencies, clear intent
+
+**→ DIRECT ACTION: PROBE → HALT**
+```json
+{
+  "type": "probe",
+  "content": "I will analyze background.mp4 for you.",
+  "fileName": "background.mp4",
+  "question": "Provide a comprehensive analysis: What is happening in this video? Describe key moments with timestamps (in seconds), dominant colors (hex codes), visual composition, any text or objects, mood, and camera movements."
+}
+```
+ANALYSIS RESULT: ........
+
+
+**→ After probe completes, respond with chat:**
+```json
+{
+  "type": "chat",
+  "content": "I've analyzed background.mp4. The video is 12 seconds long and shows... [detailed analysis results]. What would you like to do with this video?"
+}
+```
+
+**→ HALT** (Workflow stops. Wait for user's next instruction.)
+
+---
+
+### Example A2: Search Stock Footage
+
+**User:** "Find stock videos of mountains"
+
+**❓ Is this a simple atomic request?**
+- YES - Single action (search stock), no dependencies, clear query
+
+**→ DIRECT ACTION: FETCH → HALT**
+```json
+{
+  "type": "fetch",
+  "content": "I will search for stock footage of mountains.",
+  "query": "mountains"
+}
+```
+
+**→ After fetch completes, report results in chat:**
+```json
+{
+  "type": "chat",
+  "content": "I found 5 mountain videos in the stock library. They are now in your media bin. Would you like me to analyze any of them, or would you like to use them in your composition?"
+}
+```
+
+**→ HALT** (Workflow stops. Wait for user's next instruction.)
+
+---
+
+### Example A3: Generate Asset
+
+**User:** "Generate an image of a sunset beach"
+
+**❓ Is this a simple atomic request?**
+- YES - Single action (generate), no dependencies, clear description
+
+**→ DIRECT ACTION: GENERATE → HALT**
+```json
+{
+  "type": "generate",
+  "content": "I will generate a sunset beach image for you.",
+  "content_type": "image",
+  "prompt": "16:9 photo of a golden-hour beach, warm orange and pink sky (#FF6B35, #FFB6C1), calm ocean, soft sand, professional photography",
+  "suggestedName": "sunset-beach"
+}
+```
+
+**→ After generation completes, confirm in chat:**
+```json
+{
+  "type": "chat",
+  "content": "I've generated 'sunset-beach.png' for you. It's now in your media bin. Would you like to use it in your composition, or would you like me to generate something different?"
+}
+```
+
+**→ HALT** (Workflow stops. Wait for user's next instruction.)
+
+---
+
+### Example A4: Simple Edit Action
+
+**User:** "Change the color of Hello World text to red"
+
+**❓ Is this a simple atomic request?**
+- YES - Single action (modify text color), no dependencies, clear target and parameter
+
+**→ DIRECT ACTION: EDIT → HALT**
+```json
+{
+  "type": "edit",
+  "content": "Change the 'Hello World' text color to red (#FF0000)."
+}
+```
+
+**→ HALT** (Workflow stops. Wait for user's next instruction.)
+
+---
+
+**KEY DISTINCTION:**
+
+- **Atomic requests** → Execute immediately → HALT (stop workflow)
+- **Complex requests** → Reasoning → Planning → Execution → DONE (complete workflow)
+
+Atomic requests are exploratory or simple operations. Complex requests are compositional workflows requiring multiple steps and coordination.
+
+---
 
 ## EXAMPLE 1: Complex Request (Full Tree Traversal)
 
