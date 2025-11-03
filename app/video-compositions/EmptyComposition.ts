@@ -30,7 +30,7 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         element: {
           elements: [
             "div;id:split-char-container;position:absolute;top:15%;left:50%;transform:translateX(-50%);width:80%;textAlign:center",
-            "SplitText;id:split-char-text;parent:split-char-container;text:SPLIT TEXT - CHARACTER;fontSize:56px;fontWeight:bold;color:#ffffff;animateBy:char;direction:up;delay:0.5;duration:1"
+            "SplitText;id:split-char-text;parent:split-char-container;text:SPLIT TEXT - CHARACTER;fontSize:56px;fontWeight:bold;color:#ffffff;animateBy:letters;direction:up;delay:0.5;duration:1"
           ]
         }
       },
@@ -42,7 +42,7 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         element: {
           elements: [
             "div;id:split-word-container;position:absolute;top:15%;left:50%;transform:translateX(-50%);width:80%;textAlign:center",
-            "SplitText;id:split-word-text;parent:split-word-container;text:SPLIT TEXT - WORD BY WORD;fontSize:56px;fontWeight:bold;color:#fbbf24;animateBy:word;direction:left;delay:0.3;duration:0.8"
+            "SplitText;id:split-word-text;parent:split-word-container;text:SPLIT TEXT - WORD BY WORD;fontSize:56px;fontWeight:bold;color:#fbbf24;animateBy:words;direction:left;delay:0.3;duration:0.8"
           ]
         },
         transitionFromPrevious: { type: 'fade', durationInSeconds: 0.5 }
@@ -55,7 +55,7 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         element: {
           elements: [
             "div;id:blur-container;position:absolute;top:15%;left:50%;transform:translateX(-50%);width:80%;textAlign:center",
-            "BlurText;id:blur-text-comp;parent:blur-container;text:BLUR TEXT ANIMATION;fontSize:64px;fontWeight:bold;color:#34d399;animateBy:word;direction:down;delay:0.2;duration:1.2"
+            "BlurText;id:blur-text-comp;parent:blur-container;text:BLUR TEXT ANIMATION;fontSize:64px;fontWeight:bold;color:#34d399;animateBy:words;direction:down;delay:0.2;duration:1.2"
           ]
         },
         transitionFromPrevious: { type: 'fade', durationInSeconds: 0.5 }
@@ -85,7 +85,7 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         element: {
           elements: [
             "div;id:label1-container;position:absolute;bottom:20%;left:50%;transform:translateX(-50%);textAlign:center",
-            "p;id:label1;parent:label1-container;fontSize:20px;color:rgba(255,255,255,0.7);text:animateBy: char | direction: up"
+            "p;id:label1;parent:label1-container;fontSize:20px;color:rgba(255,255,255,0.7);text:animateBy: letters | direction: up"
           ]
         }
       },
@@ -96,7 +96,7 @@ export const emptyCompositionBlueprint: CompositionBlueprint = [
         element: {
           elements: [
             "div;id:label2-container;position:absolute;bottom:20%;left:50%;transform:translateX(-50%);textAlign:center",
-            "p;id:label2;parent:label2-container;fontSize:20px;color:rgba(255,255,255,0.7);text:animateBy: word | direction: left"
+            "p;id:label2;parent:label2-container;fontSize:20px;color:rgba(255,255,255,0.7);text:animateBy: words | direction: left"
           ]
         }
       },

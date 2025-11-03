@@ -80,7 +80,7 @@ Does this plan capture the artisanal, inviting atmosphere you want for your coff
 2. At 0.5s on the timeline, add BlurText 'CRAFTED WITH PASSION' in warm golden (#D4A574), 56px bold font, positioned in the lower-third, centered.
 3. At 3.5s on the timeline, fade out the 'CRAFTED WITH PASSION' text over 0.4 seconds.
 4. Add video 'Coffee Brewing 2' at 4s on the timeline, trimmed to start from 10s in the clip and end at 14s in the clip. Add a 'fade' transition to next on 'Coffee Brewing 1'.
-5. At 5s on the timeline, add SplitText 'EVERY CUP A MASTERPIECE' in rich brown (#4E342E), 64px font, centered, with cream-colored (#F5F5DC) glow shadow, mode 'word', stagger 0.1.
+5. At 5s on the timeline, add SplitText 'EVERY CUP A MASTERPIECE' in rich brown (#4E342E), 64px font, centered, with cream-colored (#F5F5DC) glow shadow, mode 'words', stagger 0.1.
 6. At 8.5s on the timeline, slide out 'EVERY CUP A MASTERPIECE' upwards over 0.4 seconds.
 7. Add video 'Coffee Brewing 3' at 9s on the timeline, trimmed to start from 3s in the clip and end at 8s in the clip. Add a 'Wipe Right' transition to next on 'Coffee Brewing 2'.
 8. At 9.5s on the timeline, add TypewriterText 'YOUR MORNING RITUAL' in warm brown (#3E2723), 52px font, positioned in the upper-third, centered, typingSpeed 12.
@@ -169,8 +169,8 @@ This video will powerfully communicate your kennel's commitment to breeding exce
 12. **INFO** - "Excellent! I'll now create your professional German Shepherd kennel promotional video."
 
 13. **EDIT** - "1. Add video 'German Shepherd 1' at 0s on the timeline, trimmed to start from 0s in the clip and end at 6s in the clip.
-2. At 0.5s on the timeline, add SplitText 'STRENGTH' in navy blue (#1A2332), 72px bold font, positioned in the upper-third, centered, with gold (#D4AF37) text shadow (2px offset), mode 'char', stagger 0.08.
-3. At 2s on the timeline, add SplitText 'ELEGANCE' in navy blue (#1A2332), 72px bold font, positioned below 'STRENGTH' with 80px vertical spacing, centered, with gold (#D4AF37) text shadow, mode 'char', stagger 0.08.
+2. At 0.5s on the timeline, add SplitText 'STRENGTH' in navy blue (#1A2332), 72px bold font, positioned in the upper-third, centered, with gold (#D4AF37) text shadow (2px offset), mode 'letters', stagger 0.08.
+3. At 2s on the timeline, add SplitText 'ELEGANCE' in navy blue (#1A2332), 72px bold font, positioned below 'STRENGTH' with 80px vertical spacing, centered, with gold (#D4AF37) text shadow, mode 'letters', stagger 0.08.
 4. At 4.5s on the timeline, fade out both 'STRENGTH' and 'ELEGANCE' text elements over 0.3 seconds.
 5. Add video 'German Shepherd 2' at 5s on the timeline, trimmed to start from 5s in the clip and end at 11s in the clip. Add a 'fade' transition to next on 'German Shepherd 1'.
 6. At 6s on the timeline, add BlurText 'BRED FOR EXCELLENCE' in gold (#D4AF37), 64px bold font, centered, with navy blue (#1A2332) text shadow for contrast.
@@ -184,7 +184,7 @@ This video will powerfully communicate your kennel's commitment to breeding exce
 14. At 15.5s on the timeline, add BlurText 'RAISED WITH LOVE' in warm gold (#D4AF37), 58px font, centered.
 15. At 17.5s on the timeline, fade out 'RAISED WITH LOVE' text over 0.3 seconds.
 16. Add image 'alpine-shepherds-logo.png' at 18s on the timeline. Add a 'fade' transition to next on 'German Shepherd 3'.
-17. At 18.2s on the timeline, add SplitText 'CHAMPIONSHIP BLOODLINES' in navy (#1A2332), 48px font, positioned below center (75% from top), centered horizontally, mode 'word', stagger 0.12."
+17. At 18.2s on the timeline, add SplitText 'CHAMPIONSHIP BLOODLINES' in navy (#1A2332), 48px font, positioned below center (75% from top), centered horizontally, mode 'words', stagger 0.12."
 
 **→ DONE**
 """
@@ -1155,7 +1155,7 @@ You can manipulate video compositions using these capabilities:
 
 **CUSTOM ELEMENTS:**
 - SplitText: Animate text character-by-character or word-by-word with stagger effects (has built-in entrance animation)
-  - mode: 'char' or 'word' (default: 'char')
+  - mode: 'letters' or 'words' (default: 'letters')
   - stagger: seconds between each unit (default: 0.05)
 - BlurText: Text with blur-in animation (has built-in entrance animation)
 - TypewriterText: Classic typewriter reveal effect (has built-in entrance animation)

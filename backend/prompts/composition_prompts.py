@@ -165,10 +165,10 @@ Use `text:Your content` to set text content. All support CSS styling.
 
 **TEXT ANIMATION COMPONENTS:**
 - `SplitText` - Animated text reveal by character/word
-  Props: `text`, `animateBy` (char/word), `direction` (up/down/left/right), `delay`, `duration`
+  Props: `text`, `animateBy` (letters/words), `direction` (up/down/left/right), `delay`, `duration`
   
 - `BlurText` - Blur-to-focus text animation
-  Props: `text`, `animateBy` (char/word), `direction`, `delay`, `duration`
+  Props: `text`, `animateBy` (letters/words), `direction`, `delay`, `duration`
   
 - `TypewriterText` - Typewriter effect with cursor
   Props: `text`, `typingSpeed` (characters per second, default 10), `initialDelay` (seconds), `pauseDuration` (seconds), `deletingSpeed` (chars/sec), `showCursor` (boolean), `cursorCharacter` (string), `cursorBlinkSpeed` (blinks per second)
