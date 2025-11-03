@@ -23,7 +23,7 @@ class StockMediaSearchRequest(BaseModel):
     )
     
     max_results: int = Field(
-        default=4,
+        default=3,
         ge=1,
         le=10,
         description="Maximum number of curated results to return (1-10)"

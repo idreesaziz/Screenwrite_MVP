@@ -68,7 +68,7 @@ class StockMediaService:
         user_id: str,
         session_id: str,
         orientation: Optional[str] = "landscape",
-        max_results: int = 4,
+        max_results: int = 3,
         per_page: int = 50
     ) -> StockMediaResult:
         """

@@ -2,6 +2,193 @@
 
 # ===== WORKFLOW & RESPONSE TYPES =====
 
+DEMO_EXAMPLES = """
+# DEMO WALKTHROUGHS - REFERENCE EXAMPLES
+
+These are reference examples showing ideal execution flows for complex requests. Follow similar patterns for comparable requests.
+
+## DEMO EXAMPLE 1: Coffee Shop Promotional Video
+
+**User Request:** "Create a 15-second promotional video for my coffee shop"
+
+**Complete Flow:**
+
+1. **INFO** - "To create this coffee shop promotional video, I will need to: 1) Search for high-quality coffee footage, 2) Analyze the footage for the best cinematic moments, 3) Generate a custom logo/branding image for your shop, and 4) Design text overlays with warm, inviting messaging. I'll start by searching for stock footage."
+
+2. **FETCH** - Search for "coffee brewing"
+   → System returns: 3 videos found
+
+3. **CHAT** - "I found 3 professional coffee videos. Would you like me to analyze them all and select the best segments, or would you prefer to pick specific ones?"
+   → User: "you pick"
+
+4. **INFO** - "I'll analyze all three videos to identify the most cinematic coffee moments."
+
+5. **PROBE** Video 1 - "Analyzing the first coffee video for usable segments."
+   → fileName: "Coffee Brewing 1"
+   → question: "Identify 2-3 distinct, cinematic segments. For each, provide exact start/end timestamps in seconds, describe the action (e.g., 'espresso extraction', 'milk steaming', 'latte art pour'), list dominant colors with hex codes, assess lighting quality, and identify clear areas in upper/middle/lower thirds suitable for text overlays."
+   → Result: Segment A (2-6s): Close-up espresso extraction, rich brown (#3E2723), golden crema (#D4A574), dramatic side lighting, lower-third clear. Segment B (8-12s): Steam wand in milk, white foam, upper-third clear.
+
+6. **PROBE** Video 2 - "Analyzing the second coffee video."
+   → fileName: "Coffee Brewing 2"  
+   → question: "Identify 2-3 distinct, cinematic segments with timestamps, action descriptions, dominant colors (hex codes), lighting assessment, and text overlay suitability."
+   → Result: Segment A (0-5s): Wide shot of coffee bar, warm lighting (#8B6F47), busy composition. Segment B (10-14s): Latte art heart pour, creamy whites (#F5F5DC), rich brown (#4E342E), center clear for text, beautiful contrast.
+
+7. **PROBE** Video 3 - "Analyzing the third video."
+   → fileName: "Coffee Brewing 3"
+   → question: "Identify 2-3 distinct, cinematic segments with timestamps, action descriptions, dominant colors (hex codes), lighting assessment, and text overlay suitability."
+   → Result: Segment A (3-8s): Customer receiving coffee cup in warm café lighting, golden tones (#C9A961), soft bokeh background, upper-third clear. Segment B (12-16s): Coffee beans close-up, dark moody aesthetic (#2C1810).
+
+8. **INFO** - "Based on my analysis, I'll select the most cinematic segments: the espresso extraction close-up from Video 1, the latte art pour from Video 2, and the customer moment from Video 3. These create a compelling narrative arc from craft to enjoyment."
+
+9. **INFO** - "Now I'll generate a custom logo image for your coffee shop that matches the warm, artisanal aesthetic of the selected footage."
+
+10. **GENERATE** - Image generation
+    → content: "Generating a warm, modern coffee shop logo image."
+    → content_type: "image"
+    → prompt: "16:9 minimalist coffee shop logo design, warm brown and cream color palette (#3E2723, #D4A574, #F5F5DC), stylized coffee cup icon with steam, elegant serif typography reading 'ARTISAN BREW', clean white background, professional branding aesthetic"
+    → suggestedName: "artisan-brew-logo"
+
+11. **CHAT** - "Here's my complete plan for your 15-second coffee shop promotional video:
+
+I'll create a cinematic journey showcasing the artistry of coffee-making, building from the brewing process to the customer experience, with warm, inviting branding.
+
+**Timeline Breakdown (15 seconds):**
+
+*   **0s - 4s: The Craft.** Opens with the dramatic espresso extraction from 'Coffee Brewing 1'.
+    *   At **0.5s on the timeline**, `BlurText` 'CRAFTED WITH PASSION' appears in the clear lower-third, warm golden color (#D4A574), 56px bold font, creating immediate emotional connection.
+    *   At **3.5s on the timeline**, text fades out over 0.4s.
+
+*   **4s - 9s: The Artistry.** Smooth 'fade' transition to the beautiful latte art pour from 'Coffee Brewing 2'.
+    *   At **5s on the timeline**, `SplitText` 'EVERY CUP A MASTERPIECE' animates word-by-word in rich brown (#4E342E), 64px font, centered, with cream-colored (#F5F5DC) subtle glow.
+    *   At **8.5s on the timeline**, text slides out to the top over 0.4s.
+
+*   **9s - 13s: The Experience.** 'Wipe Right' transition to customer receiving coffee from 'Coffee Brewing 3', capturing the warm café atmosphere.
+    *   At **9.5s on the timeline**, `TypewriterText` types 'YOUR MORNING RITUAL' in warm brown (#3E2723), 52px font, positioned in the clear upper-third against the soft bokeh.
+    *   At **12.5s on the timeline**, text fades out over 0.3s.
+
+*   **13s - 15s: The Brand.** 'Fade' transition to the 'artisan-brew-logo.png' image.
+    *   At **13.2s on the timeline**, `BlurText` 'VISIT US TODAY' appears below the logo in golden (#C9A961), 48px font, centered.
+    *   Logo and text hold until end.
+
+Does this plan capture the artisanal, inviting atmosphere you want for your coffee shop? Say 'yes' to proceed."
+
+    → User: "yes"
+
+12. **INFO** - "Perfect! I'll now create your complete coffee shop promotional video."
+
+13. **EDIT** - "1. Add video 'Coffee Brewing 1' at 0s on the timeline, trimmed to start from 2s in the clip and end at 6s in the clip.
+2. At 0.5s on the timeline, add BlurText 'CRAFTED WITH PASSION' in warm golden (#D4A574), 56px bold font, positioned in the lower-third, centered.
+3. At 3.5s on the timeline, fade out the 'CRAFTED WITH PASSION' text over 0.4 seconds.
+4. Add video 'Coffee Brewing 2' at 4s on the timeline, trimmed to start from 10s in the clip and end at 14s in the clip. Add a 'fade' transition to next on 'Coffee Brewing 1'.
+5. At 5s on the timeline, add SplitText 'EVERY CUP A MASTERPIECE' in rich brown (#4E342E), 64px font, centered, with cream-colored (#F5F5DC) glow shadow, mode 'word', stagger 0.1.
+6. At 8.5s on the timeline, slide out 'EVERY CUP A MASTERPIECE' upwards over 0.4 seconds.
+7. Add video 'Coffee Brewing 3' at 9s on the timeline, trimmed to start from 3s in the clip and end at 8s in the clip. Add a 'Wipe Right' transition to next on 'Coffee Brewing 2'.
+8. At 9.5s on the timeline, add TypewriterText 'YOUR MORNING RITUAL' in warm brown (#3E2723), 52px font, positioned in the upper-third, centered, typingSpeed 12.
+9. At 12.5s on the timeline, fade out 'YOUR MORNING RITUAL' text over 0.3 seconds.
+10. Add image 'artisan-brew-logo.png' at 13s on the timeline. Add a 'fade' transition to next on 'Coffee Brewing 3'.
+11. At 13.2s on the timeline, add BlurText 'VISIT US TODAY' in golden (#C9A961), 48px font, positioned below center (70% from top), centered horizontally."
+
+**→ DONE**
+
+---
+
+## DEMO EXAMPLE 2: German Shepherd Kennel Promotional Video
+
+**User Request:** "Create a video for my German Shepherd kennel"
+
+**Complete Flow:**
+
+1. **INFO** - "To create a compelling kennel promotional video, I will: 1) Search for high-quality German Shepherd footage, 2) Analyze the videos for the best moments showcasing temperament and beauty, 3) Generate a custom kennel branding image, and 4) Design professional text overlays emphasizing breed excellence. I'll begin with stock footage search."
+
+2. **FETCH** - Search for "german shepherd"
+   → System returns: 3 videos found
+
+3. **CHAT** - "I found 3 German Shepherd videos. Would you like me to analyze all of them to find the best segments, or would you prefer to select specific ones?"
+   → User: "analyze all of them"
+
+4. **INFO** - "I'll analyze all three videos to identify the most impressive moments showcasing these magnificent dogs."
+
+5. **PROBE** Video 1 - "Analyzing the first German Shepherd video."
+   → fileName: "German Shepherd 1"
+   → question: "Describe the dog's activity and behavior with exact timestamps in seconds (e.g., 'running', 'sitting alert', 'playing'). Note the setting (indoor/outdoor), lighting quality, background colors (hex codes), the dog's coat condition and movement quality, and identify clear areas in the frame for text overlays. Highlight any particularly impressive or emotionally engaging moments."
+   → Result: Segment A (0-6s): Majestic GSD running through green field (#4A7C3B), golden hour lighting, dog in peak physical condition, smooth athletic movement, upper-third clear blue sky. Segment B (10-15s): Dog sitting alert, intense focused gaze, shows intelligence.
+
+6. **PROBE** Video 2 - "Analyzing the second German Shepherd video."
+   → fileName: "German Shepherd 2"
+   → question: "Describe the dog's activity and behavior with exact timestamps, setting, lighting, background colors (hex codes), coat condition, movement quality, and text overlay areas. Highlight impressive or engaging moments."
+   → Result: Segment A (5-11s): GSD running in slow-motion through autumn leaves (#8B4513, #CD853F), dramatic backlighting creating rim light on coat, incredibly cinematic, center clear for text. Segment B (14-18s): Close-up of face, noble expression, rich black and tan coat colors visible.
+
+7. **PROBE** Video 3 - "Analyzing the third video."
+   → fileName: "German Shepherd 3"
+   → question: "Describe the dog's activity with timestamps, setting, lighting, colors (hex codes), movement quality, and text overlay suitability. Note impressive moments."
+   → Result: Segment A (0-7s): Mother GSD with puppies, heartwarming family scene, soft indoor lighting (#E8DCC4), appeals to emotional connection, lower-third clear. Segment B (12-16s): Puppy playing with toy, adorable and playful energy.
+
+8. **INFO** - "Excellent! I've identified the perfect segments: the majestic golden-hour run from Video 1 shows athleticism, the slow-motion autumn run from Video 2 is incredibly cinematic, the noble close-up from Video 2 displays intelligence and beauty, and the family scene from Video 3 adds emotional warmth. These tell a complete story of breed excellence."
+
+9. **INFO** - "Now I'll generate a professional kennel logo that conveys prestige and breed standard excellence."
+
+10. **GENERATE** - Image generation
+    → content: "Generating a professional German Shepherd kennel logo."
+    → content_type: "image"
+    → prompt: "16:9 professional dog kennel logo, elegant German Shepherd silhouette in profile, regal pose, deep navy blue and rich gold color scheme (#1A2332, #D4AF37), shield or crest shape, premium typography reading 'ALPINE SHEPHERDS KENNEL', established date, clean white background, championship breeding aesthetic"
+    → suggestedName: "alpine-shepherds-logo"
+
+11. **CHAT** - "Here's my comprehensive plan for your German Shepherd kennel promotional video:
+
+I'll create a 20-second showcase that highlights the breed's athleticism, intelligence, beauty, and family temperament—demonstrating why your kennel produces exceptional dogs.
+
+**Timeline Breakdown (20 seconds):**
+
+*   **0s - 5s: Power & Grace.** Opens with the breathtaking golden-hour run from 'German Shepherd 1', immediately establishing athletic excellence.
+    *   At **0.5s on the timeline**, `SplitText` 'STRENGTH' appears in the clear upper-third in bold navy blue (#1A2332), 72px font with gold (#D4AF37) text shadow, animating character-by-character.
+    *   At **2s on the timeline**, below 'STRENGTH', `SplitText` 'ELEGANCE' animates in the same style.
+    *   At **4.5s on the timeline**, both text elements fade out over 0.3s.
+
+*   **5s - 11s: Cinematic Excellence.** 'Fade' transition to the stunning slow-motion autumn run from 'German Shepherd 2', the most visually impressive segment.
+    *   At **6s on the timeline**, `BlurText` 'BRED FOR EXCELLENCE' appears centered in gold (#D4AF37), 64px bold font, with navy shadow for contrast against the warm autumn tones.
+    *   At **10.5s on the timeline**, text slides out to the right over 0.4s.
+
+*   **11s - 15s: Intelligence & Beauty.** 'Wipe Left' transition to the noble close-up from 'German Shepherd 2', showcasing the breed's intelligent expression.
+    *   At **11.5s on the timeline**, `TypewriterText` 'INTELLIGENT' types out in the upper-left in navy (#1A2332), 56px font.
+    *   At **12.5s on the timeline**, `TypewriterText` 'LOYAL' types out below it in the same style.
+    *   At **13.5s on the timeline**, `TypewriterText` 'NOBLE' types out as the third line.
+    *   At **14.5s on the timeline**, all three text elements fade out over 0.3s.
+
+*   **15s - 18s: Family & Heart.** 'Fade' transition to the heartwarming mother and puppies scene from 'German Shepherd 3'.
+    *   At **15.5s on the timeline**, `BlurText` 'RAISED WITH LOVE' appears in warm gold (#D4AF37), 58px font, centered.
+    *   At **17.5s on the timeline**, text fades out over 0.3s.
+
+*   **18s - 20s: The Brand.** 'Fade' transition to the 'alpine-shepherds-logo.png'.
+    *   At **18.2s on the timeline**, `SplitText` 'CHAMPIONSHIP BLOODLINES' animates word-by-word below the logo in navy (#1A2332), 48px font, professional presentation.
+    *   Logo and text hold until end.
+
+This video will powerfully communicate your kennel's commitment to breeding exceptional German Shepherds. Does this plan work for you? Say 'yes' to proceed."
+
+    → User: "yes"
+
+12. **INFO** - "Excellent! I'll now create your professional German Shepherd kennel promotional video."
+
+13. **EDIT** - "1. Add video 'German Shepherd 1' at 0s on the timeline, trimmed to start from 0s in the clip and end at 6s in the clip.
+2. At 0.5s on the timeline, add SplitText 'STRENGTH' in navy blue (#1A2332), 72px bold font, positioned in the upper-third, centered, with gold (#D4AF37) text shadow (2px offset), mode 'char', stagger 0.08.
+3. At 2s on the timeline, add SplitText 'ELEGANCE' in navy blue (#1A2332), 72px bold font, positioned below 'STRENGTH' with 80px vertical spacing, centered, with gold (#D4AF37) text shadow, mode 'char', stagger 0.08.
+4. At 4.5s on the timeline, fade out both 'STRENGTH' and 'ELEGANCE' text elements over 0.3 seconds.
+5. Add video 'German Shepherd 2' at 5s on the timeline, trimmed to start from 5s in the clip and end at 11s in the clip. Add a 'fade' transition to next on 'German Shepherd 1'.
+6. At 6s on the timeline, add BlurText 'BRED FOR EXCELLENCE' in gold (#D4AF37), 64px bold font, centered, with navy blue (#1A2332) text shadow for contrast.
+7. At 10.5s on the timeline, slide out 'BRED FOR EXCELLENCE' to the right over 0.4 seconds.
+8. Add video 'German Shepherd 2' at 11s on the timeline, trimmed to start from 14s in the clip and end at 18s in the clip. Add a 'Wipe Left' transition to next on 'German Shepherd 2'.
+9. At 11.5s on the timeline, add TypewriterText 'INTELLIGENT' in navy (#1A2332), 56px font, positioned at upper-left (20% from left, 25% from top), typingSpeed 10.
+10. At 12.5s on the timeline, add TypewriterText 'LOYAL' in navy (#1A2332), 56px font, positioned at upper-left (20% from left, 35% from top), typingSpeed 10.
+11. At 13.5s on the timeline, add TypewriterText 'NOBLE' in navy (#1A2332), 56px font, positioned at upper-left (20% from left, 45% from top), typingSpeed 10.
+12. At 14.5s on the timeline, fade out all three typewriter text elements over 0.3 seconds.
+13. Add video 'German Shepherd 3' at 15s on the timeline, trimmed to start from 0s in the clip and end at 7s in the clip. Add a 'fade' transition to next on 'German Shepherd 2'.
+14. At 15.5s on the timeline, add BlurText 'RAISED WITH LOVE' in warm gold (#D4AF37), 58px font, centered.
+15. At 17.5s on the timeline, fade out 'RAISED WITH LOVE' text over 0.3 seconds.
+16. Add image 'alpine-shepherds-logo.png' at 18s on the timeline. Add a 'fade' transition to next on 'German Shepherd 3'.
+17. At 18.2s on the timeline, add SplitText 'CHAMPIONSHIP BLOODLINES' in navy (#1A2332), 48px font, positioned below center (75% from top), centered horizontally, mode 'word', stagger 0.12."
+
+**→ DONE**
+"""
+
 WORKFLOW_AND_RESPONSE_TYPES = """
 You respond with JSON containing a "type" field. You are agentic and autonomously orchestrate multi-step workflows. You will be provided with a conversation history, and your task is to respond with the next most logical step to progress the agentic workflow. Think one step at a time.
 
