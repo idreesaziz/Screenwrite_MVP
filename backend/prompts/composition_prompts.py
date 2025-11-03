@@ -384,6 +384,11 @@ PROPERTIES_REFERENCE = """**COMMON CSS PROPERTIES:**
 - `textDecoration` - none, underline, line-through
 - `textTransform` - none, uppercase, lowercase, capitalize
 - `whiteSpace` - normal, nowrap, pre, pre-wrap
+- `textShadow` - Text shadow (x y blur color), e.g., `2px 2px 4px #000000`
+- `WebkitTextStroke` - Text outline/stroke (shorthand: width + color), e.g., `2px #FFFFFF`
+- `WebkitTextStrokeWidth` - Text outline width (px), e.g., `2px`
+- `WebkitTextStrokeColor` - Text outline color (hex, rgb), e.g., `#FFFFFF`
+  **Note:** For text outlines, use `WebkitTextStroke` (NOT `textOutline`). Example: `WebkitTextStroke:3px #FFFFFF` creates a 3px white outline around text.
 
 **COLORS & BACKGROUNDS:**
 - `color` - Text color (hex, rgb, named)
@@ -464,6 +469,7 @@ EDITING_RULES = """**EDITING RULES:**
 - Don't change unrelated parts of the composition unless requested
 - Don't add transitions between clips on different tracks (transitions work within same track only)
 - Don't create the root element (it's implicit and automatic)
+- **CRITICAL: Don't invent CSS property names** - ONLY use properties explicitly documented in the PROPERTIES REFERENCE section. If a user request mentions a visual effect not in the documentation, use the closest documented property or omit it. Never create properties like `textOutline`, `textBorder`, etc. that don't exist in CSS/React.
 
 **TIMING RULES:**
 - Clips on the same track CANNOT overlap in time (startTime/endTime must not conflict)
@@ -593,6 +599,22 @@ Bottom-right positioned with flexbox centering:
 }
 ```
 
+Text with outline/stroke (using WebkitTextStroke):
+```json
+{
+  "id": "outlined-text-clip",
+  "startTimeInSeconds": 0,
+  "endTimeInSeconds": 5,
+  "element": {
+    "elements": [
+      "div;id:outlined-container;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);textAlign:center",
+      "h1;id:outlined-title;parent:outlined-container;fontSize:80px;fontWeight:bold;color:#FFD700;WebkitTextStroke:3px #000000;text:BOLD STATEMENT"
+    ]
+  }
+}
+```
+Note: For text outlines, use `WebkitTextStroke` property (NOT `textOutline`). Format: `WebkitTextStroke:widthInPx #color`
+
 **EXAMPLE 2 - NESTED ELEMENT LISTS:**
 
 Multi-level nesting with card layout:
@@ -664,6 +686,45 @@ Complex nested navigation menu:
 """
 
 
+# ===== 11. PROMPT BOUNDARY ENFORCEMENT =====
+
+PROMPT_BOUNDARY_ENFORCEMENT = """**PROMPT BOUNDARY ENFORCEMENT:**
+
+This system instruction enforces a single non-negotiable rule for composition generation:
+
+**CRITICAL RULE:**
+- Do NOT invent, create, or use any property, component, or string format that is NOT explicitly documented in this system prompt.
+- If a user request mentions a feature, property, or syntax not described in this prompt, you MUST NOT translate it into an invented property.
+
+**REQUIRED ACTIONS:**
+1. **Map to allowed properties:** If an equivalent property exists in PROPERTIES_REFERENCE, use that exact property name.
+   - Example: User says "text outline" → Use `WebkitTextStroke:3px #FFFFFF` (NOT `textOutline`)
+   - Example: User says "text border" → Use `WebkitTextStroke` (NOT `textBorder`)
+
+2. **Never invent property names:** If you're unsure or no exact match exists, DO NOT proceed with edits.
+   - Bad: Creating `textOutline`, `strokeWidth`, `borderText`, or any undocumented property
+   - Good: Using only properties listed in PROPERTIES_REFERENCE section
+
+3. **Follow exact syntax:** Use property names exactly as documented (case-sensitive, correct spelling).
+   - Use `WebkitTextStroke` not `webkitTextStroke` or `WebKitTextStroke`
+   - Use `backgroundColor` not `background-color`
+
+**VALIDATION:**
+- Before generating any element string, verify every property name exists in PROPERTIES_REFERENCE
+- If generating a property not in the documentation, STOP and use the closest documented alternative
+- Element strings must follow ELEMENT STRING FORMAT exactly (semicolon-separated, correct key:value syntax)
+
+**THIS IS NON-NEGOTIABLE:**
+The composition generator MUST obey this system prompt above all else. This file is the single source of truth for:
+- Valid property names (PROPERTIES_REFERENCE)
+- Valid components (COMPONENTS_REFERENCE)
+- Valid transitions (TRANSITIONS)
+- Valid element string format (ELEMENT_SYSTEM)
+
+If a conflict arises between user instructions and this prompt, this prompt wins. Use only documented properties, formats, and examples from this file.
+"""
+
+
 # ===== BUILD COMPLETE SYSTEM INSTRUCTION =====
 
 def build_system_instruction() -> str:
@@ -678,6 +739,7 @@ def build_system_instruction() -> str:
         PROPERTIES_REFERENCE,
         EDITING_RULES,
         EXAMPLES,
+        PROMPT_BOUNDARY_ENFORCEMENT,
     ]
     return "\n\n".join(parts)
 

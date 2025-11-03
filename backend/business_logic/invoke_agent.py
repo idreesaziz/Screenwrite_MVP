@@ -252,6 +252,12 @@ class AgentService:
                     agent_response.get("fileName"),
                     (agent_response.get("question") or "")[:200]
                 )
+                
+                # Ensure probe responses have content field for validation
+                if not agent_response.get("content"):
+                    file_name = agent_response.get("fileName", "media")
+                    agent_response["content"] = f"Analyzing {file_name}..."
+                    logger.debug(f"Added default content for probe response: {agent_response['content']}")
             
             # Validate response type
             valid_types = ["info", "chat", "edit", "probe", "generate", "fetch"]

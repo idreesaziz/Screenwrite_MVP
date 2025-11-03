@@ -870,7 +870,7 @@ export function ChatBox({
     let allResponseMessages: Message[] = [];
     let continueWorkflow = true;
     let iterationCount = 0;
-    const MAX_ITERATIONS = 10; // Prevent infinite loops
+    const MAX_ITERATIONS = 20; // Prevent infinite loops
     
     // Track generated items during this workflow (they won't appear in mediaBinItems prop until re-render)
     let generatedItemsThisWorkflow: MediaBinItem[] = [];
