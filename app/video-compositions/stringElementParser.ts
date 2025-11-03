@@ -72,8 +72,14 @@ export function parseStringElement(elementString: string): FlatElement {
     // For 'text' property, store both in element.text AND props.text
     // This allows it to work as both a child (for h1, p, etc.) and as a prop (for SplitText, etc.)
     if (propName === 'text') {
-      element.text = propValue;
-      element.props!.text = propValue; // Also store as prop for components that need it
+      // Strip quotes from text values if present
+      let textValue = propValue;
+      if ((textValue.startsWith('"') && textValue.endsWith('"')) || 
+          (textValue.startsWith("'") && textValue.endsWith("'"))) {
+        textValue = textValue.slice(1, -1);
+      }
+      element.text = textValue;
+      element.props!.text = textValue; // Also store as prop for components that need it
       continue;
     }
     

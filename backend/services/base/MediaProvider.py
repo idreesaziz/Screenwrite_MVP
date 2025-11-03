@@ -241,7 +241,7 @@ class MediaProvider(ABC):
     async def search_and_curate(
         self,
         request: MediaSearchRequest,
-        max_curated: int = 4,
+        max_curated: int = 3,
         **kwargs
     ) -> MediaSearchResponse:
         """

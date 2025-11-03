@@ -710,7 +710,7 @@ export function ChatBox({
         query: query, 
         media_type: "video",
         orientation: "landscape",
-        max_results: count || 4,
+        max_results: count || 3,
         per_page: 50
       });
       
@@ -727,7 +727,7 @@ export function ChatBox({
           query: query,
           media_type: "video",
           orientation: "landscape",
-          max_results: count || 4,
+          max_results: count || 3,
           per_page: 50
         }),
         signal
@@ -1154,7 +1154,7 @@ export function ChatBox({
       const fetchResults = await handleFetchRequestInternal(
         'pexels', // Default to pexels for now
         synthResponse.query!, 
-        4, // Default to 4 results (matches backend default)
+        3, // Default to 3 results (matches backend default)
         signal
       );
       

@@ -303,14 +303,15 @@ class PexelsMediaProvider(MediaProvider):
         
         # Create curation prompt
         media_type_name = request.media_type.value
-        prompt = f"""You are a {media_type_name} curation expert. From the following {len(search_response.media_items)} {media_type_name}s, select 0-{max_curated} that are most relevant for: "{request.query}"
+        prompt = f"""You are a {media_type_name} curation expert. From the following {len(search_response.media_items)} {media_type_name}s, select AT MOST {max_curated} that are most relevant for: "{request.query}"
 
 Guidelines:
 - Only select {media_type_name}s that would genuinely help with this request
 - Prioritize items that closely match the visual/thematic intent
 - Consider the extracted titles from URLs as the main content indicator
 - It's better to return fewer high-quality matches than many mediocre ones
-- Return 0 {media_type_name}s if none are truly useful"""
+- Return 0 {media_type_name}s if none are truly useful
+- MAXIMUM {max_curated} results - do not exceed this limit"""
 
         if request.media_type == MediaType.VIDEO:
             prompt += "\n- Consider video duration for practical usability (prefer 5-30 seconds for most use cases)"

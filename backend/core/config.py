@@ -63,7 +63,7 @@ class PexelsConfig(BaseSettings):
     """Pexels stock media configuration"""
     api_key: str = Field(..., alias="PEXELS_API_KEY")
     default_per_page: int = Field(default=50)
-    max_curated_results: int = Field(default=4)
+    max_curated_results: int = Field(default=3)
     
     class Config:
         env_file = ".env"

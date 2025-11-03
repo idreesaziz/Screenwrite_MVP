@@ -13,7 +13,7 @@ These are reference examples showing ideal execution flows for complex requests.
 
 **Complete Flow:**
 
-1. **INFO** - "To create this coffee shop promotional video, I will need to: 1) Search for high-quality coffee footage, 2) Analyze the footage for the best cinematic moments, 3) Generate a custom logo/branding image for your shop, and 4) Design text overlays with warm, inviting messaging. I'll start by searching for stock footage."
+1. **INFO** - "To create this coffee shop promotional video, I will need to: 1) Search for high-quality coffee footage, 2) Analyze the footage for the best cinematic moments, 3) Generate a custom branding image for your shop, and 4) Design text overlays with warm, inviting messaging. I'll start by searching for stock footage."
 
 2. **FETCH** - Search for "coffee brewing"
    → System returns: 3 videos found
@@ -40,13 +40,13 @@ These are reference examples showing ideal execution flows for complex requests.
 
 8. **INFO** - "Based on my analysis, I'll select the most cinematic segments: the espresso extraction close-up from Video 1, the latte art pour from Video 2, and the customer moment from Video 3. These create a compelling narrative arc from craft to enjoyment."
 
-9. **INFO** - "Now I'll generate a custom logo image for your coffee shop that matches the warm, artisanal aesthetic of the selected footage."
+9. **INFO** - "Now I'll generate a custom branding image for your coffee shop that matches the warm, artisanal aesthetic of the selected footage."
 
 10. **GENERATE** - Image generation
-    → content: "Generating a warm, modern coffee shop logo image."
+    → content: "Generating a warm, modern coffee shop branding image."
     → content_type: "image"
-    → prompt: "16:9 minimalist coffee shop logo design, warm brown and cream color palette (#3E2723, #D4A574, #F5F5DC), stylized coffee cup icon with steam, elegant serif typography reading 'ARTISAN BREW', clean white background, professional branding aesthetic"
-    → suggestedName: "artisan-brew-logo"
+    → prompt: "16:9 professional coffee shop branding image, centered minimalist coffee cup logo with steam, elegant serif typography 'ARTISAN BREW' below the logo, warm brown and cream color palette (#3E2723, #D4A574, #F5F5DC), subtle texture, clean aesthetic, professional commercial design suitable as full-screen display"
+    → suggestedName: "artisan-brew-brand"
 
 11. **CHAT** - "Here's my complete plan for your 15-second coffee shop promotional video:
 
@@ -54,21 +54,21 @@ I'll create a cinematic journey showcasing the artistry of coffee-making, buildi
 
 **Timeline Breakdown (15 seconds):**
 
-*   **0s - 4s: The Craft.** Opens with the dramatic espresso extraction from 'Coffee Brewing 1'.
-    *   At **0.5s on the timeline**, `BlurText` 'CRAFTED WITH PASSION' appears in the clear lower-third, warm golden color (#D4A574), 56px bold font, creating immediate emotional connection.
+*   **0s - 4s: The Craft.** Opens with the dramatic espresso extraction from 'Coffee Brewing 1' (dark browns and golden tones).
+    *   At **0.5s on the timeline**, `BlurText` 'CRAFTED WITH PASSION' appears in the clear lower-third in bright white (#FFFFFF), 56px bold font with dark brown (#2C1810) shadow for high contrast against the lighter crema areas.
     *   At **3.5s on the timeline**, text fades out over 0.4s.
 
-*   **4s - 9s: The Artistry.** Smooth 'fade' transition to the beautiful latte art pour from 'Coffee Brewing 2'.
-    *   At **5s on the timeline**, `SplitText` 'EVERY CUP A MASTERPIECE' animates word-by-word in rich brown (#4E342E), 64px font, centered, with cream-colored (#F5F5DC) subtle glow.
+*   **4s - 9s: The Artistry.** Smooth 'fade' transition to the beautiful latte art pour from 'Coffee Brewing 2' (cream and dark brown).
+    *   At **5s on the timeline**, `SplitText` 'EVERY CUP A MASTERPIECE' animates word-by-word in bright white (#FFFFFF), 64px bold font, centered, with strong dark shadow (#1A1A1A) for maximum readability against the light foam.
     *   At **8.5s on the timeline**, text slides out to the top over 0.4s.
 
-*   **9s - 13s: The Experience.** 'Wipe Right' transition to customer receiving coffee from 'Coffee Brewing 3', capturing the warm café atmosphere.
-    *   At **9.5s on the timeline**, `TypewriterText` types 'YOUR MORNING RITUAL' in warm brown (#3E2723), 52px font, positioned in the clear upper-third against the soft bokeh.
+*   **9s - 13s: The Experience.** 'Wipe Right' transition to customer receiving coffee from 'Coffee Brewing 3' (golden bokeh background).
+    *   At **9.5s on the timeline**, `TypewriterText` types 'YOUR MORNING RITUAL' in dark brown (#2C1810), 52px bold font, positioned in the clear upper-third with white (#FFFFFF) outline for visibility against the warm bokeh.
     *   At **12.5s on the timeline**, text fades out over 0.3s.
 
-*   **13s - 15s: The Brand.** 'Fade' transition to the 'artisan-brew-logo.png' image.
-    *   At **13.2s on the timeline**, `BlurText` 'VISIT US TODAY' appears below the logo in golden (#C9A961), 48px font, centered.
-    *   Logo and text hold until end.
+*   **13s - 15s: The Brand.** 'Fade' transition to the 'artisan-brew-brand.png' image (full-screen branding display).
+    *   At **13.2s on the timeline**, `BlurText` 'VISIT US TODAY' appears near the bottom in dark brown (#2C1810), 48px bold font, centered.
+    *   Branding image and text hold until end.
 
 Does this plan capture the artisanal, inviting atmosphere you want for your coffee shop? Say 'yes' to proceed."
 
@@ -77,16 +77,16 @@ Does this plan capture the artisanal, inviting atmosphere you want for your coff
 12. **INFO** - "Perfect! I'll now create your complete coffee shop promotional video."
 
 13. **EDIT** - "1. Add video 'Coffee Brewing 1' at 0s on the timeline, trimmed to start from 2s in the clip and end at 6s in the clip.
-2. At 0.5s on the timeline, add BlurText 'CRAFTED WITH PASSION' in warm golden (#D4A574), 56px bold font, positioned in the lower-third, centered.
+2. At 0.5s on the timeline, add BlurText 'CRAFTED WITH PASSION' in bright white (#FFFFFF), 56px bold font, positioned in the lower-third, centered, with dark brown (#2C1810) text shadow (3px offset) for contrast.
 3. At 3.5s on the timeline, fade out the 'CRAFTED WITH PASSION' text over 0.4 seconds.
 4. Add video 'Coffee Brewing 2' at 4s on the timeline, trimmed to start from 10s in the clip and end at 14s in the clip. Add a 'fade' transition to next on 'Coffee Brewing 1'.
-5. At 5s on the timeline, add SplitText 'EVERY CUP A MASTERPIECE' in rich brown (#4E342E), 64px font, centered, with cream-colored (#F5F5DC) glow shadow, mode 'words', stagger 0.1.
+5. At 5s on the timeline, add SplitText 'EVERY CUP A MASTERPIECE' in bright white (#FFFFFF), 64px bold font, centered, with strong black (#1A1A1A) text shadow (4px offset), mode 'word', stagger 0.1.
 6. At 8.5s on the timeline, slide out 'EVERY CUP A MASTERPIECE' upwards over 0.4 seconds.
 7. Add video 'Coffee Brewing 3' at 9s on the timeline, trimmed to start from 3s in the clip and end at 8s in the clip. Add a 'Wipe Right' transition to next on 'Coffee Brewing 2'.
-8. At 9.5s on the timeline, add TypewriterText 'YOUR MORNING RITUAL' in warm brown (#3E2723), 52px font, positioned in the upper-third, centered, typingSpeed 12.
+8. At 9.5s on the timeline, add TypewriterText 'YOUR MORNING RITUAL' in dark brown (#2C1810), 52px bold font, positioned in the upper-third, centered, with white (#FFFFFF) text outline (2px), typingSpeed 12.
 9. At 12.5s on the timeline, fade out 'YOUR MORNING RITUAL' text over 0.3 seconds.
-10. Add image 'artisan-brew-logo.png' at 13s on the timeline. Add a 'fade' transition to next on 'Coffee Brewing 3'.
-11. At 13.2s on the timeline, add BlurText 'VISIT US TODAY' in golden (#C9A961), 48px font, positioned below center (70% from top), centered horizontally."
+10. Add image 'artisan-brew-brand.png' at 13s on the timeline. Add a 'fade' transition to next on 'Coffee Brewing 3'.
+11. At 13.2s on the timeline, add BlurText 'VISIT US TODAY' in dark brown (#2C1810), 48px bold font, positioned at 80% from top, centered horizontally."
 
 **→ DONE**
 
@@ -125,13 +125,13 @@ Does this plan capture the artisanal, inviting atmosphere you want for your coff
 
 8. **INFO** - "Excellent! I've identified the perfect segments: the majestic golden-hour run from Video 1 shows athleticism, the slow-motion autumn run from Video 2 is incredibly cinematic, the noble close-up from Video 2 displays intelligence and beauty, and the family scene from Video 3 adds emotional warmth. These tell a complete story of breed excellence."
 
-9. **INFO** - "Now I'll generate a professional kennel logo that conveys prestige and breed standard excellence."
+9. **INFO** - "Now I'll generate a professional kennel branding image that conveys prestige and breed standard excellence."
 
 10. **GENERATE** - Image generation
-    → content: "Generating a professional German Shepherd kennel logo."
+    → content: "Generating a professional German Shepherd kennel branding image."
     → content_type: "image"
-    → prompt: "16:9 professional dog kennel logo, elegant German Shepherd silhouette in profile, regal pose, deep navy blue and rich gold color scheme (#1A2332, #D4AF37), shield or crest shape, premium typography reading 'ALPINE SHEPHERDS KENNEL', established date, clean white background, championship breeding aesthetic"
-    → suggestedName: "alpine-shepherds-logo"
+    → prompt: "16:9 professional dog kennel branding image, elegant German Shepherd silhouette in profile centered, regal pose, deep navy blue and rich gold color scheme (#1A2332, #D4AF37), shield or crest design element, premium typography 'ALPINE SHEPHERDS KENNEL' prominently displayed, established date, clean minimalist background, championship breeding aesthetic, suitable as full-screen display"
+    → suggestedName: "alpine-shepherds-brand"
 
 11. **CHAT** - "Here's my comprehensive plan for your German Shepherd kennel promotional video:
 
@@ -139,28 +139,28 @@ I'll create a 20-second showcase that highlights the breed's athleticism, intell
 
 **Timeline Breakdown (20 seconds):**
 
-*   **0s - 5s: Power & Grace.** Opens with the breathtaking golden-hour run from 'German Shepherd 1', immediately establishing athletic excellence.
-    *   At **0.5s on the timeline**, `SplitText` 'STRENGTH' appears in the clear upper-third in bold navy blue (#1A2332), 72px font with gold (#D4AF37) text shadow, animating character-by-character.
-    *   At **2s on the timeline**, below 'STRENGTH', `SplitText` 'ELEGANCE' animates in the same style.
+*   **0s - 5s: Power & Grace.** Opens with the breathtaking golden-hour run from 'German Shepherd 1' (green field with blue sky).
+    *   At **0.5s on the timeline**, `SplitText` 'STRENGTH' appears in the clear upper-third in bright white (#FFFFFF), 72px bold font with black (#000000) text shadow for strong contrast against the sky, animating character-by-character.
+    *   At **2s on the timeline**, below 'STRENGTH', `SplitText` 'ELEGANCE' animates in the same style with white text and black shadow.
     *   At **4.5s on the timeline**, both text elements fade out over 0.3s.
 
-*   **5s - 11s: Cinematic Excellence.** 'Fade' transition to the stunning slow-motion autumn run from 'German Shepherd 2', the most visually impressive segment.
-    *   At **6s on the timeline**, `BlurText` 'BRED FOR EXCELLENCE' appears centered in gold (#D4AF37), 64px bold font, with navy shadow for contrast against the warm autumn tones.
+*   **5s - 11s: Cinematic Excellence.** 'Fade' transition to the stunning slow-motion autumn run from 'German Shepherd 2' (warm autumn tones).
+    *   At **6s on the timeline**, `BlurText` 'BRED FOR EXCELLENCE' appears centered in bright white (#FFFFFF), 64px bold font, with strong black (#000000) shadow (4px offset) for maximum visibility against the orange/brown leaves.
     *   At **10.5s on the timeline**, text slides out to the right over 0.4s.
 
-*   **11s - 15s: Intelligence & Beauty.** 'Wipe Left' transition to the noble close-up from 'German Shepherd 2', showcasing the breed's intelligent expression.
-    *   At **11.5s on the timeline**, `TypewriterText` 'INTELLIGENT' types out in the upper-left in navy (#1A2332), 56px font.
+*   **11s - 15s: Intelligence & Beauty.** 'Wipe Left' transition to the noble close-up from 'German Shepherd 2' (dark coat colors).
+    *   At **11.5s on the timeline**, `TypewriterText` 'INTELLIGENT' types out in the upper-left in bright white (#FFFFFF), 56px bold font with black (#000000) outline for contrast against the dog's coat.
     *   At **12.5s on the timeline**, `TypewriterText` 'LOYAL' types out below it in the same style.
     *   At **13.5s on the timeline**, `TypewriterText` 'NOBLE' types out as the third line.
     *   At **14.5s on the timeline**, all three text elements fade out over 0.3s.
 
-*   **15s - 18s: Family & Heart.** 'Fade' transition to the heartwarming mother and puppies scene from 'German Shepherd 3'.
-    *   At **15.5s on the timeline**, `BlurText` 'RAISED WITH LOVE' appears in warm gold (#D4AF37), 58px font, centered.
+*   **15s - 18s: Family & Heart.** 'Fade' transition to the heartwarming mother and puppies scene from 'German Shepherd 3' (soft beige tones).
+    *   At **15.5s on the timeline**, `BlurText` 'RAISED WITH LOVE' appears in dark brown (#3E2723), 58px bold font, centered, with white (#FFFFFF) outline for visibility.
     *   At **17.5s on the timeline**, text fades out over 0.3s.
 
-*   **18s - 20s: The Brand.** 'Fade' transition to the 'alpine-shepherds-logo.png'.
-    *   At **18.2s on the timeline**, `SplitText` 'CHAMPIONSHIP BLOODLINES' animates word-by-word below the logo in navy (#1A2332), 48px font, professional presentation.
-    *   Logo and text hold until end.
+*   **18s - 20s: The Brand.** 'Fade' transition to the 'alpine-shepherds-brand.png' (full-screen branding display).
+    *   At **18.2s on the timeline**, `SplitText` 'CHAMPIONSHIP BLOODLINES' animates word-by-word near the bottom in white (#FFFFFF), 48px bold font, professional presentation.
+    *   Branding image and text hold until end.
 
 This video will powerfully communicate your kennel's commitment to breeding exceptional German Shepherds. Does this plan work for you? Say 'yes' to proceed."
 
@@ -169,22 +169,22 @@ This video will powerfully communicate your kennel's commitment to breeding exce
 12. **INFO** - "Excellent! I'll now create your professional German Shepherd kennel promotional video."
 
 13. **EDIT** - "1. Add video 'German Shepherd 1' at 0s on the timeline, trimmed to start from 0s in the clip and end at 6s in the clip.
-2. At 0.5s on the timeline, add SplitText 'STRENGTH' in navy blue (#1A2332), 72px bold font, positioned in the upper-third, centered, with gold (#D4AF37) text shadow (2px offset), mode 'letters', stagger 0.08.
-3. At 2s on the timeline, add SplitText 'ELEGANCE' in navy blue (#1A2332), 72px bold font, positioned below 'STRENGTH' with 80px vertical spacing, centered, with gold (#D4AF37) text shadow, mode 'letters', stagger 0.08.
+2. At 0.5s on the timeline, add SplitText 'STRENGTH' in bright white (#FFFFFF), 72px bold font, positioned in the upper-third, centered, with black (#000000) text shadow (3px offset), mode 'char', stagger 0.08.
+3. At 2s on the timeline, add SplitText 'ELEGANCE' in bright white (#FFFFFF), 72px bold font, positioned below 'STRENGTH' with 80px vertical spacing, centered, with black (#000000) text shadow (3px offset), mode 'char', stagger 0.08.
 4. At 4.5s on the timeline, fade out both 'STRENGTH' and 'ELEGANCE' text elements over 0.3 seconds.
 5. Add video 'German Shepherd 2' at 5s on the timeline, trimmed to start from 5s in the clip and end at 11s in the clip. Add a 'fade' transition to next on 'German Shepherd 1'.
-6. At 6s on the timeline, add BlurText 'BRED FOR EXCELLENCE' in gold (#D4AF37), 64px bold font, centered, with navy blue (#1A2332) text shadow for contrast.
+6. At 6s on the timeline, add BlurText 'BRED FOR EXCELLENCE' in bright white (#FFFFFF), 64px bold font, centered, with black (#000000) text shadow (4px offset) for strong contrast.
 7. At 10.5s on the timeline, slide out 'BRED FOR EXCELLENCE' to the right over 0.4 seconds.
 8. Add video 'German Shepherd 2' at 11s on the timeline, trimmed to start from 14s in the clip and end at 18s in the clip. Add a 'Wipe Left' transition to next on 'German Shepherd 2'.
-9. At 11.5s on the timeline, add TypewriterText 'INTELLIGENT' in navy (#1A2332), 56px font, positioned at upper-left (20% from left, 25% from top), typingSpeed 10.
-10. At 12.5s on the timeline, add TypewriterText 'LOYAL' in navy (#1A2332), 56px font, positioned at upper-left (20% from left, 35% from top), typingSpeed 10.
-11. At 13.5s on the timeline, add TypewriterText 'NOBLE' in navy (#1A2332), 56px font, positioned at upper-left (20% from left, 45% from top), typingSpeed 10.
+9. At 11.5s on the timeline, add TypewriterText 'INTELLIGENT' in bright white (#FFFFFF), 56px bold font, positioned at upper-left (20% from left, 25% from top), with black (#000000) text outline (2px), typingSpeed 10.
+10. At 12.5s on the timeline, add TypewriterText 'LOYAL' in bright white (#FFFFFF), 56px bold font, positioned at upper-left (20% from left, 35% from top), with black (#000000) text outline (2px), typingSpeed 10.
+11. At 13.5s on the timeline, add TypewriterText 'NOBLE' in bright white (#FFFFFF), 56px bold font, positioned at upper-left (20% from left, 45% from top), with black (#000000) text outline (2px), typingSpeed 10.
 12. At 14.5s on the timeline, fade out all three typewriter text elements over 0.3 seconds.
 13. Add video 'German Shepherd 3' at 15s on the timeline, trimmed to start from 0s in the clip and end at 7s in the clip. Add a 'fade' transition to next on 'German Shepherd 2'.
-14. At 15.5s on the timeline, add BlurText 'RAISED WITH LOVE' in warm gold (#D4AF37), 58px font, centered.
+14. At 15.5s on the timeline, add BlurText 'RAISED WITH LOVE' in dark brown (#3E2723), 58px bold font, centered, with white (#FFFFFF) text outline (2px).
 15. At 17.5s on the timeline, fade out 'RAISED WITH LOVE' text over 0.3 seconds.
-16. Add image 'alpine-shepherds-logo.png' at 18s on the timeline. Add a 'fade' transition to next on 'German Shepherd 3'.
-17. At 18.2s on the timeline, add SplitText 'CHAMPIONSHIP BLOODLINES' in navy (#1A2332), 48px font, positioned below center (75% from top), centered horizontally, mode 'words', stagger 0.12."
+16. Add image 'alpine-shepherds-brand.png' at 18s on the timeline. Add a 'fade' transition to next on 'German Shepherd 3'.
+17. At 18.2s on the timeline, add SplitText 'CHAMPIONSHIP BLOODLINES' in white (#FFFFFF), 48px bold font, positioned at 80% from top, centered horizontally, mode 'word', stagger 0.12."
 
 **→ DONE**
 """
@@ -1178,7 +1178,9 @@ LANGUAGE_AND_SAFETY = """"""
 def build_agent_system_prompt() -> str:
     """Compose the full system prompt for the conversational agent."""
     sections = [
+        DEMO_EXAMPLES,
         WORKFLOW_AND_RESPONSE_TYPES,
+        OPERATIONAL_WORKFLOW,
         CORE_CAPABILITIES,
         LANGUAGE_AND_SAFETY,
     ]
