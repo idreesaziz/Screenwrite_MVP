@@ -630,7 +630,7 @@ function ClipContent({
 
 /**
  * Renders clip content with proper freeze technique for TransitionSeries
- * When freezeAfterFrames is reached, video content freezes at last frame
+ * For video elements, extends endAt to hold the last frame during transitions
  */
 function ClipContentWithFreeze({ 
   clip, 
@@ -643,8 +643,53 @@ function ClipContentWithFreeze({
   freezeAfterFrames: number;
   totalSequenceDuration: number;
 }) {
-  // TODO: Implement video extension logic for ElementObject format if needed
-  // For now, render as-is
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  
+  // Check if we need to extend duration for transitions
+  const needsExtension = totalSequenceDuration > freezeAfterFrames;
+  
+  if (!needsExtension) {
+    return executeClipElement(clip.element, executionContext);
+  }
+  
+  // For Video elements, extend the endAt property to hold the last frame
+  if (clip.element.elements && Array.isArray(clip.element.elements)) {
+    const modifiedElements = clip.element.elements.map(elementStr => {
+      // Check if this is a Video or OffthreadVideo element
+      if (elementStr.startsWith('Video;') || elementStr.startsWith('OffthreadVideo;')) {
+        // Parse endAt value (in seconds)
+        const endAtMatch = elementStr.match(/endAt:(\d+(?:\.\d+)?)/);
+        
+        if (endAtMatch) {
+          const originalEndSeconds = parseFloat(endAtMatch[1]);
+          const originalEndFrames = Math.round(originalEndSeconds * fps);
+          
+          // Calculate extension needed in frames, then convert back to seconds
+          const extensionFrames = totalSequenceDuration - freezeAfterFrames;
+          const extendedEndFrames = originalEndFrames + extensionFrames;
+          const extendedEndSeconds = extendedEndFrames / fps;
+          
+          // Replace endAt with extended value
+          const modifiedElement = elementStr.replace(
+            /endAt:\d+(?:\.\d+)?/,
+            `endAt:${extendedEndSeconds.toFixed(2)}`
+          );
+          
+          console.log(`Extended video endAt from ${originalEndSeconds}s to ${extendedEndSeconds.toFixed(2)}s for freeze technique`);
+          return modifiedElement;
+        }
+      }
+      
+      return elementStr;
+    });
+    
+    // Create modified element container
+    const modifiedElement = { elements: modifiedElements };
+    return executeClipElement(modifiedElement, executionContext);
+  }
+  
+  // Fallback for non-video or unrecognized format
   return executeClipElement(clip.element, executionContext);
 }
 
