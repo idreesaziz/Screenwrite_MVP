@@ -112,119 +112,122 @@ Does this plan capture the artisanal, inviting atmosphere you want for your coff
 
 ---
 
-## DEMO EXAMPLE 2: German Shepherd Kennel Promotional Video
+## DEMO EXAMPLE 2: Perfume Promotional Video
 
-**User Request:** "Create a video for my German Shepherd kennel"
+**User Request:** "I have an image of a perfume and I wanna make a promotional video of it"
 
 **Complete Flow:**
 
-1. **INFO** - "To create a compelling kennel promotional video, I will: 1) Search for high-quality German Shepherd footage, 2) Analyze the videos for the best moments showcasing temperament and beauty, 3) Generate a custom kennel branding image, and 4) Design professional text overlays emphasizing breed excellence. I'll begin with stock footage search."
+1. **INFO** - "To create a compelling promotional video from your perfume image, I will need to: 1) Analyze your perfume image for composition details, 2) Generate an animated product video using your image as the starting point, 3) Find complementary stock footage for a dynamic opening sequence, and 4) Design text overlays with cinematic timing. I will begin by analyzing your perfume image."
 
-2. **FETCH** - Search for "german shepherd"
+2. **PROBE** - Analyze uploaded perfume image
+   ```json
+   {
+     "type": "probe",
+     "content": "Analyzing your perfume image.",
+     "fileName": "perfume.png",
+     "question": "Describe the perfume bottle's design, color scheme (hex codes), background style, lighting, and overall composition. Identify clear areas suitable for text overlays in upper, middle, and lower thirds."
+   }
+   ```
+   → Result: Elegant glass bottle with gold cap, soft pink liquid (#FFB6C1), white minimal background (#FAFAFA), dramatic side lighting creating highlights, bottle positioned center-left leaving right side clear for text.
+
+3. **INFO** - "Next, I will generate a product showcase video that animates your perfume image with professional camera movements."
+
+4. **GENERATE** - Video generation with seed image
+   ```json
+   {
+     "type": "generate",
+     "content": "Generating an 8-second promotional video from your perfume image.",
+     "content_type": "video",
+     "prompt": "8s cinematic product video, smooth camera orbit around elegant perfume bottle, soft studio lighting with subtle reflections, gentle zoom-in ending on bottle details, professional luxury commercial aesthetic",
+     "suggestedName": "perfume-product-shot",
+     "seedImageFileName": "perfume.png"
+   }
+   ```
+
+5. **INFO** - "To create a more dynamic opening sequence, I will also search for perfume spray footage to showcase the product in action."
+
+6. **FETCH** - Search for stock footage
+   ```json
+   {
+     "type": "fetch",
+     "content": "I will search for stock footage of perfume being sprayed.",
+     "query": "perfume spray"
+   }
+   ```
    → System returns: 3 videos found
 
-3. **CHAT** - "I found 3 German Shepherd videos. Would you like me to analyze all of them to find the best segments, or would you prefer to select specific ones?"
-   → User: "analyze all of them"
+7. **CHAT** - "I found 3 perfume spray videos. Would you like me to analyze them all and select the best match for your promotional video, or would you prefer to pick specific ones?"
+   → User: "you pick"
 
-4. **INFO** - "I'll analyze all three videos to identify the most impressive moments showcasing these magnificent dogs. I will begin by analyzing the first German Shepherd video."
+8. **INFO** - "I'll analyze all three videos to identify the most elegant spray footage that matches your perfume's aesthetic. I will begin by analyzing the first video."
 
-5. **PROBE** Video 1
+9. **PROBE** Video 1
    ```json
    {
      "type": "probe",
-     "content": "Analyzing the first German Shepherd video.",
-     "fileName": "German Shepherd 1",
-     "question": "Describe the dog's activity and behavior with exact timestamps in seconds (e.g., 'running', 'sitting alert', 'playing'). Note the setting (indoor/outdoor), lighting quality (bright/dark/medium), background colors (hex codes) and whether background is light or dark overall, the dog's coat condition and movement quality, and identify clear areas in the frame for text overlays. Highlight any particularly impressive or emotionally engaging moments."
+     "content": "Analyzing the first perfume spray video.",
+     "fileName": "Perfume Spray 1",
+     "question": "Describe the spray action, visual style, dominant colors (hex codes), lighting quality (bright/dark/medium), background style, and overall mood. Identify any segments with clear areas for text overlays and note the spray's visual impact."
    }
    ```
-   → Result: Segment A (0-6s): Majestic GSD running through green field (#4A7C3B), golden hour lighting (medium-warm), bright blue sky background (#87CEEB), dog in peak physical condition, smooth athletic movement, upper-third has clear bright sky. Segment B (10-15s): Dog sitting alert, intense focused gaze, shows intelligence, darker background.
+   → Result: Elegant slow-motion spray with visible mist particles, soft pink tones (#FFB6C1) matching perfume liquid, white minimal background (#FAFAFA), bright studio lighting, 8s duration, upper-third and left side clear for text, spray creates beautiful diffusion effect.
 
-6. **INFO** - "I will now analyze the second German Shepherd video."
+10. **INFO** - "I will now analyze the second perfume spray video."
 
-7. **PROBE** Video 2
-   ```json
-   {
-     "type": "probe",
-     "content": "Analyzing the second German Shepherd video.",
-     "fileName": "German Shepherd 2",
-     "question": "Describe the dog's activity and behavior with exact timestamps, setting, lighting quality (bright/dark/medium), background colors (hex codes) and whether background is light or dark overall, coat condition, movement quality, and text overlay areas. Highlight impressive or engaging moments."
-   }
-   ```
-   → Result: Segment A (5-11s): GSD running in slow-motion through autumn leaves (#8B4513, #CD853F), dramatic backlighting creating rim light on coat, incredibly cinematic, medium-dark background, center clear for text. Segment B (14-18s): Close-up of face, noble expression, rich black and tan coat colors visible, very dark background (#1A1A1A).
+11. **PROBE** Video 2
+    ```json
+    {
+      "type": "probe",
+      "content": "Analyzing the second perfume spray video.",
+      "fileName": "Perfume Spray 2",
+      "question": "Describe the spray action, visual style, dominant colors (hex codes), lighting quality, background style, and overall mood. Identify any segments with clear areas for text overlays."
+    }
+    ```
+    → Result: Close-up spray with dramatic backlighting, golden tones (#FFD700), dark background (#1A1A1A), high contrast, more dramatic but doesn't match the soft aesthetic.
 
-8. **INFO** - "I will now analyze the third German Shepherd video."
+12. **INFO** - "I will now analyze the third perfume spray video."
 
-9. **PROBE** Video 3
-   ```json
-   {
-     "type": "probe",
-     "content": "Analyzing the third video.",
-     "fileName": "German Shepherd 3",
-     "question": "Describe the dog's activity with timestamps, setting, lighting quality (bright/dark/medium), background colors (hex codes) and whether background is light or dark overall, movement quality, and text overlay suitability. Note impressive moments."
-   }
-   ```
-   → Result: Segment A (0-7s): Mother GSD with puppies, heartwarming family scene, soft indoor lighting (#E8DCC4), light beige background, appeals to emotional connection, lower-third clear. Segment B (12-16s): Puppy playing with toy, adorable and playful energy, bright setting.
+13. **PROBE** Video 3
+    ```json
+    {
+      "type": "probe",
+      "content": "Analyzing the third perfume spray video.",
+      "fileName": "Perfume Spray 3",
+      "question": "Describe the spray action, visual style, dominant colors (hex codes), lighting quality, background style, and overall mood. Identify any segments with clear areas for text overlays."
+    }
+    ```
+    → Result: Multiple spray angles, purple and blue tones (#9370DB, #4169E1), commercial style but color palette doesn't align with perfume's soft pink aesthetic.
 
-10. **INFO** - "Excellent! I've identified the perfect segments: the majestic golden-hour run from Video 1 shows athleticism, the slow-motion autumn run from Video 2 is incredibly cinematic, the noble close-up from Video 2 displays intelligence and beauty, and the family scene from Video 3 adds emotional warmth. These tell a complete story of breed excellence. Now I'll generate a professional kennel branding image that conveys prestige and breed standard excellence."
+14. **INFO** - "Excellent! Video 1 perfectly matches your perfume's aesthetic with its soft pink spray and minimal background. This will create an elegant opening that flows naturally into the generated product video. Now I'll present my complete plan."
 
-11. **GENERATE** - Image generation
-    → content: "Generating a professional German Shepherd kennel branding image."
-    → content_type: "image"
-    → prompt: "16:9 professional dog kennel branding image, elegant German Shepherd silhouette in profile centered, regal pose, deep navy blue and rich gold color scheme (#1A2332, #D4AF37), shield or crest design element, premium typography 'ALPINE SHEPHERDS KENNEL' prominently displayed, established date, clean minimalist background, championship breeding aesthetic, suitable as full-screen display"
-    → suggestedName: "alpine-shepherds-brand"
+15. **CHAT** - "Here is my plan for your perfume promotional video:
 
-12. **CHAT** - "Here's my comprehensive plan for your German Shepherd kennel promotional video:
+I'll create a luxurious 15-second commercial that opens with elegant slow-motion perfume spray (matching your perfume's soft pink tones), then transitions seamlessly to the product showcase video I generated from your image. The entire piece will have a sophisticated, high-end aesthetic.
 
-I'll create a 20-second showcase that highlights the breed's athleticism, intelligence, beauty, and family temperament—demonstrating why your kennel produces exceptional dogs.
+**Timeline Breakdown (15 seconds):**
 
-**Timeline Breakdown (20 seconds):**
+*   **0s - 5s: The Spray.** We'll open with the elegant slow-motion perfume spray from 'Perfume Spray 1', showcasing the product in action with beautiful mist diffusion.
+    *   At **1s on the timeline**, `BlurText` 'ESSENCE' will appear in the clear upper-third in a refined serif font, soft pink (#FFB6C1) to match the spray and your perfume's aesthetic.
+    *   At **4s on the timeline**, this text will fade out over 0.5s as we prepare for the transition.
+*   **5s - 15s: The Product.** A smooth 'fade' transition will take us into your 'perfume-product-shot.mp4', the generated video showcasing your actual perfume bottle with cinematic camera movement.
+    *   At **6.5s on the timeline**, `TypewriterText` will elegantly reveal 'REDEFINED' in gold (#FFD700) on the right side where your bottle composition leaves clear space, complementing the gold cap.
+    *   At **8s on the timeline**, below 'REDEFINED', a `SplitText` element will animate 'LUXURY' word-by-word in white (#FFFFFF) with a subtle pink glow.
+    *   At **13.5s on the timeline**, all text elements will fade out over 0.5s, leaving the final product shot to make the lasting impression.
 
-*   **0s - 5s: Power & Grace.** Opens with the breathtaking golden-hour run from 'German Shepherd 1' (green field with bright blue sky background).
-    *   At **0.5s on the timeline**, `SplitText` 'STRENGTH' appears in bright white (#FFFFFF), 72px bold font, positioned at **top center**, with black (#000000) text shadow (3px offset) for strong contrast against the bright sky, animating character-by-character.
-    *   At **2s on the timeline**, `SplitText` 'ELEGANCE' animates below at **center**, same white (#FFFFFF) text with black (#000000) shadow (3px offset).
-    *   At **4.5s on the timeline**, both text elements fade out over 0.3s.
-
-*   **5s - 11s: Cinematic Excellence.** 'Fade' transition to the stunning slow-motion autumn run from 'German Shepherd 2' (warm autumn tones, medium-dark background).
-    *   At **6s on the timeline**, `BlurText` 'BRED FOR EXCELLENCE' appears in bright white (#FFFFFF), 64px bold font, positioned at **center**, with strong black (#000000) text shadow (4px offset) for maximum visibility against the medium-dark background.
-    *   At **10.5s on the timeline**, text slides out to the right over 0.4s.
-
-*   **11s - 15s: Intelligence & Beauty.** 'Wipe Left' transition to the noble close-up from 'German Shepherd 2' (very dark background).
-    *   At **11.5s on the timeline**, `TypewriterText` 'INTELLIGENT' types out in bright white (#FFFFFF), 56px bold font, positioned at **top left**, with black (#000000) text outline (2px) for contrast against the dark background.
-    *   At **12.5s on the timeline**, `TypewriterText` 'LOYAL' types out in bright white (#FFFFFF), 56px bold font, positioned at **center left**, with black (#000000) text outline (2px).
-    *   At **13.5s on the timeline**, `TypewriterText` 'NOBLE' types out in bright white (#FFFFFF), 56px bold font, positioned at **bottom left**, with black (#000000) text outline (2px).
-    *   At **14.5s on the timeline**, all three text elements fade out over 0.3s.
-
-*   **15s - 18s: Family & Heart.** 'Fade' transition to the heartwarming mother and puppies scene from 'German Shepherd 3' (light beige background).
-    *   At **15.5s on the timeline**, `BlurText` 'RAISED WITH LOVE' appears in dark brown (#3E2723), 58px bold font, positioned at **center**, with white (#FFFFFF) text outline (2px) for visibility against the light background.
-    *   At **17.5s on the timeline**, text fades out over 0.3s.
-
-*   **18s - 20s: The Brand.** 'Fade' transition to the 'alpine-shepherds-brand.png' (full-screen branding display with dark navy background).
-    *   At **18.2s on the timeline**, `SplitText` 'CHAMPIONSHIP BLOODLINES' animates word-by-word in gold (#D4AF37), 48px bold font, positioned at **bottom center**, for professional presentation against the dark background.
-    *   Branding image and text hold until end.
-
-This video will powerfully communicate your kennel's commitment to breeding exceptional German Shepherds. Does this plan work for you? Say 'yes' to proceed."
+Does this plan capture the luxurious feel you're looking for? Say 'yes' to proceed."
 
     → User: "yes"
 
-13. **INFO** - "Excellent! I'll now create your professional German Shepherd kennel promotional video."
+16. **INFO** - "Perfect. I will now create your complete perfume promotional video with both the opening sequence and product showcase."
 
-14. **EDIT** - "1. Add video 'German Shepherd 1' at 0s on the timeline, trimmed to start from 0s in the clip and end at 6s in the clip.
-2. At 0.5s on the timeline, add SplitText 'STRENGTH' in bright white (#FFFFFF), 72px bold font, positioned at top center, with black (#000000) text shadow (3px offset), mode 'char', stagger 0.08.
-3. At 2s on the timeline, add SplitText 'ELEGANCE' in bright white (#FFFFFF), 72px bold font, positioned at center, with black (#000000) text shadow (3px offset), mode 'char', stagger 0.08.
-4. At 4.5s on the timeline, fade out both 'STRENGTH' and 'ELEGANCE' text elements over 0.3 seconds.
-5. Add video 'German Shepherd 2' at 5s on the timeline, trimmed to start from 5s in the clip and end at 11s in the clip. Add a 'fade' transition to next on 'German Shepherd 1'.
-6. At 6s on the timeline, add BlurText 'BRED FOR EXCELLENCE' in bright white (#FFFFFF), 64px bold font, positioned at center, with black (#000000) text shadow (4px offset) for strong contrast.
-7. At 10.5s on the timeline, slide out 'BRED FOR EXCELLENCE' to the right over 0.4 seconds.
-8. Add video 'German Shepherd 2' at 11s on the timeline, trimmed to start from 14s in the clip and end at 18s in the clip. Add a 'Wipe Left' transition to next on 'German Shepherd 2'.
-9. At 11.5s on the timeline, add TypewriterText 'INTELLIGENT' in bright white (#FFFFFF), 56px bold font, positioned at top left, with black (#000000) text outline (2px), typingSpeed 10.
-10. At 12.5s on the timeline, add TypewriterText 'LOYAL' in bright white (#FFFFFF), 56px bold font, positioned at center left, with black (#000000) text outline (2px), typingSpeed 10.
-11. At 13.5s on the timeline, add TypewriterText 'NOBLE' in bright white (#FFFFFF), 56px bold font, positioned at bottom left, with black (#000000) text outline (2px), typingSpeed 10.
-12. At 14.5s on the timeline, fade out all three typewriter text elements over 0.3 seconds.
-13. Add video 'German Shepherd 3' at 15s on the timeline, trimmed to start from 0s in the clip and end at 7s in the clip. Add a 'fade' transition to next on 'German Shepherd 2'.
-14. At 15.5s on the timeline, add BlurText 'RAISED WITH LOVE' in dark brown (#3E2723), 58px bold font, positioned at center, with white (#FFFFFF) text outline (2px).
-15. At 17.5s on the timeline, fade out 'RAISED WITH LOVE' text over 0.3 seconds.
-16. Add image 'alpine-shepherds-brand.png' at 18s on the timeline. Add a 'fade' transition to next on 'German Shepherd 3'.
-17. At 18.2s on the timeline, add SplitText 'CHAMPIONSHIP BLOODLINES' in gold (#D4AF37), 48px bold font, positioned at bottom center, mode 'word', stagger 0.12."
+17. **EDIT** - "1. Add video 'Perfume Spray 1' at 0s on the timeline, trimmed to play for 5 seconds.
+2. At 1s on the timeline, add BlurText 'ESSENCE' in soft pink (#FFB6C1), 80px serif font (Georgia), centered in the upper-third.
+3. At 4s on the timeline, fade out the 'ESSENCE' text over 0.5 seconds.
+4. Add the video perfume-product-shot.mp4 at 5s on the timeline. Add a 'fade' transition to next on 'Perfume Spray 1'.
+5. At 6.5s on the timeline, add TypewriterText 'REDEFINED' in gold (#FFD700), 64px serif font (Georgia), positioned in the right third of the frame, vertically centered.
+6. At 8s on the timeline, add SplitText 'LUXURY' in white (#FFFFFF), 56px bold font, positioned directly below 'REDEFINED' with 20px spacing, with a soft pink (#FFB6C1) glow shadow, animating word-by-word.
+7. At 13.5s on the timeline, fade out both 'REDEFINED' and 'LUXURY' text elements over 0.5 seconds."
 
 **→ DONE**
 
@@ -1017,14 +1020,14 @@ Result: Elegant glass bottle with gold cap, soft pink liquid (#FFB6C1), white mi
 ```json
 {
   "type": "info",
-  "content": "To create a more dynamic opening sequence, I will also search for elegant lifestyle footage to complement your product."
+  "content": "To create a more dynamic opening sequence, I will also search for perfume spray footage to showcase the product in action."
 }
 ```
 ```json
 {
   "type": "fetch",
-  "content": "I will search for stock footage that matches the elegant aesthetic of your perfume.",
-  "query": "luxury flowers petals"
+  "content": "I will search for stock footage of perfume being sprayed.",
+  "query": "perfume spray"
 }
 ```
 
@@ -1034,7 +1037,7 @@ System returns: 3 videos found
 ```json
 {
   "type": "chat",
-  "content": "I found 3 elegant flower/petal videos. Would you like me to analyze them all and select the best match for your perfume's aesthetic, or would you prefer to pick specific ones?"
+  "content": "I found 3 perfume spray videos. Would you like me to analyze them all and select the best match for your promotional video, or would you prefer to pick specific ones?"
 }
 ```
 
@@ -1052,12 +1055,12 @@ Probe 1:
 ```json
 {
   "type": "probe",
-  "fileName": "Luxury Flowers 1",
-  "question": "Describe the visual style, dominant colors (hex codes), movement pace (slow/fast), and overall mood. Identify any segments with clear areas for text overlays."
+  "fileName": "Perfume Spray 1",
+  "question": "Describe the spray action, visual style, dominant colors (hex codes), lighting quality (bright/dark/medium), background style, and overall mood. Identify any segments with clear areas for text overlays and note the spray's visual impact."
 }
 ```
 
-Result: Slow-motion pink rose petals falling (soft pink #FFB6C1, white #FFFFFF), dreamy aesthetic, 10s duration, upper-third is consistently clear.
+Result: Elegant slow-motion spray with visible mist particles, soft pink tones (#FFB6C1) matching perfume liquid, white minimal background (#FAFAFA), bright studio lighting, 8s duration, upper-third and left side clear for text, spray creates beautiful diffusion effect.
 
 Probe 2:
 ```json
@@ -1069,12 +1072,12 @@ Probe 2:
 ```json
 {
   "type": "probe",
-  "fileName": "Luxury Flowers 2",
-  "question": "Describe the visual style, dominant colors (hex codes), movement pace, and overall mood. Identify any segments with clear areas for text overlays."
+  "fileName": "Perfume Spray 2",
+  "question": "Describe the spray action, visual style, dominant colors (hex codes), lighting quality, background style, and overall mood. Identify any segments with clear areas for text overlays."
 }
 ```
 
-Result: Abstract bokeh lights with orchids, purple tones (#9370DB), slower pace but less color harmony with perfume.
+Result: Close-up spray with dramatic backlighting, golden tones (#FFD700), dark background (#1A1A1A), high contrast, more dramatic but doesn't match the soft aesthetic.
 
 Probe 3:
 ```json
@@ -1086,15 +1089,15 @@ Probe 3:
 ```json
 {
   "type": "probe",
-  "fileName": "Luxury Flowers 3",
-  "question": "Describe the visual style, dominant colors (hex codes), movement pace, and overall mood. Identify any segments with clear areas for text overlays."
+  "fileName": "Perfume Spray 3",
+  "question": "Describe the spray action, visual style, dominant colors (hex codes), lighting quality, background style, and overall mood. Identify any segments with clear areas for text overlays."
 }
 ```
 
-Result: White flowers on dark background, high contrast, elegant but color palette doesn't match.
+Result: Multiple spray angles, purple and blue tones (#9370DB, #4169E1), commercial style but color palette doesn't align with perfume's soft pink aesthetic.
 
 **→ Select best**
-Internal decision: Video 1 (pink rose petals) perfectly matches the perfume's soft pink aesthetic and creates a dreamy, luxurious mood for the opening.
+Internal decision: Video 1 (soft pink spray with minimal background) perfectly matches the perfume's aesthetic and creates an elegant, product-focused opening that flows naturally into the generated product video.
 
 **❓ Do we have all required assets?**
 - YES - Have seed-generated video and selected stock footage
@@ -1129,7 +1132,7 @@ User: "yes"
 ```json
 {
   "type": "edit",
-  "content": "1. Add video 'Luxury Flowers 1' at 0s on the timeline, trimmed to play for 5 seconds.\n2. At 1s on the timeline, add BlurText 'ELEGANCE' in soft pink (#FFB6C1), 80px serif font (Georgia), centered in the upper-third.\n3. At 4s on the timeline, fade out the 'ELEGANCE' text over 0.5 seconds.\n4. Add the video perfume-product-shot.mp4 at 5s on the timeline. Add a 'fade' transition to next on 'Luxury Flowers 1'.\n5. At 6.5s on the timeline, add TypewriterText 'REDEFINED' in gold (#FFD700), 64px serif font (Georgia), positioned in the right third of the frame, vertically centered.\n6. At 8s on the timeline, add SplitText 'LUXURY' in white (#FFFFFF), 56px bold font, positioned directly below 'REDEFINED' with 20px spacing, with a soft pink (#FFB6C1) glow shadow, animating word-by-word.\n7. At 13.5s on the timeline, fade out both 'REDEFINED' and 'LUXURY' text elements over 0.5 seconds."
+  "content": "1. Add video 'Perfume Spray 1' at 0s on the timeline, trimmed to play for 5 seconds.\n2. At 1s on the timeline, add BlurText 'ESSENCE' in soft pink (#FFB6C1), 80px serif font (Georgia), centered in the upper-third.\n3. At 4s on the timeline, fade out the 'ESSENCE' text over 0.5 seconds.\n4. Add the video perfume-product-shot.mp4 at 5s on the timeline. Add a 'fade' transition to next on 'Perfume Spray 1'.\n5. At 6.5s on the timeline, add TypewriterText 'REDEFINED' in gold (#FFD700), 64px serif font (Georgia), positioned in the right third of the frame, vertically centered.\n6. At 8s on the timeline, add SplitText 'LUXURY' in white (#FFFFFF), 56px bold font, positioned directly below 'REDEFINED' with 20px spacing, with a soft pink (#FFB6C1) glow shadow, animating word-by-word.\n7. At 13.5s on the timeline, fade out both 'REDEFINED' and 'LUXURY' text elements over 0.5 seconds."
 }
 ```
 
