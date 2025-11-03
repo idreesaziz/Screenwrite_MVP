@@ -230,7 +230,9 @@ class MediaGenerationService:
                 negative_prompt=negative_prompt,
                 aspect_ratio=aspect_ratio,
                 resolution=resolution,
-                reference_image=reference_image
+                reference_image=reference_image,
+                user_id=user_id,
+                session_id=session_id
             )
             
             # Store operation data for later retrieval

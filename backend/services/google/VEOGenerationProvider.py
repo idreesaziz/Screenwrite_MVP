@@ -108,22 +108,35 @@ class VEOGenerationProvider(VideoGenerationProvider):
         **kwargs
     ) -> VideoGenerationOperation:
         """Start async video generation with Veo."""
+        user_id: Optional[str] = kwargs.get("user_id")
+        session_id: Optional[str] = kwargs.get("session_id")
+        custom_prefix: Optional[str] = kwargs.get("output_prefix")
+
+        if custom_prefix:
+            staging_prefix = custom_prefix.strip("/")
+        elif user_id and session_id:
+            staging_prefix = f"{user_id}/{session_id}/veo-staging"
+        else:
+            staging_prefix = "tmp/veo"
+
+        output_gcs_uri = f"gs://{self.gcs_bucket}/{staging_prefix}/"
+
         def _sync_generate():
             try:
                 # Build generation config - include output_gcs_uri to ensure Vertex writes to our bucket
                 config = types.GenerateVideosConfig(
-                    output_gcs_uri=f"gs://{self.gcs_bucket}/tmp/veo/",
+                    output_gcs_uri=output_gcs_uri,
                     negative_prompt=negative_prompt,
                     aspect_ratio=aspect_ratio,
                     resolution=resolution,
                     number_of_videos=1
                 )
-                
+
                 # Format reference image if provided
                 formatted_image = None
                 if reference_image:
                     formatted_image = self._format_reference_image(reference_image)
-                
+
                 # Start video generation (async operation)
                 # aspect_ratio and resolution are direct parameters
                 operation = self.client.models.generate_videos(
@@ -132,9 +145,9 @@ class VEOGenerationProvider(VideoGenerationProvider):
                     image=formatted_image,  # For image-to-video
                     config=config
                 )
-                
+
                 logger.info(f"Video generation started: {operation.name}")
-                
+
                 # Create operation object
                 return VideoGenerationOperation(
                     operation_id=operation.name,
@@ -145,15 +158,16 @@ class VEOGenerationProvider(VideoGenerationProvider):
                         "aspect_ratio": aspect_ratio,
                         "resolution": resolution,
                         "negative_prompt": negative_prompt,
-                        "has_reference_image": reference_image is not None
+                        "has_reference_image": reference_image is not None,
+                        "output_gcs_uri": output_gcs_uri
                     },
                     _operation_obj=operation  # Store internal operation
                 )
-                
+
             except Exception as e:
                 logger.error(f"Video generation failed: {e}")
                 raise RuntimeError(f"Failed to start video generation: {e}")
-        
+
         return await async_wrap(_sync_generate)()
     
     async def check_generation_status(
