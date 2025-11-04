@@ -10,6 +10,7 @@ from typing import Optional, List, Dict, Any
 
 from services.base.ChatProvider import ChatProvider
 from prompts.agent_prompts import build_agent_system_prompt
+from rag.retriever import retrieve_examples
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,33 @@ class AgentService:
         try:
             # Build system prompt
             system_prompt = build_agent_system_prompt()
+            
+            # Retrieve relevant example using RAG
+            retrieved_example = None
+            if conversation_history:
+                # Get the latest user message for retrieval
+                user_messages = [msg for msg in conversation_history if msg.get('role') == 'user']
+                if user_messages:
+                    latest_user_message = user_messages[-1].get('content', '')
+                    logger.info(f"🔍 Retrieving relevant example for query: {latest_user_message[:100]}...")
+                    
+                    try:
+                        results = retrieve_examples(latest_user_message, k=1)
+                        if results:
+                            retrieved_example = results[0]['content']
+                            similarity = results[0]['similarity']
+                            filename = results[0]['filename']
+                            logger.info(f"✓ Retrieved example: {filename} (similarity={similarity:.4f})")
+                        else:
+                            logger.warning("No examples retrieved from RAG")
+                    except Exception as e:
+                        logger.error(f"Error during RAG retrieval: {e}")
+                        logger.info("Continuing without RAG example")
+            
+            # Append retrieved example to system prompt if available
+            if retrieved_example:
+                system_prompt = f"{system_prompt}\n\n---\n\n# RETRIEVED REFERENCE EXAMPLE\n\nThe following is a highly relevant example for this request. Use it as a reference for structure, workflow, and best practices:\n\n{retrieved_example}"
+                logger.info("✓ Appended retrieved example to system prompt")
             
             # Build context for the agent
             context_parts = []
