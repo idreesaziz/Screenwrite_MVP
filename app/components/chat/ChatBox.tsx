@@ -665,6 +665,10 @@ export function ChatBox({
       // Add the generated content to the media bin
       if (onAddGeneratedImage) {
         await onAddGeneratedImage(newMediaItem);
+
+        // Sync ref immediately so in-flight workflows see the new asset
+        mediaBinItemsRef.current = [...mediaBinItemsRef.current, newMediaItem];
+        console.log(`📦 Immediately added ${newMediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
       }
 
       // Create success message that clearly indicates completion
