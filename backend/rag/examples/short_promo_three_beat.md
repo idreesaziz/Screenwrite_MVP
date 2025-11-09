@@ -1,11 +1,8 @@
 # Short Promotional Video
 
 **When to Use:**
-- User requests a promotional, marketing, or advertisement video
-- Needs stock footage search and selection workflow
-- Requires batch analysis of multiple videos to find best segments
-- Multi-video composition with text overlays and transitions
-- Three-beat narrative structure (craft → artistry → impact → branding)
+- User requests making a promotional/marketing/advertisement video
+- Currently in the midst of making a promotional video workflow
 
 **User Request:** "Create a short promotional video" (or similar request)
 
