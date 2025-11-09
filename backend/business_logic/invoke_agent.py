@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Any
 
 from services.base.ChatProvider import ChatProvider
 from prompts.agent_prompts import build_agent_system_prompt
-from rag.retriever import retrieve_examples
+from rag.llm_selector import select_example
 
 logger = logging.getLogger(__name__)
 
@@ -73,28 +73,26 @@ class AgentService:
             # Build static system prompt (will be cached by provider)
             system_prompt = build_agent_system_prompt()
             
-            # Retrieve relevant example using RAG
+            # Retrieve relevant example using LLM-based RAG
             retrieved_example = None
             retrieved_filename = None
             if conversation_history:
-                # Get the latest user message for retrieval
-                user_messages = [msg for msg in conversation_history if msg.get('role') == 'user']
-                if user_messages:
-                    latest_user_message = user_messages[-1].get('content', '')
-                    logger.info(f"🔍 Retrieving relevant example for query: {latest_user_message[:100]}...")
-                    
-                    try:
-                        results = retrieve_examples(latest_user_message, k=1)
-                        if results:
-                            retrieved_example = results[0]['content']
-                            similarity = results[0]['similarity']
-                            retrieved_filename = results[0]['filename']
-                            logger.info(f"✓ Retrieved example: {retrieved_filename} (similarity={similarity:.4f})")
-                        else:
-                            logger.warning("No examples retrieved from RAG")
-                    except Exception as e:
-                        logger.error(f"Error during RAG retrieval: {e}")
-                        logger.info("Continuing without RAG example")
+                logger.info(f"🔍 Using LLM to select relevant example from conversation...")
+                
+                try:
+                    result = await select_example(conversation_history)
+                    if result:
+                        retrieved_example = result['content']
+                        retrieved_filename = result['filename']
+                        confidence = result.get('confidence', 'unknown')
+                        reasoning = result.get('reasoning', '')
+                        logger.info(f"✓ Selected example: {retrieved_filename} (confidence: {confidence})")
+                        logger.info(f"  Reasoning: {reasoning}")
+                    else:
+                        logger.info("No relevant example found for this conversation")
+                except Exception as e:
+                    logger.error(f"Error during LLM-based RAG: {e}")
+                    logger.info("Continuing without RAG example")
             
             # Build context for the agent
             context_parts = []
