@@ -40,12 +40,18 @@ export interface ConversationMessage {
   sender?: ConversationSender;
 }
 
+export interface ProbeFile {
+  fileName: string; // Media file from library OR YouTube URL
+  question: string; // Question to ask about this specific file
+}
+
 export interface SynthResponse {
   type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch';
   content: string;
   referencedFiles?: string[]; // @-mentioned files
-  fileName?: string; // For probe responses - can be media file from library OR YouTube URL
-  question?: string; // For probe responses
+  files?: ProbeFile[]; // For probe responses - array of media files to analyze (images, videos, audio, URLs)
+  fileName?: string; // DEPRECATED: For backward compatibility with single probe
+  question?: string; // DEPRECATED: For backward compatibility with single probe
   prompt?: string; // For generate responses - content generation prompt
   suggestedName?: string; // For generate responses - AI-chosen filename
   content_type?: 'image' | 'video'; // For generate responses - type of content to generate
@@ -158,17 +164,11 @@ Your job is to generate the next appropriate response based on the conversation 
 
       const structuredResponse = await response.json();
       
-      // Handle the structured response
-      if (structuredResponse.type === 'edit') {
-        console.log("🎬 Generated edit instructions:", structuredResponse.content);
-      } else if (structuredResponse.type === 'info') {
-        console.log("💬 Generated info response:", structuredResponse.content);
-      }
-      
-      return {
+      const returnObj = {
         type: structuredResponse.type,
         content: structuredResponse.content,
         referencedFiles,
+        files: structuredResponse.files,
         fileName: structuredResponse.fileName,
         question: structuredResponse.question,
         prompt: structuredResponse.prompt,
@@ -177,6 +177,10 @@ Your job is to generate the next appropriate response based on the conversation 
         seedImageFileName: structuredResponse.seedImageFileName,
         query: structuredResponse.query
       };
+      
+      return returnObj;
+      
+      return returnObj;
 
     } catch (error) {
       console.error("❌ API call failed:", error);
@@ -342,7 +346,7 @@ Your job is to generate the next appropriate response based on the conversation 
   private async callGeminiAPIStructured(
     systemInstruction: string, 
     prompt: string
-  ): Promise<{ type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch'; content: string; fileName?: string; question?: string; prompt?: string; suggestedName?: string; content_type?: 'image' | 'video'; seedImageFileName?: string; query?: string }> {
+  ): Promise<{ type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch'; content: string; files?: ProbeFile[]; fileName?: string; question?: string; prompt?: string; suggestedName?: string; content_type?: 'image' | 'video'; seedImageFileName?: string; query?: string }> {
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment.");
     }
@@ -353,6 +357,21 @@ Your job is to generate the next appropriate response based on the conversation 
         "type": {
           "type": "STRING",
           "enum": ["info", "chat", "edit", "probe", "generate", "fetch"]
+        },
+        "files": {
+          "type": "ARRAY",
+          "items": {
+            "type": "OBJECT",
+            "properties": {
+              "fileName": {
+                "type": "STRING"
+              },
+              "question": {
+                "type": "STRING"
+              }
+            },
+            "required": ["fileName", "question"]
+          }
         },
         "fileName": {
           "type": "STRING"

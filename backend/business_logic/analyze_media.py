@@ -8,8 +8,10 @@ using AI-powered multimodal analysis.
 
 import logging
 import time
-from typing import Optional
+import asyncio
+from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 
 from services.base.MediaAnalysisProvider import MediaAnalysisProvider, MediaAnalysisResult
 from services.base.StorageProvider import StorageProvider
@@ -216,3 +218,197 @@ class MediaAnalysisService:
             List of supported MIME types
         """
         return await self.media_provider.get_supported_file_types()
+    
+    async def analyze_media_batch(
+        self,
+        videos: List[Dict[str, str]],
+        question: Optional[str] = None,
+        user_id: str = None,
+        session_id: str = None,
+        model_name: Optional[str] = None,
+        temperature: float = 0.1,
+        max_concurrent: int = 4
+    ) -> Dict[str, Any]:
+        """
+        Analyze multiple videos in parallel using concurrent requests.
+        
+        Args:
+            videos: List of dicts with 'file_url', optional 'title', and optional 'question' keys
+            question: Global question to ask about each video (optional if per-video questions provided)
+            user_id: User ID (for logging/tracking)
+            session_id: Session ID (for logging/tracking)
+            model_name: Optional model override
+            temperature: Generation temperature (0.0-1.0)
+            max_concurrent: Maximum number of concurrent analysis requests (1-10)
+        
+        Returns:
+            Dict with:
+                - aggregated_analysis: Single formatted string with all analyses
+                - results: List of per-video results
+                - total_videos: Total count
+                - successful_count: Success count
+                - failed_count: Failure count
+                - total_metadata: Aggregated stats (tokens, duration)
+        
+        Example:
+            result = await service.analyze_media_batch(
+                videos=[
+                    {"file_url": "gs://bucket/v1.mp4", "title": "Intro", "question": "What's shown?"},
+                    {"file_url": "gs://bucket/v2.mp4", "title": "Demo", "question": "Describe the demo"}
+                ],
+                user_id="user123",
+                session_id="session456",
+                max_concurrent=4
+            )
+        """
+        logger.info(
+            f"Starting batch media analysis: {len(videos)} videos, "
+            f"max_concurrent={max_concurrent}, user={user_id}, session={session_id}"
+        )
+        
+        if not videos:
+            raise ValueError("videos list cannot be empty")
+        
+        if max_concurrent < 1 or max_concurrent > 10:
+            raise ValueError("max_concurrent must be between 1 and 10")
+        
+        # Enforce batch size limit
+        if len(videos) > 10:
+            raise ValueError("Maximum 10 videos per batch request")
+        
+        batch_start = time.monotonic()
+        
+        # Create analysis tasks for each video
+        async def analyze_single_video(idx: int, video: Dict[str, str]) -> Dict[str, Any]:
+            """Analyze a single video and return structured result."""
+            file_url = video.get("file_url")
+            title = video.get("title") or f"Video {idx + 1}"
+            # Use per-video question if provided, otherwise fall back to global question, otherwise use default
+            video_question = video.get("question") or question or "Describe what you see in this media."
+            
+            logger.debug(f"Starting analysis {idx+1}/{len(videos)}: {title}")
+            
+            try:
+                result = await self.analyze_media(
+                    file_url=file_url,
+                    question=video_question,
+                    user_id=user_id,
+                    session_id=f"{session_id}_batch_{idx}",
+                    model_name=model_name,
+                    temperature=temperature
+                )
+                
+                return {
+                    "file_url": file_url,
+                    "title": title,
+                    "success": result.success,
+                    "analysis": result.analysis if result.success else None,
+                    "error_message": result.error_message if not result.success else None,
+                    "metadata": result.metadata
+                }
+            
+            except Exception as e:
+                logger.error(f"Error analyzing video {idx+1} ({title}): {e}", exc_info=True)
+                return {
+                    "file_url": file_url,
+                    "title": title,
+                    "success": False,
+                    "analysis": None,
+                    "error_message": f"Analysis failed: {str(e)}",
+                    "metadata": None
+                }
+        
+        # Run analyses with concurrency limit using semaphore
+        semaphore = asyncio.Semaphore(max_concurrent)
+        
+        async def analyze_with_limit(idx: int, video: Dict[str, str]) -> Dict[str, Any]:
+            """Wrapper to enforce concurrency limit."""
+            async with semaphore:
+                return await analyze_single_video(idx, video)
+        
+        # Execute all analyses concurrently
+        tasks = [analyze_with_limit(i, video) for i, video in enumerate(videos)]
+        results = await asyncio.gather(*tasks, return_exceptions=False)
+        
+        batch_duration = round(time.monotonic() - batch_start, 3)
+        
+        # Aggregate results
+        successful_count = sum(1 for r in results if r["success"])
+        failed_count = len(results) - successful_count
+        
+        # Calculate total tokens
+        total_tokens = 0
+        for r in results:
+            if r.get("metadata") and isinstance(r["metadata"], dict):
+                total_tokens += r["metadata"].get("total_tokens", 0)
+        
+        # Format aggregated analysis string
+        aggregated_parts = []
+        for i, result in enumerate(results):
+            title = result["title"]
+            if result["success"]:
+                analysis_text = result["analysis"] or "(No analysis returned)"
+            else:
+                analysis_text = f"ERROR: {result['error_message']}"
+            
+            aggregated_parts.append(f"Media {i+1} ({title}): {analysis_text}")
+        
+        aggregated_analysis = "\n\n".join(aggregated_parts)
+        
+        logger.info(
+            f"Batch analysis complete: {successful_count}/{len(videos)} successful, "
+            f"total_tokens={total_tokens}, duration={batch_duration}s"
+        )
+
+        # Determine effective question for logging/reporting
+        effective_question = question
+        if not effective_question:
+            for video in videos:
+                if video.get("question"):
+                    effective_question = video["question"]
+                    break
+        if not effective_question:
+            effective_question = "Describe what you see in this media."
+        
+        # Persist batch log
+        try:
+            from pathlib import Path
+            from datetime import datetime
+            logs_dir = Path(__file__).parent.parent / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            batch_log = logs_dir / f"batch_analysis_{session_id}_{timestamp}.json"
+            with open(batch_log, "w") as f:
+                import json as _json
+                _json.dump({
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "timestamp": timestamp,
+                    "question": effective_question,
+                    "model_used": model_name or self.media_provider.default_model,
+                    "temperature": temperature,
+                    "total_videos": len(videos),
+                    "successful_count": successful_count,
+                    "failed_count": failed_count,
+                    "total_tokens": total_tokens,
+                    "duration_seconds": batch_duration,
+                    "max_concurrent": max_concurrent,
+                    "results": results
+                }, f, indent=2)
+            logger.info(f"💾 Saved batch analysis log to: {batch_log}")
+        except Exception as log_err:
+            logger.warning(f"Could not write batch analysis log: {log_err}")
+        
+        return {
+            "aggregated_analysis": aggregated_analysis,
+            "results": results,
+            "question": effective_question,
+            "total_videos": len(videos),
+            "successful_count": successful_count,
+            "failed_count": failed_count,
+            "total_metadata": {
+                "total_tokens": total_tokens,
+                "duration_seconds": batch_duration,
+                "max_concurrent": max_concurrent
+            }
+        }

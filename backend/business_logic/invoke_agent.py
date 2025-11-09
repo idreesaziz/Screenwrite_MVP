@@ -205,14 +205,33 @@ class AgentService:
                         "type": "string",
                         "description": "The main message content to display to the user"
                     },
+                    "files": {
+                        "type": "array",
+                        "description": "For probe type: array of media files to analyze (images, videos, audio, YouTube URLs)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "fileName": {
+                                    "type": "string",
+                                    "description": "Exact name from media library (e.g., \"Beach Video (2)\") or full URL"
+                                },
+                                "question": {
+                                    "type": "string",
+                                    "description": "Question to ask about this specific file"
+                                }
+                            },
+                            "required": ["fileName", "question"]
+                        },
+                        "nullable": True
+                    },
                     "fileName": {
                         "type": "string",
-                        "description": "For probe type: the exact name from the media library (e.g., \"Beach Video (2)\"). Frontend resolves names to URLs automatically.",
+                        "description": "For probe type (legacy single file): the exact name from the media library (e.g., \"Beach Video (2)\"). Frontend resolves names to URLs automatically.",
                         "nullable": True
                     },
                     "question": {
                         "type": "string",
-                        "description": "For probe type: question to ask about the media",
+                        "description": "For probe type (legacy single file): question to ask about the media",
                         "nullable": True
                     },
                     "content_type": {
@@ -275,16 +294,38 @@ class AgentService:
             
             # Emit explicit probe details to logs for quick forensics
             if agent_response.get("type") == "probe":
-                logger.info(
-                    "Probe emission: fileName=%s | question=%s",
-                    agent_response.get("fileName"),
-                    (agent_response.get("question") or "")[:200]
-                )
+                # Support both batch (files array) and legacy single file format
+                if agent_response.get("files"):
+                    file_count = len(agent_response.get("files", []))
+                    file_names = [f.get("fileName", "unknown") for f in agent_response.get("files", [])]
+                    logger.info(
+                        "Batch probe emission: %d files | fileNames=%s",
+                        file_count,
+                        ", ".join(file_names)
+                    )
+                    
+                    # Validate each file has required fields
+                    for i, file_obj in enumerate(agent_response.get("files", [])):
+                        if not file_obj.get("fileName"):
+                            logger.error(f"File {i} missing fileName: {file_obj}")
+                        if not file_obj.get("question"):
+                            logger.warning(f"File {i} missing question, using default")
+                            file_obj["question"] = "Describe what you see in this media."
+                else:
+                    logger.info(
+                        "Single probe emission: fileName=%s | question=%s",
+                        agent_response.get("fileName"),
+                        (agent_response.get("question") or "")[:200]
+                    )
                 
                 # Ensure probe responses have content field for validation
                 if not agent_response.get("content"):
-                    file_name = agent_response.get("fileName", "media")
-                    agent_response["content"] = f"Analyzing {file_name}..."
+                    if agent_response.get("files"):
+                        file_count = len(agent_response.get("files", []))
+                        agent_response["content"] = f"Analyzing {file_count} file(s)..."
+                    else:
+                        file_name = agent_response.get("fileName", "media")
+                        agent_response["content"] = f"Analyzing {file_name}..."
                     logger.debug(f"Added default content for probe response: {agent_response['content']}")
             
             # Validate response type

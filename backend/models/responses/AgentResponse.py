@@ -5,7 +5,21 @@ Pydantic models for conversational agent API responses.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+
+
+class ProbeFile(BaseModel):
+    """Model for individual probe file in batch probe requests."""
+    
+    fileName: str = Field(
+        ...,
+        description="Exact name from media library or full URL"
+    )
+    
+    question: str = Field(
+        ...,
+        description="Question to ask about this specific file"
+    )
 
 
 class AgentResponse(BaseModel):
@@ -23,9 +37,17 @@ class AgentResponse(BaseModel):
     )
     
     # Optional fields for specific action types
+    
+    # Batch probe format (new)
+    files: Optional[List[ProbeFile]] = Field(
+        None,
+        description="For probe type: array of media files to analyze with per-file questions"
+    )
+    
+    # Legacy single probe format (kept for backward compatibility)
     fileName: Optional[str] = Field(
         None,
-        description="For probe type: filename to analyze OR YouTube URL"
+        description="For probe type (legacy): filename to analyze OR YouTube URL"
     )
     
     question: Optional[str] = Field(

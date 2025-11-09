@@ -318,75 +318,92 @@ export function ChatBox({
     }, 0);
   };
 
-  // Simple internal probe handler - resolves name to URL if needed, then passes to backend
+  // Batch probe handler - analyzes multiple videos in parallel
   const handleProbeRequestInternal = async (
-    fileName: string,
-    question: string,
+    videos: Array<{ fileName: string; question: string }>,
     signal?: AbortSignal
   ): Promise<Message[]> => {
-    await logProbeStart(fileName, question);
-    console.log("🔍 Executing probe request for:", fileName);
+    console.log(`🔍 Executing batch probe request for ${videos.length} video(s)`);
     
-    // Resolve fileName to URL if it's a name reference instead of a URL
-    let fileUrl = fileName;
-    
-    // Check if fileName is a URL (starts with http, https, gs://, or youtube)
-    const isUrl = /^(https?:\/\/|gs:\/\/|youtube\.com|youtu\.be)/i.test(fileName);
-    
-    if (!isUrl) {
-      // fileName is a name reference - look it up in media library
-      // Use ref instead of prop to get latest state during async workflows
-      console.log("🔍 fileName appears to be a name reference, looking up in media library...");
-      console.log(`🔍 Media library has ${mediaBinItemsRef.current.length} items`);
-      const mediaItem = mediaBinItemsRef.current.find(item => item.name === fileName);
-      
-      if (mediaItem) {
-        // Prefer remote URL over GCS URI for better MIME type detection
-        // (signed URLs preserve the file extension)
-        fileUrl = mediaItem.mediaUrlRemote || mediaItem.gcsUri || '';
-        console.log(`🔍 Resolved name "${fileName}" → URL: ${fileUrl}`);
-        
-        if (!fileUrl) {
-          throw new Error(`Media item "${fileName}" has no URL available`);
-        }
-      } else {
-        console.warn(`⚠️ Media item with name "${fileName}" not found in library`);
-        console.warn(`⚠️ Available names:`, mediaBinItemsRef.current.map(item => item.name));
-        throw new Error(`Media item "${fileName}" not found in library`);
-      }
-    } else {
-      console.log("🔍 fileName is already a URL, using directly");
+    // Log all probes
+    for (const video of videos) {
+      await logProbeStart(video.fileName, video.question);
     }
+    
+    // Resolve all fileNames to URLs
+    const resolvedVideos = await Promise.all(
+      videos.map(async (video) => {
+        const trimmedFileName = video.fileName.trim();
+        let fileUrl = trimmedFileName;
+        
+        // Check if fileName is a URL (starts with http, https, gs://, or youtube)
+        const isUrl = /^(https?:\/\/|gs:\/\/|youtube\.com|youtu\.be)/i.test(trimmedFileName);
+        
+        if (!isUrl) {
+          // fileName is a name reference - look it up in media library
+          console.log(`🔍 Resolving "${trimmedFileName}" from media library...`);
+          const mediaItem = mediaBinItemsRef.current.find(item => item.name.trim() === trimmedFileName);
+          
+          if (mediaItem) {
+            // Prefer remote URL over GCS URI for better MIME type detection
+            fileUrl = mediaItem.mediaUrlRemote || mediaItem.gcsUri || '';
+            console.log(`🔍 Resolved "${trimmedFileName}" → ${fileUrl}`);
+            
+            if (!fileUrl) {
+              throw new Error(`Media item "${trimmedFileName}" has no URL available`);
+            }
+          } else {
+            console.warn(`⚠️ Media item "${trimmedFileName}" not found in library`);
+            console.warn(`⚠️ Available names:`, mediaBinItemsRef.current.map(item => `"${item.name.trim()}"`));
+            throw new Error(`Media item "${trimmedFileName}" not found in library`);
+          }
+        }
+        
+        return {
+          file_url: fileUrl,
+          title: trimmedFileName,
+          question: video.question // Include per-video question
+        };
+      })
+    );
     
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
+      const response = await fetch(apiUrl('/api/v1/analysis/media/batch', true), {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          file_url: fileUrl, // Resolved URL (GCS, YouTube, etc.)
-          question: question
+          videos: resolvedVideos, // Each video now includes its own question
+          max_concurrent: 4
         }),
         signal
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error_message || `Backend analysis failed: ${response.status}`);
+        throw new Error(errorData.detail || `Batch analysis failed: ${response.status}`);
       }
 
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.error_message || 'Analysis failed');
+        throw new Error('Batch analysis failed');
       }
 
-      const analysisResult = result.analysis;
-      await logProbeAnalysis(fileName, analysisResult);
+      const aggregatedAnalysis = result.aggregated_analysis;
+      
+      // Log each video's analysis
+      for (const videoResult of result.results) {
+        if (videoResult.success && videoResult.analysis) {
+          await logProbeAnalysis(videoResult.title || videoResult.file_url, videoResult.analysis);
+        } else if (!videoResult.success) {
+          await logProbeError(videoResult.title || videoResult.file_url, videoResult.error_message || 'Analysis failed');
+        }
+      }
       
       const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: analysisResult,
+        content: aggregatedAnalysis,
         isUser: false,
         timestamp: new Date(),
         isAnalysisResult: true,
@@ -403,19 +420,23 @@ export function ChatBox({
       return [responseMessage];
 
     } catch (error) {
-      console.error("❌ Probe analysis failed:", error);
-      await logProbeError(fileName, error instanceof Error ? error.message : 'Unknown error');
+      console.error("❌ Batch probe analysis failed:", error);
+      
+      // Log errors for all videos
+      for (const video of videos) {
+        await logProbeError(video.fileName, error instanceof Error ? error.message : 'Unknown error');
+      }
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Failed to analyze ${fileName}. ${error instanceof Error ? error.message : 'Unknown error'}`,
+        content: `Failed to analyze ${videos.length} video(s). ${error instanceof Error ? error.message : 'Unknown error'}`,
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
         sender: 'tool',
         hasRetryButton: true,
         retryData: {
-          originalMessage: `analyze ${fileName}`
+          originalMessage: `analyze ${videos.map(v => v.fileName).join(', ')}`
         }
       };
       return [errorMessage];
@@ -427,9 +448,8 @@ export function ChatBox({
     conversationMessages: ConversationMessage[],
     synthContext: SynthContext
   ): Promise<Message[]> => {
-    // All media analysis now goes through the backend with GCS URLs
-    // No need for special handling - backend handles all media types
-    return handleProbeRequestInternal(fileName, question);
+    // Wrap single file into batch format for backward compatibility
+    return handleProbeRequestInternal([{ fileName, question }]);
   };
 
   const analyzeMediaWithGemini = async (mediaFile: MediaBinItem, question: string, signal?: AbortSignal): Promise<string> => {
@@ -1063,26 +1083,29 @@ export function ChatBox({
     console.log(`🎬 Executing action for response type: ${synthResponse.type}`);
     
     if (synthResponse.type === 'probe') {
-      // Probe request - analyze media file
-      console.log("🔍 Executing probe:", synthResponse.fileName, synthResponse.question);
+      // Probe request - analyze media files
       
-      // Create feedback message to add to conversation history
+      // Support both batch format (files array) and legacy single file format
+      const filesToAnalyze = synthResponse.files || 
+        (synthResponse.fileName ? [{ fileName: synthResponse.fileName, question: synthResponse.question || 'Describe what you see in this media.' }] : []);
+      
+      const fileNames = filesToAnalyze.map(f => f.fileName).join(', ');
+      
+      // Show analyzing message in UI
       const analyzingMessage: Message = {
         id: Date.now().toString(),
-        content: `Analysing ${synthResponse.fileName}: ${synthResponse.question}`,
+        content: `Analysing ${filesToAnalyze.length} file(s): ${fileNames}`,
         isUser: false,
         timestamp: new Date(),
         isSystemMessage: true,
-        alreadyInUI: true, // Mark as already added to UI
+        alreadyInUI: true,
         sender: 'system'
       };
-      
-      // Show analyzing message immediately in UI
       onMessagesChange(prevMessages => [...prevMessages, analyzingMessage]);
       
-      const probeResults = await handleProbeRequestInternal(synthResponse.fileName!, synthResponse.question!, signal);
+      // Execute probe
+      const probeResults = await handleProbeRequestInternal(filesToAnalyze, signal);
       
-      // Return BOTH the analyzing message AND the analysis result for complete history
       return [analyzingMessage, ...probeResults];
       
     } else if (synthResponse.type === 'generate') {

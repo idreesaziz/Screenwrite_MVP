@@ -260,8 +260,39 @@ Smart Probing Strategy:
 - For YouTube URLs: Probe when user explicitly provides the URL for analysis
 - Always explain why you're probing in the question
 
-Probe Response Format:
-- Use fileName field for BOTH uploaded media files AND YouTube URLs
+BATCH PROBE FORMAT (PREFERRED):
+When you need to analyze multiple videos, use the batch probe format to analyze them in parallel:
+{
+  "type": "probe",
+  "content": "Analyzing 3 videos in parallel to identify the best segments.",
+  "videos": [
+    {
+      "fileName": "Video 1",
+      "question": "Identify 2-3 distinct cinematic segments with timestamps, colors, and text placement opportunities."
+    },
+    {
+      "fileName": "Video 2", 
+      "question": "Identify 2-3 distinct cinematic segments with timestamps, colors, and text placement opportunities."
+    },
+    {
+      "fileName": "Video 3",
+      "question": "Identify 2-3 distinct cinematic segments with timestamps, colors, and text placement opportunities."
+    }
+  ]
+}
+
+This will analyze all 3 videos simultaneously and return a single aggregated response with all analyses.
+
+LEGACY SINGLE PROBE FORMAT (STILL SUPPORTED):
+For backward compatibility, single video analysis still works:
+{
+  "type": "probe",
+  "content": "Analyzing the video for segment details.",
+  "fileName": "Video 1",
+  "question": "Identify segments with timestamps and colors."
+}
+
+File Name Format:
 - For uploaded files: fileName = "filename.ext" (exact filename from media library)
 - For YouTube URLs: fileName = "https://www.youtube.com/watch?v=..." (the full YouTube URL)
 - Backend will automatically detect URL vs filename and route accordingly
