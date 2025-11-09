@@ -70,11 +70,12 @@ class AgentService:
         logger.info(f"Processing conversation with {len(conversation_history) if conversation_history else 0} messages")
         
         try:
-            # Build system prompt
+            # Build static system prompt (will be cached by provider)
             system_prompt = build_agent_system_prompt()
             
             # Retrieve relevant example using RAG
             retrieved_example = None
+            retrieved_filename = None
             if conversation_history:
                 # Get the latest user message for retrieval
                 user_messages = [msg for msg in conversation_history if msg.get('role') == 'user']
@@ -87,18 +88,13 @@ class AgentService:
                         if results:
                             retrieved_example = results[0]['content']
                             similarity = results[0]['similarity']
-                            filename = results[0]['filename']
-                            logger.info(f"✓ Retrieved example: {filename} (similarity={similarity:.4f})")
+                            retrieved_filename = results[0]['filename']
+                            logger.info(f"✓ Retrieved example: {retrieved_filename} (similarity={similarity:.4f})")
                         else:
                             logger.warning("No examples retrieved from RAG")
                     except Exception as e:
                         logger.error(f"Error during RAG retrieval: {e}")
                         logger.info("Continuing without RAG example")
-            
-            # Append retrieved example to system prompt if available
-            if retrieved_example:
-                system_prompt = f"{system_prompt}\n\n---\n\n# RETRIEVED REFERENCE EXAMPLE\n\nThe following is a highly relevant example for this request. Use it as a reference for structure, workflow, and best practices:\n\n{retrieved_example}"
-                logger.info("✓ Appended retrieved example to system prompt")
             
             # Build context for the agent
             context_parts = []
@@ -136,17 +132,28 @@ class AgentService:
             ]
             
             # Add conversation history as actual message turns
-            # IMPORTANT: Prepend dynamic context to the FIRST user message to avoid cache invalidation
+            # IMPORTANT: Prepend RAG example + dynamic context to the FIRST user message to preserve cache
             if conversation_history:
                 logger.info(f"📚 Adding {len(conversation_history)} conversation messages as actual message turns")
                 for i, msg in enumerate(conversation_history):
                     role = msg.get('role', 'user')
                     content = msg.get('content', '')
                     
-                    # Prepend context to the first user message
+                    # Prepend RAG example and context to the first user message
                     if i == 0 and role == 'user':
-                        content = f"{full_context}\n\n---\n\n{content}"
-                        logger.debug(f"  Prepended dynamic context to first user message")
+                        prefix_parts = []
+                        
+                        # Add RAG example first if available
+                        if retrieved_example:
+                            prefix_parts.append(f"# REFERENCE EXAMPLE\n\nThe following is a reference example from '{retrieved_filename}' that demonstrates best practices for similar requests. Use it as a guide for structure and workflow patterns, but adapt it to the current request:\n\n{retrieved_example}\n\n---")
+                            logger.debug(f"  Added RAG example ({retrieved_filename}) to first user message")
+                        
+                        # Add dynamic context
+                        prefix_parts.append(full_context)
+                        
+                        # Combine prefix with actual user message
+                        content = f"{chr(10).join(prefix_parts)}\n\n---\n\n{content}"
+                        logger.debug(f"  Prepended RAG example + dynamic context to first user message")
                     
                     messages.append(ChatMessage(role=role, content=content))
                     logger.debug(f"  Added {role} message: {content[:80]}...")
