@@ -57,67 +57,66 @@
 
 8. **INFO** - "Now I'll reason through the text styling decisions."
 
-9. **INFO** - "For text styling, I need to consider: 1) Background colors from probe results to determine contrasting text colors, 2) Text length to determine appropriate sizing (short messages = larger text for impact), 3) Available negative space to choose proper anchor positions (top-left, top-center, center, bottom-center, etc.), 4) Motion stability to decide if shadows/outlines are needed for legibility. Let me work through each beat:
+9. **INFO** - "I've analyzed the segments and designed the complete composition with text overlays, positioning, styling, and transitions. Let me present the plan."
 
-**Beat 1 reasoning example:** The probe shows [color-description] background with [brightness-level] lighting. Since the background is [dark/medium/light], I need [contrasting-color] text. The message '[BEAT-1-MESSAGE]' is [X] words, which is [short/medium], so I'll use [size-value] sizing for quick readability. The [placement-area] region is clear and stable, so I'll anchor at [anchor-position] to balance the composition without competing with the main action. Given [lighting-description] lighting, I'll add a [shadow/outline] in [contrast-color] to ensure legibility.
+10. **CHAT** - "*[Internal Reasoning - Not Output to User]:*
+*Before presenting the plan, I reason through these dimensions:*
 
-**Beat 2 reasoning example:** Video 2 segment has [contrast-description] with [hex-codes]. The high contrast means text needs strong treatment—I'll use [outline/shadow/panel] approach. Message is [length-description], so [size-reasoning]. The [placement-area] is clear during [motion-description], so [anchor-position] anchor keeps text readable while maintaining visual hierarchy. 
+1. **Clip Selection & Sequencing:** Which segments best represent each beat? What trim ranges maximize visual interest while staying concise?
+2. **Overlay Content Strategy:** What messaging creates emotional progression? Short, punchy messages = opportunity for bold, large sizing that commands attention.
+3. **Overlay Positioning & Continuity:** Based on probe data (colors, brightness, clear regions), which anchor positions provide best legibility? Default to 'center' for maximum impact—it's the most powerful position, commanding full attention. Use 'top center' or 'bottom center' only when the center region has critical action or visual clutter. How does positioning guide the viewer's eye through the narrative?
+4. **Overlay Styling:** What text colors contrast with each background? For promotional videos, favor large, bold sizing (80px-120px range) that fills the frame with confidence. Mix and match styling treatments across beats for visual variety—use shadows on some beats, outlines on others, or combine both. Vary font weights (bold vs regular) to create rhythm. What shadows/outlines ensure legibility against busy backgrounds?
+5. **Transition Strategy:** Which transition types ('fade', 'Wipe Right', etc.) and durations (0.5s, 1.0s) match the emotional tone of each beat shift?
+6. **Timing Strategy:** When should text appear/exit relative to clip action to maximize impact without overwhelming the visual?
 
-**Beat 3 reasoning example:** The lifestyle shot has [lighting-description] with [color-palette]. This [brightness-level] background works best with [text-color] for maximum contrast. Short, punchy CTA = oversized text ([size-value]) for impact. The [placement-area] provides clean negative space, so [anchor-position] anchor delivers a strong finish without cluttering the hero subject.
+*[Output to User - Polished Plan]:*
 
-**Beat 4 (Brand End-Card) reasoning example:** The generated end-card has a [background-color] clean background designed for maximum text legibility. For the brand name, I'll use [brand-color] at [size-value] for prominence. For the CTA, I'll use [cta-color] at [size-value] for clear actionability. Both anchored at [brand-anchor] and [cta-anchor] respectively to create balanced, professional composition with breathing room.
-
-I'll now present the complete plan with these styling decisions applied."
-
-10. **CHAT** - "Here's my complete plan for your promotional video:
+Here's my complete plan for your promotional video:
 
 I'll create a cinematic four-beat structure that builds emotional engagement through craft, artistry, impact, and a strong brand finish.
 
 **Beat 1: The Craft**
-*   Opens with the detail shot from 'Video 1' ([color-description], [lighting-description])
-*   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video
-*   **Text Reasoning:** The background is [color-description], so I'll use [contrasting-color] for maximum readability. The message is [length-description], so I'll use [size-reasoning] sizing. The [placement-area] has clear negative space, so I'll anchor at [anchor-position] (e.g., 'bottom center', 'top center')
-*   `BlurText` '[BEAT-1-MESSAGE]' appears in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset)
-*   Text fades out before the next clip
+*   Opens with the detail shot from 'Video 1' ([clip-start-time]s to [clip-end-time]s)
+*   `BlurText` '[BEAT-1-MESSAGE]' in [text-color], 100px 'Montserrat', bold weight, at 'center', with [shadow-color] shadow (4px offset)
+*   *Style justification:* Bold sans-serif with strong shadow for immediate impact. Shadow creates depth against the [background-description]
+*   Text fades out before transition
 
 **Beat 2: The Artistry**
-*   Smooth 'fade' transition (0.5s) to the dynamic action from 'Video 2' ([contrast-description], visual interest)
-*   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video
-*   **Text Reasoning:** The [contrast-description] background requires [text-treatment] (outline/shadow/panel). Message length is [length-description], so [size-reasoning]. Clear space in [placement-area] means [anchor-position] anchor is optimal
-*   `SplitText` '[BEAT-2-MESSAGE]' animates word-by-word in [text-color], [text-size] [font-family], positioned at [anchor-position], with [outline-color] text outline ([outline-width])
-*   Text slides out to the top before the next clip
+*   'Fade' transition (0.5s) to 'Video 2' ([clip-start-time]s to [clip-end-time]s)
+*   `SplitText` '[BEAT-2-MESSAGE]' in [text-color], 90px 'Inter', regular weight, at 'center', with [outline-color] outline (3px), word-by-word animation
+*   *Style justification:* Switched to regular weight with outline for contrast from Beat 1. Outline treatment handles [motion-description] better than shadow
+*   Text slides out upward before transition
 
 **Beat 3: The Impact**
-*   'Wipe Right' transition (0.5s) to lifestyle moment from 'Video 3' ([time-of-day], [aesthetic-description])
-*   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video
-*   **Text Reasoning:** [lighting-description] lighting with [color-description] tones means [text-color] will provide best contrast. Short, punchy message = large sizing for impact. [placement-area] is clear, so [anchor-position] anchor creates balanced composition
-*   `TypewriterText` types '[BEAT-3-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset)
-*   Text fades out before the final brand card
+*   'Wipe Right' transition (0.5s) to 'Video 3' ([clip-start-time]s to [clip-end-time]s)
+*   `TypewriterText` '[BEAT-3-MESSAGE]' in [text-color], 110px 'Poppins', bold weight, at 'center', with [shadow-color] shadow (5px offset) and [outline-color] outline (2px)
+*   *Style justification:* Combined shadow + outline for maximum punch on the CTA. Bold weight + larger size (110px) + dual effects create climactic energy
+*   Text fades out before transition
 
 **Beat 4: The Brand**
-*   'Fade' transition (0.5s) to the 'promo-brand-endcard.png' image (full-screen branding display with clean background)
-*   **Text Reasoning:** Clean [background-color] background provides maximum legibility. Brand name in [brand-color] at [brand-size] for prominence, CTA in [cta-color] at [cta-size] for action
-*   `BlurText` '[BRAND-NAME]' appears in [brand-color], [brand-size] [font-family], positioned at [brand-anchor-position]
-*   `BlurText` '[CTA-MESSAGE]' appears in [cta-color], [cta-size] [font-family], positioned at [cta-anchor-position]
-*   Brand image and text hold until end
+*   'Fade' transition (0.5s) to 'promo-brand-endcard.png'
+*   `BlurText` '[BRAND-NAME]' in [brand-color], 120px 'Bebas Neue', bold weight, at 'center'
+*   `BlurText` '[CTA-MESSAGE]' in [cta-color], 60px 'Inter', regular weight, at 'bottom center'
+*   *Style justification:* Condensed display font (Bebas Neue) for massive brand presence. Minimal effects on clean background. CTA uses readable sans-serif at smaller size for hierarchy
+*   Holds until end
 
-Does this plan capture the right tone and pacing? Say 'yes' to proceed."
+*Continuity note:* All beats use centered positioning for consistent focus. Styling varies across beats—alternating between shadow-only (Beat 1), outline-only (Beat 2), shadow+outline combo (Beat 3), and clean minimal (Beat 4)—creating visual rhythm while maintaining cohesion. Font choices progress from modern sans (Montserrat) → neutral (Inter) → rounded (Poppins) → display (Bebas Neue).
+
+Does this work? Say 'yes' to proceed."
 
     → User: "yes"
 
-11. **INFO** - "Perfect! I'll now create your complete promotional video. I've reasoned through each text placement: Beat 1 uses [anchor-position] because [placement-reasoning], Beat 2 uses [anchor-position] for [composition-reasoning], Beat 3 uses [anchor-position] to [visual-balance-reasoning], and Beat 4 uses [brand-anchor] and [cta-anchor] for a clean, professional brand finish. All colors and sizes are optimized for readability based on background analysis."
-
-12. **EDIT** - "1. Add video 'Video 1' at 0s on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video.
-2. At [text-timing]s on the timeline, add BlurText '[BEAT-1-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset).
+11. **EDIT** - "1. Add video 'Video 1' at 0s on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video.
+2. At [text-timing]s on the timeline, add BlurText '[BEAT-1-MESSAGE]' in [text-color], 100px 'Montserrat', bold weight, positioned at 'center', with [shadow-color] text shadow (4px offset).
 3. At [text-exit-timing]s on the timeline, fade out the '[BEAT-1-MESSAGE]' text over [duration] seconds.
 4. Add video 'Video 2' immediately after 'Video 1' on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video. Add a 'fade' transition (0.5s duration) to next on 'Video 1'.
-5. At [text-timing]s on the timeline, add SplitText '[BEAT-2-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [outline-color] text outline ([outline-width]), mode 'words', stagger [stagger-delay].
+5. At [text-timing]s on the timeline, add SplitText '[BEAT-2-MESSAGE]' in [text-color], 90px 'Inter', regular weight, positioned at 'center', with [outline-color] text outline (3px), mode 'words', stagger [stagger-delay].
 6. At [text-exit-timing]s on the timeline, slide out '[BEAT-2-MESSAGE]' upwards over [duration] seconds.
 7. Add video 'Video 3' immediately after 'Video 2' on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video. Add a 'Wipe Right' transition (0.5s duration) to next on 'Video 2'.
-8. At [text-timing]s on the timeline, add TypewriterText '[BEAT-3-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset), typingSpeed [typing-speed].
+8. At [text-timing]s on the timeline, add TypewriterText '[BEAT-3-MESSAGE]' in [text-color], 110px 'Poppins', bold weight, positioned at 'center', with [shadow-color] text shadow (5px offset) and [outline-color] text outline (2px), typingSpeed [typing-speed].
 9. At [text-exit-timing]s on the timeline, fade out '[BEAT-3-MESSAGE]' text over [duration] seconds.
 10. Add image 'promo-brand-endcard.png' immediately after 'Video 3' on the timeline. Add a 'fade' transition (0.5s duration) to next on 'Video 3'.
-11. At [text-timing]s on the timeline, add BlurText '[BRAND-NAME]' in [brand-color], [brand-size] [font-family], positioned at [brand-anchor-position].
-12. At [text-timing]s on the timeline, add BlurText '[CTA-MESSAGE]' in [cta-color], [cta-size] [font-family], positioned at [cta-anchor-position]."
+11. At [text-timing]s on the timeline, add BlurText '[BRAND-NAME]' in [brand-color], 120px 'Bebas Neue', bold weight, positioned at 'center'.
+12. At [text-timing]s on the timeline, add BlurText '[CTA-MESSAGE]' in [cta-color], 60px 'Inter', regular weight, positioned at 'bottom center'."
 
 **→ DONE**
