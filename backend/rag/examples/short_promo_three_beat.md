@@ -47,7 +47,7 @@
    
    Video 3 (Video 3): Segment A ([clip-start-time]-[clip-end-time] in source video): Lifestyle shot, [lighting-type] lighting, [color-description] ([hex-code]), [focus-description] background ([brightness-level]), [placement-area] clear. Segment B ([clip-start-time]-[clip-end-time] in source video): Close detail, clean aesthetic.
 
-6. **INFO** - "Based on my parallel analysis, I've selected the most cinematic segments that create a compelling three-beat narrative arc. These clips have excellent text placement opportunities and visual flow. Now I'll generate a clean brand end-card for the finale."
+6. **INFO** - "Based on my analysis, I've selected the most cinematic segments that create a compelling three-beat narrative arc. These clips have excellent text placement opportunities and visual flow. Now I'll generate a clean brand end-card for the finale."
 
 7. **GENERATE** - Image generation
     → content: "Generating a clean, professional brand end-card for the finale."
@@ -73,31 +73,33 @@ I'll now present the complete plan with these styling decisions applied."
 
 I'll create a cinematic four-beat structure that builds emotional engagement through craft, artistry, impact, and a strong brand finish.
 
-**Timeline Breakdown ([total-duration] seconds on the global timeline):**
+**Beat 1: The Craft**
+*   Opens with the detail shot from 'Video 1' ([color-description], [lighting-description])
+*   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video
+*   **Text Reasoning:** The background is [color-description], so I'll use [contrasting-color] for maximum readability. The message is [length-description], so I'll use [size-reasoning] sizing. The [placement-area] has clear negative space, so I'll anchor at [anchor-position] (e.g., 'bottom center', 'top center')
+*   `BlurText` '[BEAT-1-MESSAGE]' appears in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset)
+*   Text fades out before the next clip
 
-*   **[timeline-start] - [timeline-end] on timeline: The Craft.** Opens with the detail shot from 'Video 1' ([color-description], [lighting-description]).
-    *   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video.
-    *   **Text Reasoning:** The background is [color-description], so I'll use [contrasting-color] for maximum readability. The message is [length-description], so I'll use [size-reasoning] sizing. The [placement-area] has clear negative space, so I'll anchor at [anchor-position] (e.g., 'bottom-center', 'top-left').
-    *   At **[timeline-position]s on the global timeline**, `BlurText` '[BEAT-1-MESSAGE]' appears in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset) for contrast against [background-description].
-    *   At **[timeline-position]s on the global timeline**, text fades out over [duration]s.
+**Beat 2: The Artistry**
+*   Smooth 'fade' transition (0.5s) to the dynamic action from 'Video 2' ([contrast-description], visual interest)
+*   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video
+*   **Text Reasoning:** The [contrast-description] background requires [text-treatment] (outline/shadow/panel). Message length is [length-description], so [size-reasoning]. Clear space in [placement-area] means [anchor-position] anchor is optimal
+*   `SplitText` '[BEAT-2-MESSAGE]' animates word-by-word in [text-color], [text-size] [font-family], positioned at [anchor-position], with [outline-color] text outline ([outline-width])
+*   Text slides out to the top before the next clip
 
-*   **[timeline-start] - [timeline-end] on timeline: The Artistry.** Smooth 'fade' transition to the dynamic action from 'Video 2' ([contrast-description], visual interest).
-    *   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video.
-    *   **Text Reasoning:** The [contrast-description] background requires [text-treatment] (outline/shadow/panel). Message length is [length-description], so [size-reasoning]. Clear space in [placement-area] means [anchor-position] anchor is optimal.
-    *   At **[timeline-position]s on the global timeline**, `SplitText` '[BEAT-2-MESSAGE]' animates word-by-word in [text-color], [text-size] [font-family], positioned at [anchor-position], with [outline-color] text outline ([outline-width]) for maximum readability against [background-description].
-    *   At **[timeline-position]s on the global timeline**, text slides out to the top over [duration]s.
+**Beat 3: The Impact**
+*   'Wipe Right' transition (0.5s) to lifestyle moment from 'Video 3' ([time-of-day], [aesthetic-description])
+*   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video
+*   **Text Reasoning:** [lighting-description] lighting with [color-description] tones means [text-color] will provide best contrast. Short, punchy message = large sizing for impact. [placement-area] is clear, so [anchor-position] anchor creates balanced composition
+*   `TypewriterText` types '[BEAT-3-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset)
+*   Text fades out before the final brand card
 
-*   **[timeline-start] - [timeline-end] on timeline: The Impact.** 'Wipe Right' transition to lifestyle moment from 'Video 3' ([time-of-day], [aesthetic-description]).
-    *   Using clip segment from [clip-start-time]s to [clip-end-time]s in the source video.
-    *   **Text Reasoning:** [lighting-description] lighting with [color-description] tones means [text-color] will provide best contrast. Short, punchy message = large sizing for impact. [placement-area] is clear, so [anchor-position] anchor creates balanced composition.
-    *   At **[timeline-position]s on the global timeline**, `TypewriterText` types '[BEAT-3-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset) for visibility against [background-description].
-    *   At **[timeline-position]s on the global timeline**, text fades out over [duration]s.
-
-*   **[timeline-start] - [timeline-end] on timeline: The Brand.** 'Fade' transition to the 'promo-brand-endcard.png' image (full-screen branding display with clean background).
-    *   **Text Reasoning:** Clean [background-color] background provides maximum legibility. Brand name in [brand-color] at [brand-size] for prominence, CTA in [cta-color] at [cta-size] for action.
-    *   At **[timeline-position]s on the global timeline**, `BlurText` '[BRAND-NAME]' appears in [brand-color], [brand-size] [font-family], positioned at [brand-anchor-position].
-    *   At **[timeline-position]s on the global timeline**, `BlurText` '[CTA-MESSAGE]' appears in [cta-color], [cta-size] [font-family], positioned at [cta-anchor-position].
-    *   Brand image and text hold until end.
+**Beat 4: The Brand**
+*   'Fade' transition (0.5s) to the 'promo-brand-endcard.png' image (full-screen branding display with clean background)
+*   **Text Reasoning:** Clean [background-color] background provides maximum legibility. Brand name in [brand-color] at [brand-size] for prominence, CTA in [cta-color] at [cta-size] for action
+*   `BlurText` '[BRAND-NAME]' appears in [brand-color], [brand-size] [font-family], positioned at [brand-anchor-position]
+*   `BlurText` '[CTA-MESSAGE]' appears in [cta-color], [cta-size] [font-family], positioned at [cta-anchor-position]
+*   Brand image and text hold until end
 
 Does this plan capture the right tone and pacing? Say 'yes' to proceed."
 
@@ -105,17 +107,17 @@ Does this plan capture the right tone and pacing? Say 'yes' to proceed."
 
 11. **INFO** - "Perfect! I'll now create your complete promotional video. I've reasoned through each text placement: Beat 1 uses [anchor-position] because [placement-reasoning], Beat 2 uses [anchor-position] for [composition-reasoning], Beat 3 uses [anchor-position] to [visual-balance-reasoning], and Beat 4 uses [brand-anchor] and [cta-anchor] for a clean, professional brand finish. All colors and sizes are optimized for readability based on background analysis."
 
-12. **EDIT** - "1. Add video 'Video 1' at [timeline-position]s on the global timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video.
-2. At [timeline-position]s on the global timeline, add BlurText '[BEAT-1-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset).
-3. At [timeline-position]s on the global timeline, fade out the '[BEAT-1-MESSAGE]' text over [duration] seconds.
-4. Add video 'Video 2' at [timeline-position]s on the global timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video. Add a 'fade' transition to next on 'Video 1'.
-5. At [timeline-position]s on the global timeline, add SplitText '[BEAT-2-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [outline-color] text outline ([outline-width]), mode 'word', stagger [stagger-delay].
-6. At [timeline-position]s on the global timeline, slide out '[BEAT-2-MESSAGE]' upwards over [duration] seconds.
-7. Add video 'Video 3' at [timeline-position]s on the global timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video. Add a 'Wipe Right' transition to next on 'Video 2'.
-8. At [timeline-position]s on the global timeline, add TypewriterText '[BEAT-3-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset), typingSpeed [typing-speed].
-9. At [timeline-position]s on the global timeline, fade out '[BEAT-3-MESSAGE]' text over [duration] seconds.
-10. Add image 'promo-brand-endcard.png' at [timeline-position]s on the global timeline. Add a 'fade' transition to next on 'Video 3'.
-11. At [timeline-position]s on the global timeline, add BlurText '[BRAND-NAME]' in [brand-color], [brand-size] [font-family], positioned at [brand-anchor-position].
-12. At [timeline-position]s on the global timeline, add BlurText '[CTA-MESSAGE]' in [cta-color], [cta-size] [font-family], positioned at [cta-anchor-position]."
+12. **EDIT** - "1. Add video 'Video 1' at 0s on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video.
+2. At [text-timing]s on the timeline, add BlurText '[BEAT-1-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset).
+3. At [text-exit-timing]s on the timeline, fade out the '[BEAT-1-MESSAGE]' text over [duration] seconds.
+4. Add video 'Video 2' immediately after 'Video 1' on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video. Add a 'fade' transition (0.5s duration) to next on 'Video 1'.
+5. At [text-timing]s on the timeline, add SplitText '[BEAT-2-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [outline-color] text outline ([outline-width]), mode 'words', stagger [stagger-delay].
+6. At [text-exit-timing]s on the timeline, slide out '[BEAT-2-MESSAGE]' upwards over [duration] seconds.
+7. Add video 'Video 3' immediately after 'Video 2' on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video. Add a 'Wipe Right' transition (0.5s duration) to next on 'Video 2'.
+8. At [text-timing]s on the timeline, add TypewriterText '[BEAT-3-MESSAGE]' in [text-color], [text-size] [font-family], positioned at [anchor-position], with [shadow-color] text shadow ([shadow-offset] offset), typingSpeed [typing-speed].
+9. At [text-exit-timing]s on the timeline, fade out '[BEAT-3-MESSAGE]' text over [duration] seconds.
+10. Add image 'promo-brand-endcard.png' immediately after 'Video 3' on the timeline. Add a 'fade' transition (0.5s duration) to next on 'Video 3'.
+11. At [text-timing]s on the timeline, add BlurText '[BRAND-NAME]' in [brand-color], [brand-size] [font-family], positioned at [brand-anchor-position].
+12. At [text-timing]s on the timeline, add BlurText '[CTA-MESSAGE]' in [cta-color], [cta-size] [font-family], positioned at [cta-anchor-position]."
 
 **→ DONE**
