@@ -176,6 +176,152 @@ class MediaGenerationService:
             logger.error(f"Image generation failed: {e}", exc_info=True)
             raise RuntimeError(f"Image generation failed: {e}")
     
+    async def generate_logo(
+        self,
+        prompt: str,
+        user_id: str,
+        session_id: str
+    ) -> GeneratedAssetResult:
+        """
+        Generate a logo with transparent background.
+        
+        Process:
+        1. Enhance user's simple prompt with system instructions for green background
+        2. Generate image with provider
+        3. Remove green background to create transparent PNG
+        4. Upload to storage
+        
+        Args:
+            prompt: Simple user description (e.g., "coffee cup minimalistic", "flower cartoon")
+            user_id: User ID for storage isolation
+            session_id: Session ID for storage isolation
+            
+        Returns:
+            GeneratedAssetResult with transparent PNG URL and metadata
+            
+        Raises:
+            RuntimeError: If generation or processing fails
+        """
+        try:
+            logger.info(f"Generating logo for prompt: '{prompt}'")
+            
+            # Step 1: Build enhanced prompt with system instructions
+            system_instructions = """Professional logo design requirements:
+
+BACKGROUND: Pure chroma key green (#00FF00, RGB 0,255,0) - solid uniform color, no gradients or shadows
+
+POSITIONING: Logo centered, spanning 60-80% of frame, with 10-20% padding from edges
+
+DESIGN: Crisp clean edges, no blur on boundaries, no effects bleeding onto green background, clear separation from background, scalable design
+
+COMPOSITION: Logo only, professional appearance, suitable for transparent background extraction
+
+Generate logo: """
+            
+            enhanced_prompt = system_instructions + prompt
+            logger.info(f"Enhanced logo prompt length: {len(enhanced_prompt)} characters")
+            
+            # Step 2: Generate image with provider
+            from services.base.ImageGenerationProvider import ImageGenerationRequest
+            
+            request = ImageGenerationRequest(
+                prompt=enhanced_prompt,
+                aspect_ratio="1:1",  # Logos are typically square
+                sample_count=1,
+                enhance_prompt=False,  # Don't enhance, we've already added instructions
+                output_mime_type="image/png"
+            )
+            
+            response = await self.image_provider.generate_images(request)
+            
+            if not response.images:
+                logger.error("No logo image generated in response")
+                raise RuntimeError("No logo image generated")
+            
+            generated_image = response.images[0]
+            logger.info(f"Logo image generated successfully with {len(generated_image.image_bytes)} bytes")
+            
+            # Step 3: Decode image and remove green background
+            import base64
+            import numpy as np
+            
+            logger.info("Decoding image bytes...")
+            image_bytes = base64.b64decode(generated_image.image_bytes)
+            logger.info(f"Decoded {len(image_bytes)} bytes")
+            
+            img = Image.open(BytesIO(image_bytes))
+            logger.info(f"Opened image: {img.size}, mode: {img.mode}")
+            
+            # Convert to RGBA if not already
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+            
+            # Convert to numpy array for processing
+            img_np = np.array(img)
+            
+            # Create mask for green pixels (with tolerance for slight variations)
+            # Green is [0, 255, 0] in RGB
+            green_target = np.array([0, 255, 0])
+            tolerance = 30  # Allow some variation in green detection
+            
+            # Check if each pixel is close to pure green
+            diff = np.abs(img_np[..., :3].astype(int) - green_target)
+            is_green = np.all(diff < tolerance, axis=-1)
+            
+            # Create alpha channel: 0 for green pixels, 255 for others
+            alpha = (~is_green * 255).astype(np.uint8)
+            
+            # Apply alpha channel
+            img_np[..., 3] = alpha
+            
+            # Convert back to PIL Image
+            result_img = Image.fromarray(img_np, 'RGBA')
+            
+            # Save to bytes buffer
+            output_buffer = BytesIO()
+            result_img.save(output_buffer, format='PNG', optimize=True)
+            transparent_png_bytes = output_buffer.getvalue()
+            
+            logger.info(f"Green background removed. Transparent PNG size: {len(transparent_png_bytes)} bytes")
+            
+            # Step 4: Upload to cloud storage
+            asset_id = str(uuid.uuid4())
+            file_name = f"generated_logo_{asset_id}.png"
+            
+            logger.info(f"Uploading logo to storage: {file_name}")
+            upload_result = await self.storage_provider.upload_file(
+                file_data=BytesIO(transparent_png_bytes),
+                user_id=user_id,
+                session_id=session_id,
+                filename=file_name,
+                content_type="image/png"
+            )
+            
+            logger.info(f"✅ Logo generated and uploaded: {upload_result.url[:80]}...")
+            
+            # Step 5: Build result with dimensions
+            width, height = result_img.size
+            
+            # Build GCS URI for Vertex AI access
+            bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
+            gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
+            
+            return GeneratedAssetResult(
+                asset_id=asset_id,
+                content_type="logo",
+                file_path=upload_result.path,
+                file_url=upload_result.signed_url or upload_result.url,
+                gcs_uri=gcs_uri,
+                prompt=prompt,  # Return original user prompt, not enhanced
+                width=width,
+                height=height,
+                file_size=len(transparent_png_bytes)
+            )
+            
+        except Exception as e:
+            logger.error(f"Logo generation failed: {e}", exc_info=True)
+            raise RuntimeError(f"Logo generation failed: {e}")
+    
     async def generate_video(
         self,
         prompt: str,

@@ -29,15 +29,23 @@ router = APIRouter()
 @router.post(
     "/generate",
     response_model=MediaGenerationResponse,
-    summary="Generate image or video with AI",
+    summary="Generate image, video, or logo with AI",
     description="""
-    Generate images with Imagen or videos with Veo.
+    Generate images with Imagen, videos with Veo, or logos with transparent backgrounds.
     
     **Image Generation (Imagen):**
     - Synchronous operation - returns immediately with image URL
     - High quality image generation with prompt enhancement
     - Supports multiple aspect ratios (1:1, 16:9, 9:16)
     - Automatic upload to cloud storage with user/session isolation
+    
+    **Logo Generation (Imagen + Processing):**
+    - Synchronous operation - returns immediately with transparent PNG URL
+    - User provides simple prompt (e.g., "coffee cup minimalistic", "flower cartoon")
+    - System automatically adds professional logo requirements and green background
+    - Green background removed via chroma keying to create transparent PNG
+    - Always generates 1:1 aspect ratio logos
+    - Perfect for overlaying on videos and images
     
     **Video Generation (Veo):**
     - Asynchronous operation - returns operation_id to poll for status
@@ -98,10 +106,12 @@ async def generate_media(
     user_data: dict = Depends(get_current_user),
     media_service: MediaGenerationService = Depends(get_media_generation_service)
 ) -> MediaGenerationResponse:
-    """Generate image or video with AI."""
+    """Generate image, video, or logo with AI."""
     
     user_id = user_data.get("user_id")
     session_id = user_data.get("session_id")
+    
+    logger.info(f"Media generation request: content_type={request.content_type}, user={user_id}")
     
     try:
         if request.content_type == "image":
@@ -113,6 +123,35 @@ async def generate_media(
                 user_id=user_id,
                 session_id=session_id,
                 aspect_ratio=request.aspect_ratio
+            )
+            
+            return MediaGenerationResponse(
+                success=True,
+                status="completed",
+                generated_asset=GeneratedAsset(
+                    asset_id=result.asset_id,
+                    content_type=result.content_type,
+                    file_path=result.file_path,
+                    file_url=result.file_url,
+                    gcs_uri=result.gcs_uri,
+                    prompt=result.prompt,
+                    width=result.width,
+                    height=result.height,
+                    duration_seconds=result.duration_seconds,
+                    file_size=result.file_size
+                ),
+                operation_id=None,
+                error_message=None
+            )
+        
+        elif request.content_type == "logo":
+            # Logo generation (sync) - with green background removal
+            logger.info(f"Logo generation request from user {user_id}: {request.prompt[:50]}...")
+            
+            result = await media_service.generate_logo(
+                prompt=request.prompt,
+                user_id=user_id,
+                session_id=session_id
             )
             
             return MediaGenerationResponse(

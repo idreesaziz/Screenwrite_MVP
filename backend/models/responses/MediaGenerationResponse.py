@@ -8,7 +8,7 @@ class GeneratedAsset(BaseModel):
     """Metadata for a generated asset."""
     
     asset_id: str = Field(description="Unique asset identifier")
-    content_type: Literal["image", "video"] = Field(description="Type of generated content")
+    content_type: Literal["image", "video", "logo"] = Field(description="Type of generated content")
     file_path: str = Field(description="Storage path (user_id/session_id/filename)")
     file_url: str = Field(description="Public URL to access the file")
     gcs_uri: str = Field(description="GCS URI for Vertex AI access (gs://bucket/path)")

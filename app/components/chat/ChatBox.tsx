@@ -521,7 +521,7 @@ export function ChatBox({
     prompt: string,
     suggestedName: string,
     description: string,
-    contentType: 'image' | 'video' = 'image', // Add content type parameter
+    contentType: 'image' | 'video' | 'logo' = 'image', // Add logo content type
     seedImageFileName?: string, // Add seed image parameter for video generation
     generatedItemsArray?: MediaBinItem[], // Optional array to track generated items
     signal?: AbortSignal
@@ -638,7 +638,7 @@ export function ChatBox({
       
       console.log(`🎨 Generated ${contentType} asset:`, generatedAsset);
       
-      const fileExtension = contentType === 'video' ? 'mp4' : 'png';
+      const fileExtension = contentType === 'video' ? 'mp4' : 'png'; // Images and logos are both PNG
       const generatedFileName = generatedAsset.file_url.split('/').pop() || `${suggestedName}.${fileExtension}`;
       console.log(`🎨 Generated filename:`, generatedFileName);
       console.log(`🎨 Generated file URL:`, generatedAsset.file_url);

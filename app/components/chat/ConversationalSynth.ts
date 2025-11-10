@@ -54,7 +54,7 @@ export interface SynthResponse {
   question?: string; // DEPRECATED: For backward compatibility with single probe
   prompt?: string; // For generate responses - content generation prompt
   suggestedName?: string; // For generate responses - AI-chosen filename
-  content_type?: 'image' | 'video'; // For generate responses - type of content to generate
+  content_type?: 'image' | 'video' | 'logo'; // For generate responses - type of content to generate
   seedImageFileName?: string; // For generate video responses - filename of image to use as seed/reference
   query?: string; // For fetch responses - search query for stock videos
 }
@@ -387,7 +387,7 @@ Your job is to generate the next appropriate response based on the conversation 
         },
         "content_type": {
           "type": "STRING",
-          "enum": ["image", "video"]
+          "enum": ["image", "video", "logo"]
         },
         "seedImageFileName": {
           "type": "STRING"

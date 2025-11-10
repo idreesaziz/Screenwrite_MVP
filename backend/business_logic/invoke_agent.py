@@ -241,13 +241,13 @@ class AgentService:
                     },
                     "content_type": {
                         "type": "string",
-                        "enum": ["image", "video"],
-                        "description": "For generate type: type of media to generate",
+                        "enum": ["image", "video", "logo"],
+                        "description": "For generate type: type of media to generate. Use 'logo' for transparent logo generation with simple prompts like 'coffee cup minimalistic' or 'flower cartoon'",
                         "nullable": True
                     },
                     "prompt": {
                         "type": "string",
-                        "description": "For generate type: detailed generation prompt",
+                        "description": "For generate type: generation prompt. For logos, use simple descriptions (e.g., 'coffee cup minimalistic', 'tech startup modern'). System will add professional logo requirements automatically.",
                         "nullable": True
                     },
                     "suggestedName": {
@@ -368,7 +368,7 @@ class AgentService:
                 "chat": "Conversational messages requiring user input, workflow pauses",
                 "edit": "Direct editing instructions for composition changes",
                 "probe": "Media content analysis requests",
-                "generate": "Media generation requests (images: 16:9 1920x1080, videos: 8s 16:9 1920x1080)",
+                "generate": "Media generation requests (images: 16:9 1920x1080, videos: 8s 16:9 1920x1080, logos: 1:1 transparent PNG)",
                 "fetch": "Stock video search and selection requests"
             },
             "features": [
