@@ -16,6 +16,7 @@ from datetime import datetime
 from PIL import Image
 import httpx
 from io import BytesIO
+from rembg import remove, new_session
 
 from services.base.ImageGenerationProvider import ImageGenerationProvider
 from services.base.VideoGenerationProvider import (
@@ -206,15 +207,14 @@ class MediaGenerationService:
             logger.info(f"Generating logo for prompt: '{prompt}'")
             
             # Step 1: Build enhanced prompt with system instructions
+            # Note: No background color requirements needed - rembg handles any background
             system_instructions = """Professional logo design requirements:
 
-BACKGROUND: Pure chroma key green (#00FF00, RGB 0,255,0) - solid uniform color, no gradients or shadows
+DESIGN: Crisp clean edges, clear boundaries, professional appearance, scalable design, suitable for transparent background
 
-POSITIONING: Logo centered, spanning 60-80% of frame, with 10-20% padding from edges
+POSITIONING: Logo centered, spanning 60-80% of frame, with padding from edges
 
-DESIGN: Crisp clean edges, no blur on boundaries, no effects bleeding onto green background, clear separation from background, scalable design
-
-COMPOSITION: Logo only, professional appearance, suitable for transparent background extraction
+COMPOSITION: Logo only, professional quality, appropriate for branding and overlays
 
 Generate logo: """
             
@@ -241,9 +241,8 @@ Generate logo: """
             generated_image = response.images[0]
             logger.info(f"Logo image generated successfully with {len(generated_image.image_bytes)} bytes")
             
-            # Step 3: Decode image and remove green background
+            # Step 3: Decode image and remove background using rembg
             import base64
-            import numpy as np
             
             logger.info("Decoding image bytes...")
             image_bytes = base64.b64decode(generated_image.image_bytes)
@@ -252,37 +251,17 @@ Generate logo: """
             img = Image.open(BytesIO(image_bytes))
             logger.info(f"Opened image: {img.size}, mode: {img.mode}")
             
-            # Convert to RGBA if not already
-            if img.mode != 'RGBA':
-                img = img.convert('RGBA')
+            # Remove background using rembg ML model
+            logger.info("Removing background with rembg...")
+            result_img = remove(img)
+            logger.info(f"Background removed successfully. Output mode: {result_img.mode}")
             
-            # Convert to numpy array for processing
-            img_np = np.array(img)
-            
-            # Create mask for green pixels (with tolerance for slight variations)
-            # Green is [0, 255, 0] in RGB
-            green_target = np.array([0, 255, 0])
-            tolerance = 30  # Allow some variation in green detection
-            
-            # Check if each pixel is close to pure green
-            diff = np.abs(img_np[..., :3].astype(int) - green_target)
-            is_green = np.all(diff < tolerance, axis=-1)
-            
-            # Create alpha channel: 0 for green pixels, 255 for others
-            alpha = (~is_green * 255).astype(np.uint8)
-            
-            # Apply alpha channel
-            img_np[..., 3] = alpha
-            
-            # Convert back to PIL Image
-            result_img = Image.fromarray(img_np, 'RGBA')
-            
-            # Save to bytes buffer
+            # Save to bytes buffer as PNG with transparency
             output_buffer = BytesIO()
             result_img.save(output_buffer, format='PNG', optimize=True)
             transparent_png_bytes = output_buffer.getvalue()
             
-            logger.info(f"Green background removed. Transparent PNG size: {len(transparent_png_bytes)} bytes")
+            logger.info(f"Transparent PNG created. Size: {len(transparent_png_bytes)} bytes")
             
             # Step 4: Upload to cloud storage
             asset_id = str(uuid.uuid4())
