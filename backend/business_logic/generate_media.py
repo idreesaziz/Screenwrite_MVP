@@ -207,12 +207,14 @@ class MediaGenerationService:
             logger.info(f"Generating logo for prompt: '{prompt}'")
             
             # Step 1: Build enhanced prompt with system instructions
-            # Note: No background color requirements needed - rembg handles any background
+            # Note: Request solid background to help ML model separate logo from background
             system_instructions = """Professional logo design requirements:
 
-DESIGN: Crisp clean edges, clear boundaries, professional appearance, scalable design, suitable for transparent background
+BACKGROUND: Solid, uniform, consistent color background (any color) - no gradients, textures, or patterns
 
-POSITIONING: Logo centered, spanning 60-80% of frame, with padding from edges
+DESIGN: Crisp clean edges, clear boundaries, professional appearance, scalable design, high contrast with background
+
+POSITIONING: Logo centered, well-defined separation from background
 
 COMPOSITION: Logo only, professional quality, appropriate for branding and overlays
 
