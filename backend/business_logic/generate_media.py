@@ -256,6 +256,49 @@ Generate logo: """
             result_img = remove(img)
             logger.info(f"Background removed successfully. Output mode: {result_img.mode}")
             
+            # Auto-crop to remove excess transparent space while maintaining square aspect ratio
+            logger.info("Auto-cropping logo to remove excess padding...")
+            
+            # Get alpha channel and find bounding box of non-transparent pixels
+            alpha = result_img.split()[-1]
+            bbox = alpha.getbbox()
+            
+            if bbox:
+                # Calculate dimensions of logo content
+                logo_width = bbox[2] - bbox[0]
+                logo_height = bbox[3] - bbox[1]
+                
+                # Use larger dimension to maintain square aspect ratio
+                square_size = max(logo_width, logo_height)
+                
+                # Add 10% padding on each side (20% total)
+                padding_percent = 0.10
+                padding = int(square_size * padding_percent)
+                final_size = square_size + (padding * 2)
+                
+                # Calculate center point of logo
+                center_x = (bbox[0] + bbox[2]) / 2
+                center_y = (bbox[1] + bbox[3]) / 2
+                
+                # Calculate crop coordinates (centered square)
+                left = int(center_x - (final_size / 2))
+                top = int(center_y - (final_size / 2))
+                right = int(left + final_size)
+                bottom = int(top + final_size)
+                
+                # Ensure crop is within image bounds
+                img_width, img_height = result_img.size
+                left = max(0, left)
+                top = max(0, top)
+                right = min(img_width, right)
+                bottom = min(img_height, bottom)
+                
+                # Crop the image
+                result_img = result_img.crop((left, top, right, bottom))
+                logger.info(f"Logo cropped from {img.size} to {result_img.size} (removed excess padding)")
+            else:
+                logger.warning("No visible logo content found, skipping auto-crop")
+            
             # Save to bytes buffer as PNG with transparency
             output_buffer = BytesIO()
             result_img.save(output_buffer, format='PNG', optimize=True)
