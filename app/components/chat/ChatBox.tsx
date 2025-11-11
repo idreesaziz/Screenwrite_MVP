@@ -521,7 +521,7 @@ export function ChatBox({
     prompt: string,
     suggestedName: string,
     description: string,
-    contentType: 'image' | 'video' = 'image', // Add content type parameter
+    contentType: 'image' | 'video' | 'logo' = 'image', // Add logo content type
     seedImageFileName?: string, // Add seed image parameter for video generation
     generatedItemsArray?: MediaBinItem[], // Optional array to track generated items
     signal?: AbortSignal
@@ -638,7 +638,7 @@ export function ChatBox({
       
       console.log(`🎨 Generated ${contentType} asset:`, generatedAsset);
       
-      const fileExtension = contentType === 'video' ? 'mp4' : 'png';
+      const fileExtension = contentType === 'video' ? 'mp4' : 'png'; // Images and logos are both PNG
       const generatedFileName = generatedAsset.file_url.split('/').pop() || `${suggestedName}.${fileExtension}`;
       console.log(`🎨 Generated filename:`, generatedFileName);
       console.log(`🎨 Generated file URL:`, generatedAsset.file_url);
@@ -1109,10 +1109,14 @@ export function ChatBox({
       return [analyzingMessage, ...probeResults];
       
     } else if (synthResponse.type === 'generate') {
-      // Generate request - create image or video
+      // Generate request - create image, video, or logo
       console.log("🎨 Executing generation:", synthResponse.prompt, synthResponse.suggestedName);
 
-      const contentTypeText = synthResponse.content_type === 'video' ? 'video' : 'image';
+      const contentTypeText = synthResponse.content_type === 'video' 
+        ? 'video' 
+        : synthResponse.content_type === 'logo' 
+          ? 'logo' 
+          : 'image';
 
       // 1) Add a concise assistant decision message that WILL be included in conversation history
       //    This helps the agent see its own prior action on the next pass and avoid re-generating.

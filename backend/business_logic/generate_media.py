@@ -16,6 +16,7 @@ from datetime import datetime
 from PIL import Image
 import httpx
 from io import BytesIO
+from rembg import remove, new_session
 
 from services.base.ImageGenerationProvider import ImageGenerationProvider
 from services.base.VideoGenerationProvider import (
@@ -175,6 +176,175 @@ class MediaGenerationService:
         except Exception as e:
             logger.error(f"Image generation failed: {e}", exc_info=True)
             raise RuntimeError(f"Image generation failed: {e}")
+    
+    async def generate_logo(
+        self,
+        prompt: str,
+        user_id: str,
+        session_id: str
+    ) -> GeneratedAssetResult:
+        """
+        Generate a logo with transparent background.
+        
+        Process:
+        1. Enhance user's simple prompt with system instructions for green background
+        2. Generate image with provider
+        3. Remove green background to create transparent PNG
+        4. Upload to storage
+        
+        Args:
+            prompt: Simple user description (e.g., "coffee cup minimalistic", "flower cartoon")
+            user_id: User ID for storage isolation
+            session_id: Session ID for storage isolation
+            
+        Returns:
+            GeneratedAssetResult with transparent PNG URL and metadata
+            
+        Raises:
+            RuntimeError: If generation or processing fails
+        """
+        try:
+            logger.info(f"Generating logo for prompt: '{prompt}'")
+            
+            # Step 1: Build enhanced prompt with system instructions
+            # Note: Request solid background to help ML model separate logo from background
+            system_instructions = """Professional logo design requirements:
+
+BACKGROUND: Solid, uniform, consistent color background (any color) - no gradients, textures, or patterns
+
+DESIGN: Crisp clean edges, clear boundaries, professional appearance, scalable design, high contrast with background
+
+POSITIONING: Logo centered, well-defined separation from background
+
+COMPOSITION: Logo only, professional quality, appropriate for branding and overlays
+
+Generate logo: """
+            
+            enhanced_prompt = system_instructions + prompt
+            logger.info(f"Enhanced logo prompt length: {len(enhanced_prompt)} characters")
+            
+            # Step 2: Generate image with provider
+            from services.base.ImageGenerationProvider import ImageGenerationRequest
+            
+            request = ImageGenerationRequest(
+                prompt=enhanced_prompt,
+                aspect_ratio="1:1",  # Logos are typically square
+                sample_count=1,
+                enhance_prompt=False,  # Don't enhance, we've already added instructions
+                output_mime_type="image/png"
+            )
+            
+            response = await self.image_provider.generate_images(request)
+            
+            if not response.images:
+                logger.error("No logo image generated in response")
+                raise RuntimeError("No logo image generated")
+            
+            generated_image = response.images[0]
+            logger.info(f"Logo image generated successfully with {len(generated_image.image_bytes)} bytes")
+            
+            # Step 3: Decode image and remove background using rembg
+            import base64
+            
+            logger.info("Decoding image bytes...")
+            image_bytes = base64.b64decode(generated_image.image_bytes)
+            logger.info(f"Decoded {len(image_bytes)} bytes")
+            
+            img = Image.open(BytesIO(image_bytes))
+            logger.info(f"Opened image: {img.size}, mode: {img.mode}")
+            
+            # Remove background using rembg ML model
+            logger.info("Removing background with rembg...")
+            result_img = remove(img)
+            logger.info(f"Background removed successfully. Output mode: {result_img.mode}")
+            
+            # Auto-crop to remove excess transparent space while maintaining square aspect ratio
+            logger.info("Auto-cropping logo to remove excess padding...")
+            
+            # Get alpha channel and find bounding box of non-transparent pixels
+            alpha = result_img.split()[-1]
+            bbox = alpha.getbbox()
+            
+            if bbox:
+                # Calculate dimensions of logo content
+                logo_width = bbox[2] - bbox[0]
+                logo_height = bbox[3] - bbox[1]
+                
+                # Use larger dimension to maintain square aspect ratio
+                square_size = max(logo_width, logo_height)
+                
+                # Add 10% padding on each side (20% total)
+                padding_percent = 0.10
+                padding = int(square_size * padding_percent)
+                final_size = square_size + (padding * 2)
+                
+                # Calculate center point of logo
+                center_x = (bbox[0] + bbox[2]) / 2
+                center_y = (bbox[1] + bbox[3]) / 2
+                
+                # Calculate crop coordinates (centered square)
+                left = int(center_x - (final_size / 2))
+                top = int(center_y - (final_size / 2))
+                right = int(left + final_size)
+                bottom = int(top + final_size)
+                
+                # Ensure crop is within image bounds
+                img_width, img_height = result_img.size
+                left = max(0, left)
+                top = max(0, top)
+                right = min(img_width, right)
+                bottom = min(img_height, bottom)
+                
+                # Crop the image
+                result_img = result_img.crop((left, top, right, bottom))
+                logger.info(f"Logo cropped from {img.size} to {result_img.size} (removed excess padding)")
+            else:
+                logger.warning("No visible logo content found, skipping auto-crop")
+            
+            # Save to bytes buffer as PNG with transparency
+            output_buffer = BytesIO()
+            result_img.save(output_buffer, format='PNG', optimize=True)
+            transparent_png_bytes = output_buffer.getvalue()
+            
+            logger.info(f"Transparent PNG created. Size: {len(transparent_png_bytes)} bytes")
+            
+            # Step 4: Upload to cloud storage
+            asset_id = str(uuid.uuid4())
+            file_name = f"generated_logo_{asset_id}.png"
+            
+            logger.info(f"Uploading logo to storage: {file_name}")
+            upload_result = await self.storage_provider.upload_file(
+                file_data=BytesIO(transparent_png_bytes),
+                user_id=user_id,
+                session_id=session_id,
+                filename=file_name,
+                content_type="image/png"
+            )
+            
+            logger.info(f"✅ Logo generated and uploaded: {upload_result.url[:80]}...")
+            
+            # Step 5: Build result with dimensions
+            width, height = result_img.size
+            
+            # Build GCS URI for Vertex AI access
+            bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
+            gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
+            
+            return GeneratedAssetResult(
+                asset_id=asset_id,
+                content_type="logo",
+                file_path=upload_result.path,
+                file_url=upload_result.signed_url or upload_result.url,
+                gcs_uri=gcs_uri,
+                prompt=prompt,  # Return original user prompt, not enhanced
+                width=width,
+                height=height,
+                file_size=len(transparent_png_bytes)
+            )
+            
+        except Exception as e:
+            logger.error(f"Logo generation failed: {e}", exc_info=True)
+            raise RuntimeError(f"Logo generation failed: {e}")
     
     async def generate_video(
         self,

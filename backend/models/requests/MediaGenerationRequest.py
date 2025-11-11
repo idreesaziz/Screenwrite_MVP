@@ -5,9 +5,9 @@ from typing import Optional, Literal
 
 
 class MediaGenerationRequest(BaseModel):
-    """Request for generating image or video content."""
+    """Request for generating image, video, or logo content."""
     
-    content_type: Literal["image", "video"] = Field(
+    content_type: Literal["image", "video", "logo"] = Field(
         description="Type of content to generate"
     )
     
