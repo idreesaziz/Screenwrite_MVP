@@ -1109,10 +1109,14 @@ export function ChatBox({
       return [analyzingMessage, ...probeResults];
       
     } else if (synthResponse.type === 'generate') {
-      // Generate request - create image or video
+      // Generate request - create image, video, or logo
       console.log("🎨 Executing generation:", synthResponse.prompt, synthResponse.suggestedName);
 
-      const contentTypeText = synthResponse.content_type === 'video' ? 'video' : 'image';
+      const contentTypeText = synthResponse.content_type === 'video' 
+        ? 'video' 
+        : synthResponse.content_type === 'logo' 
+          ? 'logo' 
+          : 'image';
 
       // 1) Add a concise assistant decision message that WILL be included in conversation history
       //    This helps the agent see its own prior action on the next pass and avoid re-generating.
