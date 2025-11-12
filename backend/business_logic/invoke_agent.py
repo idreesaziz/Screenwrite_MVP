@@ -241,13 +241,13 @@ class AgentService:
                     },
                     "content_type": {
                         "type": "string",
-                        "enum": ["image", "video", "logo"],
-                        "description": "For generate type: type of media to generate. Use 'logo' for transparent logo generation with simple prompts like 'coffee cup minimalistic' or 'flower cartoon'",
+                        "enum": ["image", "video", "logo", "audio"],
+                        "description": "For generate type: type of media to generate. Use 'logo' for transparent logos with simple prompts, 'audio' for voice-over narration with text scripts",
                         "nullable": True
                     },
                     "prompt": {
                         "type": "string",
-                        "description": "For generate type: generation prompt. For logos, use simple descriptions (e.g., 'coffee cup minimalistic', 'tech startup modern'). System will add professional logo requirements automatically.",
+                        "description": "For generate type: generation prompt. For images/videos, use detailed descriptions. For logos, use simple 2-5 word descriptions. For audio, provide the complete text script to be spoken.",
                         "nullable": True
                     },
                     "suggestedName": {
@@ -258,6 +258,11 @@ class AgentService:
                     "seedImageFileName": {
                         "type": "string",
                         "description": "For video generation: optional seed image filename from media library",
+                        "nullable": True
+                    },
+                    "voice_settings": {
+                        "type": "object",
+                        "description": "For audio generation: voice configuration using Gemini 2.5 Pro TTS. voice_id: Gemini voice name like 'Aoede' (female, warm), 'Charon' (male, professional), 'Kore' (female, versatile). language_code: e.g., 'en-US'. style_prompt: Optional delivery style like 'Speak dramatically with urgency', 'Whisper quietly [whispering]', 'Sound excited and energetic'. Optional: speaking_rate (0.25-4.0), pitch (-20 to 20). Example: {\"voice_id\": \"Aoede\", \"language_code\": \"en-US\", \"style_prompt\": \"Speak with confidence and authority\"}",
                         "nullable": True
                     },
                     "query": {
@@ -368,7 +373,7 @@ class AgentService:
                 "chat": "Conversational messages requiring user input, workflow pauses",
                 "edit": "Direct editing instructions for composition changes",
                 "probe": "Media content analysis requests",
-                "generate": "Media generation requests (images: 16:9 1920x1080, videos: 8s 16:9 1920x1080, logos: 1:1 transparent PNG)",
+                "generate": "Media generation requests (images: 16:9 1920x1080, videos: 8s 16:9 1920x1080, logos: 1:1 transparent PNG, audio: voice-over narration)",
                 "fetch": "Stock video search and selection requests"
             },
             "features": [

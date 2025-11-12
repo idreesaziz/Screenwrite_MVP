@@ -52,9 +52,15 @@ export interface SynthResponse {
   files?: ProbeFile[]; // For probe responses - array of media files to analyze (images, videos, audio, URLs)
   fileName?: string; // DEPRECATED: For backward compatibility with single probe
   question?: string; // DEPRECATED: For backward compatibility with single probe
-  prompt?: string; // For generate responses - content generation prompt
+  prompt?: string; // For generate responses - content generation prompt/script
   suggestedName?: string; // For generate responses - AI-chosen filename
-  content_type?: 'image' | 'video' | 'logo'; // For generate responses - type of content to generate
+  content_type?: 'image' | 'video' | 'logo' | 'audio'; // For generate responses - type of content to generate
+  voice_settings?: { // For audio generation - voice configuration
+    voice_id?: string;
+    language_code?: string;
+    speaking_rate?: number;
+    pitch?: number;
+  };
   seedImageFileName?: string; // For generate video responses - filename of image to use as seed/reference
   query?: string; // For fetch responses - search query for stock videos
 }

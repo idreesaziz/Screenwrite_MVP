@@ -15,6 +15,7 @@ from services.base.ChatProvider import ChatProvider
 from services.base.MediaProvider import MediaProvider
 from services.base.ImageGenerationProvider import ImageGenerationProvider
 from services.base.VideoGenerationProvider import VideoGenerationProvider
+from services.base.VoiceGenerationProvider import VoiceGenerationProvider
 from services.google.GeminiMediaAnalysisProvider import GeminiMediaAnalysisProvider
 from services.google.GCStorageProvider import GCStorageProvider
 from services.google.GeminiChatProvider import GeminiChatProvider
@@ -23,6 +24,7 @@ from services.openai.OpenAIChatProvider import OpenAIChatProvider
 from services.pexels.PexelsMediaProvider import PexelsMediaProvider
 from services.google.ImagenGenerationProvider import ImagenGenerationProvider
 from services.google.VEOGenerationProvider import VEOGenerationProvider
+from services.google.GoogleTTSProvider import GoogleTTSProvider
 
 
 @lru_cache()
@@ -274,6 +276,22 @@ def get_video_generation_provider() -> VideoGenerationProvider:
 
 
 @lru_cache()
+def get_voice_generation_provider() -> VoiceGenerationProvider:
+    """
+    Factory function for VoiceGenerationProvider.
+    
+    Returns a singleton instance of the configured voice generation provider.
+    Uses @lru_cache() to ensure only one instance is created.
+    
+    Currently returns GoogleTTSProvider (Google Cloud Text-to-Speech).
+    
+    Returns:
+        VoiceGenerationProvider instance (GoogleTTSProvider)
+    """
+    return GoogleTTSProvider()
+
+
+@lru_cache()
 def get_media_generation_service():
     """
     Factory function for MediaGenerationService.
@@ -289,6 +307,7 @@ def get_media_generation_service():
     return MediaGenerationService(
         image_provider=get_image_generation_provider(),
         video_provider=get_video_generation_provider(),
+        voice_provider=get_voice_generation_provider(),
         storage_provider=get_storage_provider()
     )
 

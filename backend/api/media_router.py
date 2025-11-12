@@ -172,6 +172,48 @@ async def generate_media(
                 operation_id=None,
                 error_message=None
             )
+        
+        elif request.content_type == "audio":
+            # Voice-over generation (sync)
+            logger.info(f"Voice-over generation request from user {user_id}: {len(request.prompt)} chars")
+            
+            # Extract voice settings
+            voice_settings = request.voice_settings or {}
+            voice_id = voice_settings.get("voice_id", "Aoede")  # Default to Gemini voice
+            language_code = voice_settings.get("language_code", "en-US")
+            style_prompt = voice_settings.get("style_prompt", None)  # Optional custom style
+            speaking_rate = voice_settings.get("speaking_rate", 1.0)
+            pitch = voice_settings.get("pitch", 0.0)
+            
+            result = await media_service.generate_voice(
+                text=request.prompt,
+                user_id=user_id,
+                session_id=session_id,
+                voice_id=voice_id,
+                language_code=language_code,
+                style_prompt=style_prompt,
+                speaking_rate=speaking_rate,
+                pitch=pitch
+            )
+            
+            return MediaGenerationResponse(
+                success=True,
+                status="completed",
+                generated_asset=GeneratedAsset(
+                    asset_id=result.asset_id,
+                    content_type=result.content_type,
+                    file_path=result.file_path,
+                    file_url=result.file_url,
+                    gcs_uri=result.gcs_uri,
+                    prompt=result.prompt,
+                    width=result.width,
+                    height=result.height,
+                    duration_seconds=result.duration_seconds,  # CRITICAL for timeline
+                    file_size=result.file_size
+                ),
+                operation_id=None,
+                error_message=None
+            )
             
         elif request.content_type == "video":
             # Video generation (async)

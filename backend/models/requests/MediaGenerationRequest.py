@@ -1,20 +1,20 @@
 """Request models for media generation endpoints."""
 
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict, Any
 
 
 class MediaGenerationRequest(BaseModel):
-    """Request for generating image, video, or logo content."""
+    """Request for generating image, video, logo, or audio content."""
     
-    content_type: Literal["image", "video", "logo"] = Field(
+    content_type: Literal["image", "video", "logo", "audio"] = Field(
         description="Type of content to generate"
     )
     
     prompt: str = Field(
-        description="Text description of content to generate",
+        description="Text description/script for content to generate",
         min_length=1,
-        max_length=2000
+        max_length=5000  # Increased for voice-over scripts
     )
     
     negative_prompt: Optional[str] = Field(
@@ -25,7 +25,12 @@ class MediaGenerationRequest(BaseModel):
     
     aspect_ratio: str = Field(
         default="16:9",
-        description="Content aspect ratio ('16:9', '9:16')"
+        description="Content aspect ratio ('16:9', '9:16') - not applicable for audio"
+    )
+    
+    voice_settings: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Voice generation settings (audio only): voice_id, language_code, style_prompt, speaking_rate, pitch"
     )
     
     resolution: str = Field(

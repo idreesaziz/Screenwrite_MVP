@@ -1,9 +1,11 @@
 """
-Business logic for AI-powered media generation (images and videos).
+Business logic for AI-powered media generation (images, videos, logos, and voice-overs).
 
 Handles:
 - Image generation with Imagen (sync)
 - Video generation with Veo (async with polling)
+- Logo generation with transparent backgrounds (sync)
+- Voice-over generation with Google TTS (sync)
 - Cloud storage upload
 - Operation tracking for async video generation
 """
@@ -22,6 +24,10 @@ from services.base.ImageGenerationProvider import ImageGenerationProvider
 from services.base.VideoGenerationProvider import (
     VideoGenerationProvider,
     VideoGenerationOperation
+)
+from services.base.VoiceGenerationProvider import (
+    VoiceGenerationProvider,
+    VoiceGenerationRequest
 )
 from services.base.StorageProvider import StorageProvider
 
@@ -58,17 +64,20 @@ class GeneratedAssetResult:
 
 class MediaGenerationService:
     """
-    Service for generating images and videos with AI.
+    Service for generating images, videos, logos, and voice-overs with AI.
     
     Workflow:
     - Images: Generate → Upload to GCS → Return URL (sync)
     - Videos: Start generation → Return operation_id → Poll status → Download → Upload → Return URL
+    - Logos: Generate → Remove background → Auto-crop → Upload → Return URL (sync)
+    - Voice-overs: Generate → Upload to GCS → Return URL + duration (sync)
     """
     
     def __init__(
         self,
         image_provider: ImageGenerationProvider,
         video_provider: VideoGenerationProvider,
+        voice_provider: VoiceGenerationProvider,
         storage_provider: StorageProvider
     ):
         """
@@ -77,10 +86,12 @@ class MediaGenerationService:
         Args:
             image_provider: Provider for image generation (Imagen)
             video_provider: Provider for video generation (Veo)
+            voice_provider: Provider for voice/speech generation (Google TTS)
             storage_provider: Provider for cloud storage (GCS)
         """
         self.image_provider = image_provider
         self.video_provider = video_provider
+        self.voice_provider = voice_provider
         self.storage_provider = storage_provider
         
         # Track active video generation operations
@@ -524,3 +535,93 @@ Generate logo: """
             logger.error(f"Error checking video status: {e}", exc_info=True)
             # Don't delete operation on transient errors
             return ("failed", None, str(e))
+    
+    async def generate_voice(
+        self,
+        text: str,
+        user_id: str,
+        session_id: str,
+        voice_id: str = "Aoede",  # Gemini 2.5 Pro TTS voice (warm female, natural quality)
+        language_code: str = "en-US",
+        style_prompt: Optional[str] = None,  # Optional custom style prompt (e.g., "Speak dramatically")
+        speaking_rate: float = 1.0,
+        pitch: float = 0.0
+    ) -> GeneratedAssetResult:
+        """
+        Generate voice-over/speech from text script using Gemini 2.5 Pro TTS.
+        
+        Workflow:
+        1. Generate audio via Gemini TTS with prompt-based style control
+        2. Upload to cloud storage
+        3. Return URL with duration metadata (critical for timeline placement)
+        
+        Args:
+            text: Script text to convert to speech
+            user_id: User ID for storage isolation
+            session_id: Session ID for storage isolation
+            voice_id: Gemini voice name (e.g., "Aoede", "Charon", "Kore")
+            language_code: BCP-47 language code (e.g., "en-US")
+            style_prompt: Optional delivery style (e.g., "Speak dramatically with urgency", "[whispering]")
+                          If None, uses natural conversational tone
+            speaking_rate: Speech speed (0.25-4.0, default 1.0)
+            pitch: Voice pitch (-20.0 to 20.0, default 0.0)
+            
+        Returns:
+            GeneratedAssetResult with audio URL and duration
+            
+        Raises:
+            RuntimeError: If voice generation or upload fails
+        """
+        try:
+            logger.info(f"Generating voice-over: {len(text)} characters, voice={voice_id}")
+            
+            # Step 1: Generate audio via TTS provider
+            request = VoiceGenerationRequest(
+                text=text,
+                voice_id=voice_id,
+                language_code=language_code,
+                style_prompt=style_prompt,
+                speaking_rate=speaking_rate,
+                pitch=pitch,
+                audio_encoding="MP3",
+                sample_rate_hertz=24000
+            )
+            
+            result = await self.voice_provider.generate_voice(request)
+            logger.info(f"Voice generated: {result.duration_seconds:.2f}s, {len(result.audio_bytes)} bytes")
+            
+            # Step 2: Upload to cloud storage
+            asset_id = str(uuid.uuid4())
+            file_name = f"voiceover_{asset_id}.mp3"
+            
+            logger.info(f"Uploading voice-over to storage: {file_name}")
+            upload_result = await self.storage_provider.upload_file(
+                file_data=BytesIO(result.audio_bytes),
+                user_id=user_id,
+                session_id=session_id,
+                filename=file_name,
+                content_type="audio/mpeg"
+            )
+            
+            logger.info(f"✅ Voice-over generated and uploaded: {upload_result.url[:80]}...")
+            
+            # Step 3: Build result with duration (CRITICAL for timeline placement)
+            bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
+            gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
+            
+            return GeneratedAssetResult(
+                asset_id=asset_id,
+                content_type="audio",
+                file_path=upload_result.path,
+                file_url=upload_result.signed_url or upload_result.url,
+                gcs_uri=gcs_uri,
+                prompt=text,
+                width=0,  # Audio has no dimensions
+                height=0,
+                file_size=len(result.audio_bytes),
+                duration_seconds=result.duration_seconds  # Essential for timeline!
+            )
+            
+        except Exception as e:
+            logger.error(f"Voice generation failed: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to generate voice-over: {str(e)}")

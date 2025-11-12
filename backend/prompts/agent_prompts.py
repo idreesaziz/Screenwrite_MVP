@@ -101,11 +101,13 @@ You respond with JSON containing a "type" field. You are agentic and autonomousl
 
 4. **"generate"** - Create new media via AI (workflow continues automatically after execution)
    - Use when: Plan requires generated content OR user directly requests generation
-   - **Three content types:**
+   - **Four content types:**
      * **image**: 16:9 general images (backgrounds, scenes, etc.)
      * **video**: 8-second videos with optional seed image
      * **logo**: 1:1 transparent PNG logos (use simple prompts like "coffee cup minimalistic", "flower cartoon")
+     * **audio**: Voice-over narration from text scripts with Gemini 2.5 Pro TTS (highest quality, natural delivery)
    - For logos: Keep prompts SHORT and descriptive (2-5 words). System automatically handles transparency, centering, and professional styling.
+   - For audio: Provide the complete text script to be spoken. Optionally customize delivery style using style_prompt for dramatic, excited, whispered, or other tones. Default is natural conversational delivery with emotion.
    - Agent autonomously generates required assets
    - Workflow continues automatically after generation completes
    - JSON structure (image):
@@ -139,10 +141,37 @@ You respond with JSON containing a "type" field. You are agentic and autonomousl
        "seedImageFileName": "smartphone-angle.png"
      }
      ```
+   - JSON structure (audio - Gemini 2.5 Pro TTS):
+     ```json
+     {
+       "type": "generate",
+       "content": "I will generate voice-over narration.",
+       "content_type": "audio",
+       "prompt": "Welcome to our product showcase. Today we're excited to introduce our latest innovation.",
+       "suggestedName": "intro-narration",
+       "voice_settings": {
+         "voice_id": "Aoede",
+         "language_code": "en-US",
+         "style_prompt": "Speak with confidence and authority",
+         "speaking_rate": 1.0,
+         "pitch": 0.0
+       }
+     }
+     ```
    - Required fields: type, content, content_type, prompt, suggestedName
-   - Optional fields: seedImageFileName (for video generation only)
+   - Optional fields: seedImageFileName (for video only), voice_settings (for audio only)
    - `content` = user-facing announcement message
-   - `prompt` = detailed AI generation instruction (except logos: keep simple)
+   - `prompt` = For audio: exact text script to be spoken (Gemini TTS uses natural, conversational delivery with emotion)
+   - `voice_settings.voice_id` = Gemini voice name: "Aoede" (female, warm), "Charon" (male, professional), "Kore" (female, versatile), etc.
+   - `voice_settings.style_prompt` = OPTIONAL delivery style guidance:
+     * Dramatic: "Speak dramatically with urgency and impact"
+     * Excited: "Sound excited and energetic [enthusiastic]"
+     * Whispered: "Whisper quietly [whispering] with intimate tone"
+     * Authoritative: "Speak with confidence and authority"
+     * Calm: "Speak calmly and soothingly"
+     * Storytelling: "Read with emotion and expression like a narrator"
+     * Use markup tags: [laughing], [sigh], [sarcasm], [extremely fast], [short pause]
+     * If omitted, uses default natural conversational tone
 
 5. **"fetch"** - Search stock footage (workflow continues automatically after execution)
    - Use when: Plan requires stock video OR user directly requests stock footage
@@ -208,8 +237,10 @@ Do we have all required assets?
     │    │   └─ User has library file → PROBE it
     │    ├─ Need image?
     │    │   └─ Always GENERATE (no stock images)
-    │    └─ Need logo?
-    │         └─ Always GENERATE with content_type: "logo" (transparent PNG, use simple prompts)
+    │    ├─ Need logo?
+    │    │   └─ Always GENERATE with content_type: "logo" (transparent PNG, use simple prompts)
+    │    └─ Need voice-over/narration?
+    │         └─ Always GENERATE with content_type: "audio" (provide complete text script)
     └─ YES → Continue
          ↓
 Do we need to know what's IN the media? (colors, composition, timing, events)

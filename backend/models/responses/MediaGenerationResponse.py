@@ -8,14 +8,14 @@ class GeneratedAsset(BaseModel):
     """Metadata for a generated asset."""
     
     asset_id: str = Field(description="Unique asset identifier")
-    content_type: Literal["image", "video", "logo"] = Field(description="Type of generated content")
+    content_type: Literal["image", "video", "logo", "audio"] = Field(description="Type of generated content")
     file_path: str = Field(description="Storage path (user_id/session_id/filename)")
     file_url: str = Field(description="Public URL to access the file")
     gcs_uri: str = Field(description="GCS URI for Vertex AI access (gs://bucket/path)")
-    prompt: str = Field(description="Generation prompt used")
-    width: int = Field(description="Asset width in pixels")
-    height: int = Field(description="Asset height in pixels")
-    duration_seconds: Optional[float] = Field(default=None, description="Video duration (video only)")
+    prompt: str = Field(description="Generation prompt/script used")
+    width: int = Field(description="Asset width in pixels (0 for audio)")
+    height: int = Field(description="Asset height in pixels (0 for audio)")
+    duration_seconds: Optional[float] = Field(default=None, description="Duration in seconds (video/audio)")
     file_size: int = Field(description="File size in bytes")
 
 

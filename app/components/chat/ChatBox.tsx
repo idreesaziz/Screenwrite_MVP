@@ -521,12 +521,13 @@ export function ChatBox({
     prompt: string,
     suggestedName: string,
     description: string,
-    contentType: 'image' | 'video' | 'logo' = 'image', // Add logo content type
+    contentType: 'image' | 'video' | 'logo' | 'audio' = 'image', // Add audio content type
     seedImageFileName?: string, // Add seed image parameter for video generation
+    voiceSettings?: { voice_id?: string; language_code?: string; speaking_rate?: number; pitch?: number }, // Voice settings for audio
     generatedItemsArray?: MediaBinItem[], // Optional array to track generated items
     signal?: AbortSignal
   ): Promise<{ messages: Message[], newMediaItem: MediaBinItem | null }> => {
-    console.log("🎨 Executing generation request:", { prompt, suggestedName, description, contentType, seedImageFileName });
+    console.log("🎨 Executing generation request:", { prompt, suggestedName, description, contentType, seedImageFileName, voiceSettings });
     
     try {
       // Call the backend generation API for both image and video
@@ -561,6 +562,11 @@ export function ChatBox({
             console.warn(`📋 Available media:`, mediaBinItems.map(item => item.name));
           }
         }
+      }
+
+      // Add audio-specific parameters
+      if (contentType === 'audio' && voiceSettings) {
+        requestBody.voice_settings = voiceSettings;
       }
 
       const headers = await getAuthHeaders();
@@ -664,13 +670,13 @@ export function ChatBox({
         id: generateUUID(),
         name,
         title,
-        mediaType: contentType === 'video' ? "video" : "image",
+        mediaType: contentType === 'video' ? "video" : contentType === 'audio' ? "audio" : "image",
         mediaUrlLocal: null, // Not a blob URL
         mediaUrlRemote: mediaUrl, // Use absolute URL
         gcsUri: generatedAsset.gcs_uri, // GCS URI for Vertex AI analysis
         media_width: generatedAsset.width,
         media_height: generatedAsset.height,
-        durationInSeconds: contentType === 'video' ? (generatedAsset.duration_seconds || 8.0) : 0,
+        durationInSeconds: (contentType === 'video' || contentType === 'audio') ? (generatedAsset.duration_seconds || 8.0) : 0,
         text: null,
         isUploading: false,
         uploadProgress: null,
@@ -1109,14 +1115,16 @@ export function ChatBox({
       return [analyzingMessage, ...probeResults];
       
     } else if (synthResponse.type === 'generate') {
-      // Generate request - create image, video, or logo
+      // Generate request - create image, video, logo, or audio
       console.log("🎨 Executing generation:", synthResponse.prompt, synthResponse.suggestedName);
 
       const contentTypeText = synthResponse.content_type === 'video' 
         ? 'video' 
         : synthResponse.content_type === 'logo' 
           ? 'logo' 
-          : 'image';
+          : synthResponse.content_type === 'audio'
+            ? 'audio'
+            : 'image';
 
       // 1) Add a concise assistant decision message that WILL be included in conversation history
       //    This helps the agent see its own prior action on the next pass and avoid re-generating.
@@ -1151,6 +1159,7 @@ export function ChatBox({
         synthResponse.content,
         synthResponse.content_type || 'image',
         synthResponse.seedImageFileName,
+        synthResponse.voice_settings,
         undefined,
         signal
       );
@@ -1870,6 +1879,8 @@ export function ChatBox({
                         <FileVideo className="h-3 w-3 text-muted-foreground" />
                       ) : item.mediaType === "image" ? (
                         <FileImage className="h-3 w-3 text-muted-foreground" />
+                      ) : item.mediaType === "audio" ? (
+                        <Music className="h-3 w-3 text-muted-foreground" />
                       ) : (
                         <Type className="h-3 w-3 text-muted-foreground" />
                       )}
@@ -2004,6 +2015,8 @@ export function ChatBox({
                         <FileVideo className="h-2 w-2 text-muted-foreground" />
                       ) : item.mediaType === "image" ? (
                         <FileImage className="h-2 w-2 text-muted-foreground" />
+                      ) : item.mediaType === "audio" ? (
+                        <Music className="h-2 w-2 text-muted-foreground" />
                       ) : (
                         <Type className="h-2 w-2 text-muted-foreground" />
                       )}
