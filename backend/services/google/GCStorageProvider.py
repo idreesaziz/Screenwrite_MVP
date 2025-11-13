@@ -145,10 +145,43 @@ class GCStorageProvider(StorageProvider):
                 self._bucket_cache = bucket
                 return bucket
     
-    def _generate_blob_path(self, user_id: str, session_id: str, filename: str) -> str:
-        """Generate unique blob path with UUID."""
+    def _generate_blob_path(self, user_id: str, session_id: str, filename: str) -> tuple[str, str]:
+        """
+        Generate unique blob path with UUID and sanitized filename.
+        
+        Returns:
+            tuple: (full_blob_path, sanitized_filename)
+        """
+        import re
+        from pathlib import Path
+        
         file_uuid = str(uuid.uuid4())
-        return f"{user_id}/{session_id}/{file_uuid}_{filename}"
+        
+        # Extract extension
+        file_path = Path(filename)
+        extension = file_path.suffix  # includes the dot, e.g., ".mp4"
+        name_without_ext = file_path.stem
+        
+        # Sanitize the filename: replace special characters with underscores
+        # Allow only alphanumeric, hyphens, underscores
+        sanitized_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name_without_ext)
+        
+        # Remove consecutive underscores
+        sanitized_name = re.sub(r'_+', '_', sanitized_name)
+        
+        # Remove leading/trailing underscores
+        sanitized_name = sanitized_name.strip('_')
+        
+        # If name is empty after sanitization, use 'file'
+        if not sanitized_name:
+            sanitized_name = 'file'
+        
+        # Construct final filename: uuid_sanitizedname.ext
+        sanitized_filename = f"{sanitized_name}{extension}"
+        full_blob_path = f"{user_id}/{session_id}/{file_uuid}_{sanitized_filename}"
+        
+        return full_blob_path, sanitized_filename
+
     
     async def upload_file(
         self,
@@ -163,7 +196,7 @@ class GCStorageProvider(StorageProvider):
         """Upload file from binary stream."""
         def _sync_upload():
             bucket = self._get_or_create_bucket()
-            blob_path = self._generate_blob_path(user_id, session_id, filename)
+            blob_path, sanitized_filename = self._generate_blob_path(user_id, session_id, filename)
             blob = bucket.blob(blob_path)
             
             if content_type:
@@ -195,7 +228,8 @@ class GCStorageProvider(StorageProvider):
                 signed_url=signed_url,
                 size=size,
                 content_type=content_type,
-                metadata=metadata
+                metadata=metadata,
+                sanitized_filename=sanitized_filename
             )
         
         return await async_wrap(_sync_upload)()
@@ -223,7 +257,7 @@ class GCStorageProvider(StorageProvider):
         loop = asyncio.get_event_loop()
         bucket = await loop.run_in_executor(None, self._get_or_create_bucket)
         
-        blob_path = self._generate_blob_path(user_id, session_id, final_filename)
+        blob_path, sanitized_filename = self._generate_blob_path(user_id, session_id, final_filename)
         blob = bucket.blob(blob_path)
         
         logger.info(f"Streaming from URL to GCS: {url} -> {blob_path}")
@@ -280,7 +314,8 @@ class GCStorageProvider(StorageProvider):
             signed_url=signed_url,
             size=size,
             content_type=content_type,
-            metadata=metadata
+            metadata=metadata,
+            sanitized_filename=sanitized_filename
         )
     
     async def download_file(self, path: str, **kwargs) -> bytes:

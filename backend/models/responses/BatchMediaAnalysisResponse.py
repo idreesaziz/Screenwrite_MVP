@@ -41,6 +41,11 @@ class VideoAnalysisResult(BaseModel):
         description="Token usage and other metadata"
     )
 
+    audio_timestamp: Optional[bool] = Field(
+        None,
+        description="Indicates whether timestamps were requested for this item"
+    )
+
 
 class BatchMediaAnalysisResponse(BaseModel):
     """Response model for batch media analysis endpoint."""
@@ -102,7 +107,8 @@ class BatchMediaAnalysisResponse(BaseModel):
                         "success": True,
                         "analysis": "The video shows surfers...",
                         "error_message": None,
-                        "metadata": {"total_tokens": 4809}
+                        "metadata": {"total_tokens": 4809},
+                        "audio_timestamp": None
                     }
                 ],
                 "model_used": "gemini-2.0-flash-exp",

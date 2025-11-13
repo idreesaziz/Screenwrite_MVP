@@ -121,6 +121,7 @@ async def upload_media(
             signed_url=upload_result.signed_url,
             file_size=upload_result.size,
             content_type=upload_result.content_type,
+            filename=upload_result.sanitized_filename,
             error_message=None
         )
         

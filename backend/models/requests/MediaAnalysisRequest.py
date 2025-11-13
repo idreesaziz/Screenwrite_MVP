@@ -44,12 +44,19 @@ class MediaAnalysisRequest(BaseModel):
         ge=0.0,
         le=1.0
     )
+
+    audio_timestamp: bool = Field(
+        False,
+        description="Set to true to request word-level timestamps for audio-only files",
+        examples=[False, True]
+    )
     
     class Config:
         json_schema_extra = {
             "example": {
                 "file_url": "gs://my-bucket/videos/surfing.mp4",
                 "question": "What activities are shown in this video?",
-                "temperature": 0.1
+                "temperature": 0.1,
+                "audio_timestamp": False
             }
         }

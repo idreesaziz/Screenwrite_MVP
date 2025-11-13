@@ -28,6 +28,7 @@ class MediaAnalysisRequest:
     session_id: str
     model_name: Optional[str] = None
     temperature: float = 0.1
+    audio_timestamp: bool = False
 
 
 class MediaAnalysisService:
@@ -65,7 +66,8 @@ class MediaAnalysisService:
         user_id: str,
         session_id: str,
         model_name: Optional[str] = None,
-        temperature: float = 0.1
+        temperature: float = 0.1,
+        audio_timestamp: bool = False
     ) -> MediaAnalysisResult:
         """
         Analyze media file using AI.
@@ -77,6 +79,7 @@ class MediaAnalysisService:
             session_id: Session ID (for logging/tracking)
             model_name: Optional model override (e.g., "gemini-2.5-flash")
             temperature: Generation temperature (0.0-1.0)
+            audio_timestamp: Request timestamps for audio-only media when supported
         
         Returns:
             MediaAnalysisResult with analysis or error information
@@ -121,7 +124,8 @@ class MediaAnalysisService:
                 file_url=file_url,
                 question=question,
                 model_name=model_name,
-                temperature=temperature
+                temperature=temperature,
+                audio_timestamp=audio_timestamp
             )
             duration_s = round(time.monotonic() - t0, 3)
             
@@ -154,6 +158,7 @@ class MediaAnalysisService:
                         "question": question,
                         "model_used": result.model_used,
                         "temperature": temperature,
+                        "audio_timestamp": audio_timestamp,
                         "success": result.success,
                         "error_message": result.error_message,
                         "metadata": result.metadata,
@@ -221,13 +226,14 @@ class MediaAnalysisService:
     
     async def analyze_media_batch(
         self,
-        videos: List[Dict[str, str]],
+    videos: List[Dict[str, Any]],
         question: Optional[str] = None,
         user_id: str = None,
         session_id: str = None,
         model_name: Optional[str] = None,
         temperature: float = 0.1,
-        max_concurrent: int = 4
+        max_concurrent: int = 4,
+        audio_timestamp: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Analyze multiple videos in parallel using concurrent requests.
@@ -240,6 +246,7 @@ class MediaAnalysisService:
             model_name: Optional model override
             temperature: Generation temperature (0.0-1.0)
             max_concurrent: Maximum number of concurrent analysis requests (1-10)
+            audio_timestamp: Optional global toggle for requesting timestamps on audio-only files
         
         Returns:
             Dict with:
@@ -285,6 +292,12 @@ class MediaAnalysisService:
             title = video.get("title") or f"Video {idx + 1}"
             # Use per-video question if provided, otherwise fall back to global question, otherwise use default
             video_question = video.get("question") or question or "Describe what you see in this media."
+            video_audio_flag = video.get("audio_timestamp")
+            effective_audio_timestamp = (
+                bool(video_audio_flag)
+                if video_audio_flag is not None
+                else bool(audio_timestamp)
+            )
             
             logger.debug(f"Starting analysis {idx+1}/{len(videos)}: {title}")
             
@@ -295,7 +308,8 @@ class MediaAnalysisService:
                     user_id=user_id,
                     session_id=f"{session_id}_batch_{idx}",
                     model_name=model_name,
-                    temperature=temperature
+                    temperature=temperature,
+                    audio_timestamp=effective_audio_timestamp
                 )
                 
                 return {
@@ -304,7 +318,8 @@ class MediaAnalysisService:
                     "success": result.success,
                     "analysis": result.analysis if result.success else None,
                     "error_message": result.error_message if not result.success else None,
-                    "metadata": result.metadata
+                    "metadata": result.metadata,
+                    "audio_timestamp": effective_audio_timestamp
                 }
             
             except Exception as e:
@@ -315,7 +330,8 @@ class MediaAnalysisService:
                     "success": False,
                     "analysis": None,
                     "error_message": f"Analysis failed: {str(e)}",
-                    "metadata": None
+                    "metadata": None,
+                    "audio_timestamp": effective_audio_timestamp
                 }
         
         # Run analyses with concurrency limit using semaphore
@@ -393,6 +409,7 @@ class MediaAnalysisService:
                     "total_tokens": total_tokens,
                     "duration_seconds": batch_duration,
                     "max_concurrent": max_concurrent,
+                    "audio_timestamp": audio_timestamp,
                     "results": results
                 }, f, indent=2)
             logger.info(f"💾 Saved batch analysis log to: {batch_log}")

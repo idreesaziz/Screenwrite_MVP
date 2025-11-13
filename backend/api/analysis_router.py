@@ -100,7 +100,8 @@ async def analyze_media(
             user_id=user_id,
             session_id=session_id,
             model_name=request.model_name,
-            temperature=request.temperature
+            temperature=request.temperature,
+            audio_timestamp=request.audio_timestamp
         )
         
         # Convert to response model
@@ -111,7 +112,8 @@ async def analyze_media(
             file_url=result.file_url,
             question=result.question,
             error_message=result.error_message,
-            metadata=result.metadata
+            metadata=result.metadata,
+            audio_timestamp=request.audio_timestamp
         )
     
     except Exception as e:
@@ -267,7 +269,8 @@ async def analyze_media_batch(
             {
                 "file_url": v.file_url, 
                 "title": v.title,
-                "question": v.question  # Include per-video question
+                "question": v.question,
+                "audio_timestamp": v.audio_timestamp
             }
             for v in request.videos
         ]
@@ -280,7 +283,8 @@ async def analyze_media_batch(
             session_id=session_id,
             model_name=request.model_name,
             temperature=request.temperature,
-            max_concurrent=request.max_concurrent
+            max_concurrent=request.max_concurrent,
+            audio_timestamp=request.audio_timestamp
         )
         
         # Determine question to return (prefer service result, fall back to request, then first per-video, then default)
@@ -301,7 +305,8 @@ async def analyze_media_batch(
                 success=r["success"],
                 analysis=r.get("analysis"),
                 error_message=r.get("error_message"),
-                metadata=r.get("metadata")
+                metadata=r.get("metadata"),
+                audio_timestamp=r.get("audio_timestamp")
             )
             for r in batch_result["results"]
         ]

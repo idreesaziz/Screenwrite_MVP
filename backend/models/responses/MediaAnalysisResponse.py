@@ -45,6 +45,11 @@ class MediaAnalysisResponse(BaseModel):
         None,
         description="Additional metadata (token usage, etc.)"
     )
+
+    audio_timestamp: bool = Field(
+        False,
+        description="Indicates whether timestamp generation was requested for audio-only files"
+    )
     
     class Config:
         json_schema_extra = {
@@ -59,6 +64,7 @@ class MediaAnalysisResponse(BaseModel):
                     "prompt_tokens": 4657,
                     "response_tokens": 152,
                     "total_tokens": 4809
-                }
+                },
+                "audio_timestamp": False
             }
         }

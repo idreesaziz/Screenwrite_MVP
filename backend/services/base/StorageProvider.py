@@ -27,6 +27,7 @@ class UploadResult:
     size: int
     content_type: Optional[str]
     metadata: Optional[Dict[str, Any]] = None
+    sanitized_filename: Optional[str] = None  # The actual filename used in storage
 
 
 class StorageProvider(ABC):

@@ -14,4 +14,5 @@ class MediaUploadResponse(BaseModel):
     signed_url: Optional[str] = Field(None, description="Signed URL with expiration")
     file_size: int = Field(description="File size in bytes")
     content_type: Optional[str] = Field(None, description="File MIME type")
+    filename: Optional[str] = Field(None, description="Sanitized filename (safe for storage)")
     error_message: Optional[str] = Field(None, description="Error message if upload failed")

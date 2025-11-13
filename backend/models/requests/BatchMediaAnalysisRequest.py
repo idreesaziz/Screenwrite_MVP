@@ -35,6 +35,12 @@ class VideoAnalysisItem(BaseModel):
         ]
     )
 
+    audio_timestamp: Optional[bool] = Field(
+        None,
+        description="Optional per-video override to request timestamps for audio-only files",
+        examples=[True, False]
+    )
+
 
 class BatchMediaAnalysisRequest(BaseModel):
     """Request model for batch media analysis endpoint."""
@@ -77,6 +83,12 @@ class BatchMediaAnalysisRequest(BaseModel):
         ge=1,
         le=10
     )
+
+    audio_timestamp: Optional[bool] = Field(
+        None,
+        description="Optional global toggle to request timestamps for audio-only files",
+        examples=[True, False]
+    )
     
     @field_validator('videos')
     @classmethod
@@ -105,6 +117,7 @@ class BatchMediaAnalysisRequest(BaseModel):
                 ],
                 "question": "What activities are shown in this video?",
                 "temperature": 0.1,
-                "max_concurrent": 4
+                "max_concurrent": 4,
+                "audio_timestamp": None
             }
         }
