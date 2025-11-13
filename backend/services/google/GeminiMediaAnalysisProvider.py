@@ -20,7 +20,7 @@ import logging
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 from google import genai
-from google.genai.types import HttpOptions, Part
+from google.genai.types import HttpOptions, Part, GenerationConfig
 
 from ..base.MediaAnalysisProvider import MediaAnalysisProvider, MediaAnalysisResult
 
@@ -107,6 +107,7 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         question: str,
         model_name: Optional[str] = None,
         temperature: float = 0.1,
+        audio_timestamp: bool = False,
         **kwargs
     ) -> MediaAnalysisResult:
         """
@@ -114,21 +115,33 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         
         Follows the official Vertex AI pattern from Google Cloud docs:
         https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/video-understanding
+        https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/audio-understanding
         
         Args:
             file_url: GCS URI (gs://bucket/path) or HTTP/HTTPS URL (signed URLs)
             question: Question about the media
             model_name: Optional model override (default: gemini-2.0-flash-exp)
             temperature: Generation temperature (0.0-1.0, default: 0.1)
+            audio_timestamp: Enable accurate timestamps for audio-only files (default: False)
+                            For videos, timestamps are included automatically.
+                            For audio-only, set to True for accurate timestamp generation.
             **kwargs: Additional parameters (max_tokens, etc.)
         
         Returns:
             MediaAnalysisResult with analysis
         
         Example:
+            # Video analysis (timestamps automatic)
             result = await provider.analyze_media(
                 file_url="gs://my-bucket/video.mp4",
                 question="What is in the video?"
+            )
+            
+            # Audio-only analysis (enable timestamps)
+            result = await provider.analyze_media(
+                file_url="gs://my-bucket/audio.mp3",
+                question="Identify pauses and segment boundaries",
+                audio_timestamp=True
             )
         """
         if not file_url or not question:
@@ -178,16 +191,33 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                 mime_type = self._get_mime_type(normalized_url)
                 logger.debug(f"Using Part.from_uri() with mime_type={mime_type}")
 
-                response = self.client.models.generate_content(
-                    model=model,
-                    contents=[
+                # Build generation_config for audio-only files
+                # Per Vertex AI docs: audio-only files need audio_timestamp=True for accurate timestamps
+                # Videos automatically include timestamps, so this is only for audio-only files
+                from google.genai import types
+                
+                config_params = {}
+                if self._is_audio_file(mime_type) or audio_timestamp:
+                    config_params['audio_timestamp'] = True
+                    logger.debug("Enabled audio_timestamp=True for accurate word-level timestamps")
+
+                # Build request arguments
+                generate_kwargs = {
+                    "model": model,
+                    "contents": [
                         Part.from_uri(
                             file_uri=normalized_url,
                             mime_type=mime_type
                         ),
-                        question
+                        Part.from_text(text=question)
                     ]
-                )
+                }
+                
+                # Only add config if we have audio-specific settings
+                if config_params:
+                    generate_kwargs["config"] = types.GenerateContentConfig(**config_params)
+                
+                response = self.client.models.generate_content(**generate_kwargs)
             else:
                 raise ValueError(
                     f"Unsupported file URL format: {file_url}. "
@@ -318,6 +348,22 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         # Default to video/mp4 for GCS URLs (most common case in our app)
         # This is safer than application/octet-stream which Gemini rejects
         return 'video/mp4'
+    
+    def _is_audio_file(self, mime_type: str) -> bool:
+        """
+        Check if the MIME type represents an audio-only file.
+        
+        This is used to enable audio_timestamp configuration for audio-only files,
+        as required by Vertex AI for accurate timestamp generation.
+        Videos with audio tracks don't need this flag (timestamps are automatic).
+        
+        Args:
+            mime_type: MIME type string (e.g., 'audio/mpeg', 'video/mp4')
+        
+        Returns:
+            True if audio-only file, False otherwise
+        """
+        return mime_type.startswith('audio/')
     
     async def is_file_ready(self, file_url: str) -> bool:
         """
