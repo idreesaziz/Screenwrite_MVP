@@ -27,20 +27,20 @@ Return JSON array of tracks:
     "clips": [
       {
         "id": "bg-clip",
-        "startTimeInSeconds": 0,
-        "endTimeInSeconds": 10,
+        "startTimeInSeconds": 0.0,
+        "endTimeInSeconds": 10.0,
         "element": {
           "elements": ["div;id:bg;parent:root;backgroundColor:#000;width:100%;height:100%"]
         }
       },
       {
         "id": "scene2",
-        "startTimeInSeconds": 10,
-        "endTimeInSeconds": 15,
+        "startTimeInSeconds": 10.0,
+        "endTimeInSeconds": 15.0,
         "element": {
           "elements": ["div;id:bg2;parent:root;backgroundColor:#fff"]
         },
-        "transitionFromPrevious": {"type": "fade", "durationInSeconds": 1}
+        "transitionFromPrevious": {"type": "fade", "durationInSeconds": 1.0}
       }
     ]
   },
@@ -48,8 +48,8 @@ Return JSON array of tracks:
     "clips": [
       {
         "id": "title",
-        "startTimeInSeconds": 2,
-        "endTimeInSeconds": 8,
+        "startTimeInSeconds": 2.0,
+        "endTimeInSeconds": 8.0,
         "element": {
           "elements": ["h1;id:t1;parent:root;fontSize:64px;color:#fff;text:Main Title"]
         },
@@ -61,8 +61,8 @@ Return JSON array of tracks:
 ```
 
 **STRUCTURE:**
-- Track 0: Background layer (0-10s black, 10-15s white with fade)
-- Track 1: Title overlay (2-8s, renders ON TOP of track 0)
+- Track 0: Background layer (0.0-10.0s black, 10.0-15.0s white with fade)
+- Track 1: Title overlay (2.0-8.0s, renders ON TOP of track 0)
 
 **REQUIRED FIELDS:**
 - Clip: `id`, `startTimeInSeconds`, `endTimeInSeconds`, `element`
@@ -191,12 +191,12 @@ Transitions create visual effects between clips. Add them to clips using `transi
 ```json
 {
   "id": "clip1",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 5,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 5.0,
   "element": {...},
   "transitionToNext": {
     "type": "fade",
-    "durationInSeconds": 1
+    "durationInSeconds": 1.0
   }
 }
 ```
@@ -236,12 +236,12 @@ Transitions create visual effects between clips. Add them to clips using `transi
 **EXAMPLES:**
 ```json
 Adjacent transition (crossfade between two clips):
-Clip A ends at 5s, Clip B starts at 5s
-Clip A: "transitionToNext": {"type": "fade", "durationInSeconds": 1}
-Result: 1s crossfade from A to B
+Clip A ends at 5.0s, Clip B starts at 5.0s
+Clip A: "transitionToNext": {"type": "fade", "durationInSeconds": 1.0}
+Result: 1.0s crossfade from A to B
 
 Orphaned transition (fade to transparent):
-Clip ends at 5s, no next clip
+Clip ends at 5.0s, no next clip
 Clip: "transitionToNext": {"type": "fade", "durationInSeconds": 0.5}
 Result: Fades to transparent over 0.5s
 
@@ -270,7 +270,7 @@ propertyName:@animate[timestamp1,timestamp2,...]:[value1,value2,...]
 
 **TIMESTAMPS ARE GLOBAL:**
 - Timestamps are absolute composition time (NOT clip-relative)
-- If clip starts at 5s and you want animation at clip second 2, use timestamp 7 (5+2)
+- If clip starts at 5.0s and you want animation at clip second 2.0, use timestamp 7.0 (5.0+2.0)
 - Must have at least 2 keyframes
 - Timestamp count must match value count
 
@@ -278,33 +278,33 @@ propertyName:@animate[timestamp1,timestamp2,...]:[value1,value2,...]
 
 **1. Numbers (unitless):**
 ```
-opacity:@animate[0,1,2]:[0,1,0]
-volume:@animate[0,2]:[0,0.8]
+opacity:@animate[0.0,1.0,2.0]:[0,1,0]
+volume:@animate[0.0,2.0]:[0,0.8]
 ```
 
 **2. Numbers with units:**
 ```
-fontSize:@animate[0,1,2]:[24px,48px,24px]
-width:@animate[0,2]:[50%,100%]
+fontSize:@animate[0.0,1.0,2.0]:[24px,48px,24px]
+width:@animate[0.0,2.0]:[50%,100%]
 ```
 
 **3. Hex colors:**
 ```
-color:@animate[0,1,2]:[#ff0000,#00ff00,#0000ff]
-backgroundColor:@animate[0,2]:[#000000,#ffffff]
+color:@animate[0.0,1.0,2.0]:[#ff0000,#00ff00,#0000ff]
+backgroundColor:@animate[0.0,2.0]:[#000000,#ffffff]
 ```
 
 **4. Complex CSS strings (transforms, filters):**
 ```
-transform:@animate[0,1,2]:[translateX(0px),translateX(100px),translateX(0px)]
-filter:@animate[0,1,2]:[blur(0px),blur(10px),blur(0px)]
-transform:@animate[0,2]:[scale(1),scale(1.5)]
+transform:@animate[0.0,1.0,2.0]:[translateX(0px),translateX(100px),translateX(0px)]
+filter:@animate[0.0,1.0,2.0]:[blur(0px),blur(10px),blur(0px)]
+transform:@animate[0.0,2.0]:[scale(1),scale(1.5)]
 ```
 
 Multi-value transforms:
 ```
-transform:@animate[0,1]:[translateX(0px) scale(1),translateX(100px) scale(1.5)]
-filter:@animate[0,1]:[blur(0px) brightness(100%),blur(5px) brightness(150%)]
+transform:@animate[0.0,1.0]:[translateX(0px) scale(1),translateX(100px) scale(1.5)]
+filter:@animate[0.0,1.0]:[blur(0px) brightness(100%),blur(5px) brightness(150%)]
 ```
 
 **HOW IT WORKS:**
@@ -314,8 +314,8 @@ filter:@animate[0,1]:[blur(0px) brightness(100%),blur(5px) brightness(150%)]
 - Easing is ALWAYS 'inOut' (smooth acceleration/deceleration) - cannot be changed
 
 **RULES:**
-- NO SPACES in arrays: `[0,1,2]` not `[0, 1, 2]`
-- Timestamps must be numbers (decimals allowed: `[0,0.5,1]`)
+- NO SPACES in arrays: `[0.0,1.0,2.0]` not `[0.0, 1.0, 2.0]`
+- Timestamps must be numbers (decimals allowed: `[0.0,0.5,1.0]`)
 - Values can be any type but must be consistent (all numbers, all colors, etc.)
 - For complex strings, structure must match (same number of numeric values)
 - Global timestamps: account for clip's startTimeInSeconds
@@ -324,27 +324,27 @@ filter:@animate[0,1]:[blur(0px) brightness(100%),blur(5px) brightness(150%)]
 
 Fade in/out:
 ```
-"div;id:box;opacity:@animate[0,1,4,5]:[0,1,1,0]"
+"div;id:box;opacity:@animate[0.0,1.0,4.0,5.0]:[0,1,1,0]"
 ```
 
 Moving text:
 ```
-"h1;id:title;transform:@animate[2,3,4]:[translateY(-100px),translateY(0px),translateY(100px)]"
+"h1;id:title;transform:@animate[2.0,3.0,4.0]:[translateY(-100px),translateY(0px),translateY(100px)]"
 ```
 
 Color shift:
 ```
-"div;id:bg;backgroundColor:@animate[0,2,4]:[#ff0000,#00ff00,#0000ff]"
+"div;id:bg;backgroundColor:@animate[0.0,2.0,4.0]:[#ff0000,#00ff00,#0000ff]"
 ```
 
 Scaling element:
 ```
-"div;id:box;transform:@animate[0,1]:[scale(0.5),scale(1)]"
+"div;id:box;transform:@animate[0.0,1.0]:[scale(0.5),scale(1)]"
 ```
 
 Complex animation:
 ```
-"div;id:box;transform:@animate[0,1,2]:[translateX(0px) rotate(0deg),translateX(100px) rotate(180deg),translateX(0px) rotate(360deg)]"
+"div;id:box;transform:@animate[0.0,1.0,2.0]:[translateX(0px) rotate(0deg),translateX(100px) rotate(180deg),translateX(0px) rotate(360deg)]"
 ```
 
 **IMPORTANT NOTES:**
@@ -512,8 +512,8 @@ A complete video composition with background video and text overlay (notice the 
     "clips": [
       {
         "id": "bg-video",
-        "startTimeInSeconds": 0,
-        "endTimeInSeconds": 10,
+        "startTimeInSeconds": 0.0,
+        "endTimeInSeconds": 10.0,
         "element": {
           "elements": [
             "Video;id:main-video;parent:root;src:\"beach-sunset.mp4\";width:100%;height:100%;objectFit:cover"
@@ -526,8 +526,8 @@ A complete video composition with background video and text overlay (notice the 
     "clips": [
       {
         "id": "title-clip",
-        "startTimeInSeconds": 1,
-        "endTimeInSeconds": 5,
+        "startTimeInSeconds": 1.0,
+        "endTimeInSeconds": 5.0,
         "element": {
           "elements": [
             "div;id:title-container;position:absolute;top:20%;left:50%;transform:translateX(-50%);textAlign:center",
@@ -538,11 +538,11 @@ A complete video composition with background video and text overlay (notice the 
       {
         "id": "subtitle-clip",
         "startTimeInSeconds": 5.5,
-        "endTimeInSeconds": 9,
+        "endTimeInSeconds": 9.0,
         "element": {
           "elements": [
             "div;id:subtitle-container;position:absolute;bottom:15%;left:50%;transform:translateX(-50%);textAlign:center",
-            "h2;id:subtitle;parent:subtitle-container;fontSize:32px;color:#ffffff;opacity:@animate[5.5,6,9]:[0,1,1];text:Relax and Enjoy"
+            "h2;id:subtitle;parent:subtitle-container;fontSize:32px;color:#ffffff;opacity:@animate[5.5,6.0,9.0]:[0,1,1];text:Relax and Enjoy"
           ]
         }
       }
@@ -558,8 +558,8 @@ Centered text with absolute positioning:
 ```json
 {
   "id": "centered-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 5,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 5.0,
   "element": {
     "elements": [
       "div;id:center-container;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%",
@@ -573,8 +573,8 @@ Top-left positioned element:
 ```json
 {
   "id": "corner-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 5,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 5.0,
   "element": {
     "elements": [
       "div;id:top-left-box;position:absolute;top:20px;left:20px;padding:16px;backgroundColor:#000000",
@@ -588,8 +588,8 @@ Bottom-right positioned with flexbox centering:
 ```json
 {
   "id": "flex-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 5,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 5.0,
   "element": {
     "elements": [
       "div;id:flex-container;position:absolute;bottom:40px;right:40px;width:300px;height:200px;display:flex;justifyContent:center;alignItems:center;backgroundColor:#1a1a1a",
@@ -603,8 +603,8 @@ Text with outline/stroke (using WebkitTextStroke):
 ```json
 {
   "id": "outlined-text-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 5,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 5.0,
   "element": {
     "elements": [
       "div;id:outlined-container;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);textAlign:center",
@@ -621,8 +621,8 @@ Multi-level nesting with card layout:
 ```json
 {
   "id": "card-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 8,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 8.0,
   "element": {
     "elements": [
       "div;id:card;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;padding:32px;backgroundColor:#ffffff;borderRadius:16px;boxShadow:0px 4px 20px rgba(0,0,0,0.3)",
@@ -641,8 +641,8 @@ Nested grid layout:
 ```json
 {
   "id": "grid-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 10,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 10.0,
   "element": {
     "elements": [
       "div;id:grid-container;width:100%;height:100%;display:flex;flexDirection:column;gap:20px;padding:40px;backgroundColor:#0a0a0a",
@@ -666,8 +666,8 @@ Complex nested navigation menu:
 ```json
 {
   "id": "nav-clip",
-  "startTimeInSeconds": 0,
-  "endTimeInSeconds": 5,
+  "startTimeInSeconds": 0.0,
+  "endTimeInSeconds": 5.0,
   "element": {
     "elements": [
       "div;id:nav-bar;position:absolute;top:0;left:0;width:100%;height:80px;backgroundColor:rgba(0,0,0,0.9);display:flex;alignItems:center;padding:0px 40px",
