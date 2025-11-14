@@ -40,6 +40,7 @@ class GeneratedAssetResult:
     def __init__(
         self,
         asset_id: str,
+        name: str,
         content_type: str,
         file_path: str,
         file_url: str,
@@ -51,6 +52,7 @@ class GeneratedAssetResult:
         duration_seconds: Optional[float] = None
     ):
         self.asset_id = asset_id
+        self.name = name
         self.content_type = content_type
         self.file_path = file_path
         self.file_url = file_url
@@ -104,7 +106,8 @@ class MediaGenerationService:
         prompt: str,
         user_id: str,
         session_id: str,
-        aspect_ratio: str = "16:9"
+        aspect_ratio: str = "16:9",
+        suggested_name: str = ""
     ) -> GeneratedAssetResult:
         """
         Generate an image with Imagen and upload to storage.
@@ -145,25 +148,34 @@ class MediaGenerationService:
             generated_image = response.images[0]
             logger.info(f"Image generated successfully with {len(generated_image.image_bytes)} bytes")
             
-            # Step 2: Upload to cloud storage
+            # Step 2: Get existing names for collision checking
+            existing_names = await self.storage_provider.get_existing_names(user_id, session_id)
+            
+            # Step 3: Generate unique name
+            from utils.naming import create_generated_name, generate_unique_name
+            asset_id = str(uuid.uuid4())
+            base_name = create_generated_name(suggested_name, "image", asset_id[:6])
+            unique_name = generate_unique_name(base_name, existing_names)
+            
+            # Step 4: Upload to cloud storage
             import base64
             image_bytes = base64.b64decode(generated_image.image_bytes)
             
-            asset_id = str(uuid.uuid4())
             file_name = f"generated_image_{asset_id}.png"
             
-            logger.info(f"Uploading image to storage: {file_name}")
+            logger.info(f"Uploading image to storage: {unique_name}")
             upload_result = await self.storage_provider.upload_file(
                 file_data=BytesIO(image_bytes),
                 user_id=user_id,
                 session_id=session_id,
                 filename=file_name,
+                name=unique_name,
                 content_type="image/png"
             )
             
-            logger.info(f"✅ Image generated and uploaded: {upload_result.url[:80]}...")
+            logger.info(f"✅ Image generated and uploaded: {unique_name}")
             
-            # Step 3: Build result (extract dimensions from image if possible)
+            # Step 5: Build result
             from PIL import Image
             img = Image.open(BytesIO(image_bytes))
             width, height = img.size
@@ -174,9 +186,10 @@ class MediaGenerationService:
             
             return GeneratedAssetResult(
                 asset_id=asset_id,
+                name=unique_name,
                 content_type="image",
                 file_path=upload_result.path,
-                file_url=upload_result.signed_url or upload_result.url,  # Use signed URL for secure browser access
+                file_url=upload_result.signed_url or upload_result.url,
                 gcs_uri=gcs_uri,
                 prompt=prompt,
                 width=width,
@@ -192,7 +205,8 @@ class MediaGenerationService:
         self,
         prompt: str,
         user_id: str,
-        session_id: str
+        session_id: str,
+        suggested_name: str = ""
     ) -> GeneratedAssetResult:
         """
         Generate a logo with transparent background.
@@ -319,22 +333,29 @@ Generate logo: """
             
             logger.info(f"Transparent PNG created. Size: {len(transparent_png_bytes)} bytes")
             
-            # Step 4: Upload to cloud storage
+            # Step 4: Get existing names and generate unique name
+            existing_names = await self.storage_provider.get_existing_names(user_id, session_id)
+            from utils.naming import create_generated_name, generate_unique_name
             asset_id = str(uuid.uuid4())
+            base_name = create_generated_name(suggested_name, "logo", asset_id[:6])
+            unique_name = generate_unique_name(base_name, existing_names)
+            
+            # Step 5: Upload to cloud storage
             file_name = f"generated_logo_{asset_id}.png"
             
-            logger.info(f"Uploading logo to storage: {file_name}")
+            logger.info(f"Uploading logo to storage: {unique_name}")
             upload_result = await self.storage_provider.upload_file(
                 file_data=BytesIO(transparent_png_bytes),
                 user_id=user_id,
                 session_id=session_id,
                 filename=file_name,
+                name=unique_name,
                 content_type="image/png"
             )
             
-            logger.info(f"✅ Logo generated and uploaded: {upload_result.url[:80]}...")
+            logger.info(f"✅ Logo generated and uploaded: {unique_name}")
             
-            # Step 5: Build result with dimensions
+            # Step 6: Build result with dimensions
             width, height = result_img.size
             
             # Build GCS URI for Vertex AI access
@@ -343,6 +364,7 @@ Generate logo: """
             
             return GeneratedAssetResult(
                 asset_id=asset_id,
+                name=unique_name,
                 content_type="logo",
                 file_path=upload_result.path,
                 file_url=upload_result.signed_url or upload_result.url,
@@ -365,7 +387,8 @@ Generate logo: """
         negative_prompt: Optional[str] = None,
         aspect_ratio: str = "16:9",
         resolution: str = "720p",
-        reference_image_url: Optional[str] = None
+        reference_image_url: Optional[str] = None,
+        suggested_name: str = ""
     ) -> str:
         """
         Start async video generation with Veo.
@@ -423,6 +446,7 @@ Generate logo: """
                 'session_id': session_id,
                 'prompt': prompt,
                 'resolution': resolution,
+                'suggested_name': suggested_name,
                 'started_at': datetime.utcnow()
             }
             
@@ -493,20 +517,28 @@ Generate logo: """
             
             logger.info(f"Video downloaded: {generated_video.file_size} bytes")
             
-            # Upload to storage
+            # Get existing names and generate unique name
+            existing_names = await self.storage_provider.get_existing_names(user_id, session_id)
+            from utils.naming import create_generated_name, generate_unique_name
             asset_id = str(uuid.uuid4())
+            suggested_name = operation_data.get('suggested_name', '')
+            base_name = create_generated_name(suggested_name, "video", asset_id[:6])
+            unique_name = generate_unique_name(base_name, existing_names)
+            
+            # Upload to storage
             file_name = f"generated_video_{asset_id}.mp4"
             
-            logger.info(f"Uploading video to storage: {file_name}")
+            logger.info(f"Uploading video to storage: {unique_name}")
             upload_result = await self.storage_provider.upload_file(
                 file_data=BytesIO(generated_video.video_data),
                 user_id=user_id,
                 session_id=session_id,
                 filename=file_name,
+                name=unique_name,
                 content_type="video/mp4"
             )
             
-            logger.info(f"✅ Video uploaded: {upload_result.url[:80]}...")
+            logger.info(f"✅ Video uploaded: {unique_name}")
             
             # Build GCS URI for Vertex AI access
             bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
@@ -515,9 +547,10 @@ Generate logo: """
             # Build result
             result = GeneratedAssetResult(
                 asset_id=asset_id,
+                name=unique_name,
                 content_type="video",
                 file_path=upload_result.path,
-                file_url=upload_result.signed_url or upload_result.url,  # Use signed URL for secure browser access
+                file_url=upload_result.signed_url or upload_result.url,
                 gcs_uri=gcs_uri,
                 prompt=prompt,
                 width=generated_video.width,
@@ -541,11 +574,12 @@ Generate logo: """
         text: str,
         user_id: str,
         session_id: str,
-        voice_id: str = "Aoede",  # Gemini 2.5 Pro TTS voice (warm female, natural quality)
+        voice_id: str = "Aoede",
         language_code: str = "en-US",
-        style_prompt: Optional[str] = None,  # Optional custom style prompt (e.g., "Speak dramatically")
+        style_prompt: Optional[str] = None,
         speaking_rate: float = 1.0,
-        pitch: float = 0.0
+        pitch: float = 0.0,
+        suggested_name: str = ""
     ) -> GeneratedAssetResult:
         """
         Generate voice-over/speech from text script using Gemini 2.5 Pro TTS.
@@ -590,33 +624,41 @@ Generate logo: """
             result = await self.voice_provider.generate_voice(request)
             logger.info(f"Voice generated: {result.duration_seconds:.2f}s, {len(result.audio_bytes)} bytes")
             
-            # Step 2: Upload to cloud storage
+            # Step 2: Get existing names and generate unique name
+            existing_names = await self.storage_provider.get_existing_names(user_id, session_id)
+            from utils.naming import create_generated_name, generate_unique_name
             asset_id = str(uuid.uuid4())
+            base_name = create_generated_name(suggested_name, "audio", asset_id[:6])
+            unique_name = generate_unique_name(base_name, existing_names)
+            
+            # Step 3: Upload to cloud storage
             file_name = f"voiceover_{asset_id}.mp3"
             
-            logger.info(f"Uploading voice-over to storage: {file_name}")
+            logger.info(f"Uploading voice-over to storage: {unique_name}")
             upload_result = await self.storage_provider.upload_file(
                 file_data=BytesIO(result.audio_bytes),
                 user_id=user_id,
                 session_id=session_id,
                 filename=file_name,
+                name=unique_name,
                 content_type="audio/mpeg"
             )
             
-            logger.info(f"✅ Voice-over generated and uploaded: {upload_result.url[:80]}...")
+            logger.info(f"✅ Voice-over generated and uploaded: {unique_name}")
             
-            # Step 3: Build result with duration (CRITICAL for timeline placement)
+            # Step 4: Build result with duration
             bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
             gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
             
             return GeneratedAssetResult(
                 asset_id=asset_id,
+                name=unique_name,
                 content_type="audio",
                 file_path=upload_result.path,
                 file_url=upload_result.signed_url or upload_result.url,
                 gcs_uri=gcs_uri,
                 prompt=text,
-                width=0,  # Audio has no dimensions
+                width=0,
                 height=0,
                 file_size=len(result.audio_bytes),
                 duration_seconds=result.duration_seconds  # Essential for timeline!

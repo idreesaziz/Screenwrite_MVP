@@ -55,12 +55,14 @@ export async function uploadFileToGCS(
   onProgress?: (percentCompleted: number) => void
 ): Promise<{
   success: boolean;
+  name: string;
   file_url: string;
   gcs_uri: string;
   signed_url?: string;
   file_path: string;
   file_size: number;
   content_type?: string;
+  filename?: string;
 }> {
   const formData = new FormData();
   formData.append('file', file);

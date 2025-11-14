@@ -8,6 +8,7 @@ class MediaUploadResponse(BaseModel):
     """Response from media upload endpoint."""
     
     success: bool = Field(description="Whether upload was successful")
+    name: str = Field(description="Short unique name for display and AI reference")
     file_path: str = Field(description="Storage path (user_id/session_id/filename)")
     file_url: str = Field(description="Public URL to access the file")
     gcs_uri: str = Field(description="GCS URI for Vertex AI access (gs://bucket/path)")

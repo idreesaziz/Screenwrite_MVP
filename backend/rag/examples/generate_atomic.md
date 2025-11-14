@@ -1,8 +1,13 @@
 # Generate Media (Atomic Request)
 
 **When to Use:**
-- User directly requests media generation (image, video, or logo)
+- User directly requests generating NEW media from scratch: **image**, **video**, **logo**, or **voiceover/audio**
 - Simple atomic request with no dependencies or complex workflow
+- Examples:
+  - "generate a sunset image"
+  - "create a video of dancing robots"
+  - "make a logo for a coffee shop"
+  - "generate a voiceover saying 'welcome to our show'"
 
 **User Request:** "generate a sunset image" or "create a video of dancing robots" or "make a logo"
 
@@ -57,7 +62,6 @@
 **User Request:** "create a logo" or "generate a logo for my brand"
 
 **Complete Flow:**
-
 1. **INFO** - "I will generate a logo for you."
 
 2. **GENERATE** - Logo generation
@@ -92,11 +96,18 @@
 
 **Videos (content_type: "video"):**
 - 8 seconds duration
-- Detailed prompts with motion, camera work, lighting
+- Detailed prompts with motion, camera work, lighting, scene description
 - 16:9 aspect ratio
+- Generate NEW video from text description (not from existing image)
 
 **Logos (content_type: "logo"):**
 - 1:1 aspect ratio (square)
 - SHORT simple prompts (e.g., "[subject] [style]")
 - Transparent background (PNG)
 - Perfect for overlays on videos/images
+
+**Audio/Voiceover (content_type: "audio"):**
+- Prompt is the TEXT TO SPEAK (not a description)
+- Returns duration in seconds (critical for timeline sync)
+- Optional: voice_settings for voice_id, language_code, style_prompt, speaking_rate, pitch
+- Default voice: "Aoede" (Gemini voice), language: "en-US"

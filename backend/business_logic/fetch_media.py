@@ -143,7 +143,13 @@ class StockMediaService:
                 f"{curated_response.ai_curation_explanation}"
             )
             
-            # Step 2: Upload selected items to cloud storage
+            # Step 2: Get existing names for collision checking
+            existing_names = await self.storage_provider.get_existing_names(user_id, session_id)
+            logger.info(f"Found {len(existing_names)} existing media items for user/session")
+            
+            # Step 3: Upload selected items to cloud storage
+            from utils.naming import create_stock_name, generate_unique_name
+            
             uploaded_items = []
             for idx, curated_item in enumerate(curated_response.curated_items):
                 media_item = curated_item.media_item
@@ -161,23 +167,31 @@ class StockMediaService:
                         logger.warning(f"No download URL for item {media_item.id}")
                         continue
                     
-                    # Generate storage path
+                    # Generate unique name
+                    creator_name = media_item.creator.name if media_item.creator else "unknown"
+                    base_name = create_stock_name(creator_name, query, idx + 1)
+                    unique_name = generate_unique_name(base_name, existing_names)
+                    existing_names.add(unique_name)  # Add to set for next iteration
+                    
+                    # Generate storage filename
                     file_ext = ".mp4" if media_type == "video" else ".jpg"
                     file_name = f"stock_{media_type}_{uuid.uuid4()}{file_ext}"
                     
-                    # Upload to storage (user/session isolated)
-                    logger.info(f"Uploading {media_type} {idx+1}/{len(curated_response.curated_items)}")
+                    # Upload to storage with name metadata
+                    logger.info(f"Uploading {media_type} {idx+1}/{len(curated_response.curated_items)}: {unique_name}")
                     upload_result = await self.storage_provider.upload_from_url(
                         url=download_url,
                         user_id=user_id,
                         session_id=session_id,
-                        filename=file_name
+                        filename=file_name,
+                        name=unique_name
                     )
-                    storage_url = upload_result.signed_url or upload_result.url  # Use signed URL for secure browser access
+                    storage_url = upload_result.signed_url or upload_result.url
                     
                     # Build response item
                     uploaded_items.append({
                         "id": media_item.id,
+                        "name": unique_name,
                         "media_type": media_type,
                         "storage_url": storage_url,
                         "preview_url": media_item.preview_url,
@@ -191,7 +205,7 @@ class StockMediaService:
                         "avg_color": media_item.avg_color
                     })
                     
-                    logger.info(f"✅ Uploaded {file_name} → {storage_url}")
+                    logger.info(f"✅ Uploaded {unique_name} → {storage_url}")
                     
                 except Exception as e:
                     logger.error(f"Failed to upload item {media_item.id}: {e}")

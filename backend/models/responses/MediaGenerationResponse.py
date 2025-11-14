@@ -8,6 +8,7 @@ class GeneratedAsset(BaseModel):
     """Metadata for a generated asset."""
     
     asset_id: str = Field(description="Unique asset identifier")
+    name: str = Field(description="Short unique name for display and AI reference")
     content_type: Literal["image", "video", "logo", "audio"] = Field(description="Type of generated content")
     file_path: str = Field(description="Storage path (user_id/session_id/filename)")
     file_url: str = Field(description="Public URL to access the file")

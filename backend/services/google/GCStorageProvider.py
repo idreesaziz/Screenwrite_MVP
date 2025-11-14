@@ -189,6 +189,7 @@ class GCStorageProvider(StorageProvider):
         user_id: str,
         session_id: str,
         filename: str,
+        name: Optional[str] = None,
         content_type: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         **kwargs
@@ -204,8 +205,13 @@ class GCStorageProvider(StorageProvider):
             
             blob.cache_control = "public, max-age=31536000"
             
-            if metadata:
-                blob.metadata = metadata
+            # Merge name into metadata
+            final_metadata = metadata or {}
+            if name:
+                final_metadata['name'] = name
+            
+            if final_metadata:
+                blob.metadata = final_metadata
             
             # Upload with automatic retry
             blob.upload_from_file(file_data, rewind=True)
@@ -228,7 +234,7 @@ class GCStorageProvider(StorageProvider):
                 signed_url=signed_url,
                 size=size,
                 content_type=content_type,
-                metadata=metadata,
+                metadata=final_metadata,
                 sanitized_filename=sanitized_filename
             )
         
@@ -240,6 +246,7 @@ class GCStorageProvider(StorageProvider):
         user_id: str,
         session_id: str,
         filename: Optional[str] = None,
+        name: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         **kwargs
     ) -> UploadResult:
@@ -273,8 +280,13 @@ class GCStorageProvider(StorageProvider):
                 
                 blob.cache_control = "public, max-age=31536000"
                 
-                if metadata:
-                    blob.metadata = metadata
+                # Merge name into metadata
+                final_metadata = metadata or {}
+                if name:
+                    final_metadata['name'] = name
+                
+                if final_metadata:
+                    blob.metadata = final_metadata
                 
                 content_length = response.headers.get('Content-Length')
                 content_length_int = int(content_length) if content_length else None
@@ -314,7 +326,7 @@ class GCStorageProvider(StorageProvider):
             signed_url=signed_url,
             size=size,
             content_type=content_type,
-            metadata=metadata,
+            metadata=final_metadata,
             sanitized_filename=sanitized_filename
         )
     
@@ -409,3 +421,30 @@ class GCStorageProvider(StorageProvider):
             return blob.public_url
         
         return await async_wrap(_sync_get_public_url)()
+    
+    async def get_existing_names(self, user_id: str, session_id: str) -> set[str]:
+        """
+        Get all existing media names for a user/session.
+        
+        Reads 'name' from blob metadata to check for naming collisions.
+        
+        Args:
+            user_id: User ID
+            session_id: Session ID
+            
+        Returns:
+            Set of existing names
+        """
+        def _sync_get_names():
+            bucket = self._get_or_create_bucket()
+            prefix = f"{user_id}/{session_id}/"
+            blobs = bucket.list_blobs(prefix=prefix)
+            
+            names = set()
+            for blob in blobs:
+                if blob.metadata and 'name' in blob.metadata:
+                    names.add(blob.metadata['name'])
+            
+            return names
+        
+        return await async_wrap(_sync_get_names)()

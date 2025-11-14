@@ -17,6 +17,12 @@ class MediaGenerationRequest(BaseModel):
         max_length=5000  # Increased for voice-over scripts
     )
     
+    suggested_name: Optional[str] = Field(
+        default=None,
+        description="Suggested name for the generated asset (will be sanitized and made unique)",
+        max_length=100
+    )
+    
     negative_prompt: Optional[str] = Field(
         default=None,
         description="What to avoid in generation (video only)",

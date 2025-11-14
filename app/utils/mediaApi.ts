@@ -19,9 +19,11 @@ export interface MediaGenerationRequest {
 // Response types
 export interface GeneratedAsset {
   asset_id: string;
-  content_type: 'image' | 'video';
+  name: string;
+  content_type: 'image' | 'video' | 'logo' | 'audio';
   file_path: string;
   file_url: string;
+  gcs_uri: string;
   prompt: string;
   width: number;
   height: number;

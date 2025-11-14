@@ -122,7 +122,8 @@ async def generate_media(
                 prompt=request.prompt,
                 user_id=user_id,
                 session_id=session_id,
-                aspect_ratio=request.aspect_ratio
+                aspect_ratio=request.aspect_ratio,
+                suggested_name=request.suggested_name or ""
             )
             
             return MediaGenerationResponse(
@@ -130,6 +131,7 @@ async def generate_media(
                 status="completed",
                 generated_asset=GeneratedAsset(
                     asset_id=result.asset_id,
+                    name=result.name,
                     content_type=result.content_type,
                     file_path=result.file_path,
                     file_url=result.file_url,
@@ -145,13 +147,14 @@ async def generate_media(
             )
         
         elif request.content_type == "logo":
-            # Logo generation (sync) - with green background removal
+            # Logo generation (sync)
             logger.info(f"Logo generation request from user {user_id}: {request.prompt[:50]}...")
             
             result = await media_service.generate_logo(
                 prompt=request.prompt,
                 user_id=user_id,
-                session_id=session_id
+                session_id=session_id,
+                suggested_name=request.suggested_name or ""
             )
             
             return MediaGenerationResponse(
@@ -159,6 +162,7 @@ async def generate_media(
                 status="completed",
                 generated_asset=GeneratedAsset(
                     asset_id=result.asset_id,
+                    name=result.name,
                     content_type=result.content_type,
                     file_path=result.file_path,
                     file_url=result.file_url,
@@ -193,7 +197,8 @@ async def generate_media(
                 language_code=language_code,
                 style_prompt=style_prompt,
                 speaking_rate=speaking_rate,
-                pitch=pitch
+                pitch=pitch,
+                suggested_name=request.suggested_name or ""
             )
             
             return MediaGenerationResponse(
@@ -201,6 +206,7 @@ async def generate_media(
                 status="completed",
                 generated_asset=GeneratedAsset(
                     asset_id=result.asset_id,
+                    name=result.name,
                     content_type=result.content_type,
                     file_path=result.file_path,
                     file_url=result.file_url,
@@ -343,6 +349,7 @@ async def check_video_status(
                 status="completed",
                 generated_asset=GeneratedAsset(
                     asset_id=result.asset_id,
+                    name=result.name,
                     content_type=result.content_type,
                     file_path=result.file_path,
                     file_url=result.file_url,

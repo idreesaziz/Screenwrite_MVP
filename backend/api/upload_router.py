@@ -97,6 +97,12 @@ async def upload_media(
         
         logger.info(f"File size: {file_size} bytes")
         
+        # Get existing names and generate unique name
+        existing_names = await storage_provider.get_existing_names(user_id, session_id)
+        from utils.naming import create_upload_name, generate_unique_name
+        base_name = create_upload_name(file.filename)
+        unique_name = generate_unique_name(base_name, existing_names)
+        
         # Upload to storage
         from io import BytesIO
         upload_result = await storage_provider.upload_file(
@@ -104,10 +110,11 @@ async def upload_media(
             user_id=user_id,
             session_id=session_id,
             filename=file.filename,
+            name=unique_name,
             content_type=file.content_type
         )
         
-        logger.info(f"✅ File uploaded: {upload_result.url[:80]}...")
+        logger.info(f"✅ File uploaded: {unique_name}")
         
         # Construct GCS URI for Vertex AI access
         bucket_name = storage_provider.bucket_name if hasattr(storage_provider, 'bucket_name') else "screenwrite-media"
@@ -115,6 +122,7 @@ async def upload_media(
         
         return MediaUploadResponse(
             success=True,
+            name=unique_name,
             file_path=upload_result.path,
             file_url=upload_result.url,
             gcs_uri=gcs_uri,

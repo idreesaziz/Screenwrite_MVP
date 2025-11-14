@@ -7,6 +7,8 @@ class StockMediaItem(BaseModel):
     
     id: int = Field(description="Provider's media ID")
     
+    name: str = Field(description="Short unique name for display and AI reference")
+    
     media_type: str = Field(description="Type: 'video' or 'image'")
     
     storage_url: str = Field(description="URL to media in cloud storage (GCS, S3, etc.)")

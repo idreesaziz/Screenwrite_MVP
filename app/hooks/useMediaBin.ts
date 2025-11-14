@@ -4,7 +4,6 @@ import { type MediaBinItem } from "~/components/timeline/types"
 import { generateUUID } from "~/utils/uuid"
 import { apiUrl } from "~/utils/api"
 import { uploadFileToGCS, type GetTokenFn } from "~/utils/authApi"
-import { generateUniqueName, cleanFilenameToTitle } from "~/utils/uniqueNameGenerator"
 
 // Delete media file from server (Node.js render server, port 8000)
 export const deleteMediaFile = async (filename: string): Promise<{ success: boolean; message?: string; error?: string }> => {
@@ -151,12 +150,6 @@ export const useMediaBin = (
   const handleAddMediaToBin = useCallback(async (file: File) => {
     const id = generateUUID();
     
-    // Generate title from filename
-    const title = cleanFilenameToTitle(file.name);
-    
-    // Generate unique name from title
-    const name = generateUniqueName(title, mediaBinItems);
-    
     let mediaType: "video" | "image" | "audio";
     if (file.type.startsWith("video/")) mediaType = "video";
     else if (file.type.startsWith("image/")) mediaType = "image";
@@ -166,7 +159,7 @@ export const useMediaBin = (
       return;
     }
 
-    console.log("Adding to bin:", { title, name, mediaType });
+    console.log("Adding to bin:", { filename: file.name, mediaType });
 
     try {
       const mediaUrlLocal = URL.createObjectURL(file);
@@ -176,13 +169,13 @@ export const useMediaBin = (
       console.log("Media metadata:", metadata);
 
       // Add item to media bin immediately with upload progress tracking
+      // Name will be provided by backend after upload
       const newItem: MediaBinItem = {
         id,
-        name,
-        title,
+        name: "uploading...", // Temporary name until backend returns unique name
         mediaType,
         mediaUrlLocal,
-        mediaUrlRemote: null, // Will be set after successful GCS upload
+        mediaUrlRemote: null,
         durationInSeconds: metadata.durationInSeconds ?? 0,
         media_width: metadata.width,
         media_height: metadata.height,
@@ -220,15 +213,17 @@ export const useMediaBin = (
       console.log("📦 Upload result:", uploadResult);
       console.log("🔗 Signed URL:", uploadResult.signed_url);
       console.log("🔗 GCS URI:", uploadResult.gcs_uri);
+      console.log("🏷️  Name from backend:", uploadResult.name);
 
-      // Update item with successful GCS upload result
+      // Update item with successful GCS upload result and backend-provided name
       setMediaBinItems(prev =>
         prev.map(item =>
           item.id === id
             ? {
               ...item,
-              mediaUrlRemote: uploadResult.signed_url || uploadResult.file_url, // Use signed URL for secure browser access
-              gcsUri: uploadResult.gcs_uri, // GCS URI for Vertex AI backend
+              name: uploadResult.name, // Use name from backend
+              mediaUrlRemote: uploadResult.signed_url || uploadResult.file_url,
+              gcsUri: uploadResult.gcs_uri,
               isUploading: false,
               uploadProgress: null,
             }
@@ -236,7 +231,7 @@ export const useMediaBin = (
         )
       );
 
-      console.log("✅ Media item updated - Signed URL:", uploadResult.signed_url, "GCS URI:", uploadResult.gcs_uri);
+      console.log("✅ Media item updated with name:", uploadResult.name);
 
     } catch (error) {
       console.error("Error adding media to bin:", error);
@@ -266,7 +261,7 @@ export const useMediaBin = (
     }
   }, [getToken]);
 
-    const handleAddTextToBin = useCallback((
+  const handleAddTextToBin = useCallback((
     textContent: string,
     fontSize: number = 48,
     fontFamily: string = "Arial",
@@ -274,16 +269,21 @@ export const useMediaBin = (
     textAlign: "left" | "center" | "right" = "center",
     fontWeight: "normal" | "bold" = "normal"
   ) => {
-    // Use first 50 chars of text as title, or "Text" if empty
-    const title = textContent.trim().substring(0, 50) || "Text";
+    // Use first 50 chars of text as base name
+    const baseTitle = textContent.trim().substring(0, 50) || "text";
     
-    // Generate unique name from title
-    const name = generateUniqueName(title, mediaBinItems);
+    // Simple uniqueness check with counter
+    const existingNames = new Set(mediaBinItems.map(item => item.name));
+    let name = baseTitle;
+    let counter = 2;
+    while (existingNames.has(name)) {
+      name = `${baseTitle}_${counter}`;
+      counter++;
+    }
     
     const newItem: MediaBinItem = {
       id: generateUUID(),
       name,
-      title,
       mediaType: "text",
       media_width: 0,
       media_height: 0,
@@ -296,7 +296,7 @@ export const useMediaBin = (
         fontWeight,
       },
       mediaUrlLocal: null,
-      mediaUrlRemote: null, // Text items don't need cloud storage
+      mediaUrlRemote: null,
       durationInSeconds: 0,
       isUploading: false,
       uploadProgress: null,

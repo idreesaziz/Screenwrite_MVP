@@ -31,7 +31,6 @@ import axios from "axios";
 import { apiUrl, getApiBaseUrl } from "~/utils/api";
 import { generateUUID } from "~/utils/uuid";
 import type { GetTokenFn } from "~/utils/authApi";
-import { generateUniqueName } from "~/utils/uniqueNameGenerator";
 import { 
   logUserMessage, 
   logSynthCall, 
@@ -643,10 +642,6 @@ export function ChatBox({
       }
       
       console.log(`🎨 Generated ${contentType} asset:`, generatedAsset);
-      
-      const fileExtension = contentType === 'video' ? 'mp4' : 'png'; // Images and logos are both PNG
-      const generatedFileName = generatedAsset.file_url.split('/').pop() || `${suggestedName}.${fileExtension}`;
-      console.log(`🎨 Generated filename:`, generatedFileName);
       console.log(`🎨 Generated file URL:`, generatedAsset.file_url);
 
       // Create the MediaBinItem for the generated content
@@ -658,22 +653,16 @@ export function ChatBox({
       
       console.log(`🎨 Final ${contentType} URL:`, mediaUrl);
 
-      // Calculate next index for generated media
-      // Generate a nice title for the generated content
-      const baseTitle = suggestedName || generatedFileName.replace(`.${fileExtension}`, '');
-      const title = `Generated ${contentType} - ${baseTitle}`;
-      
-      // Generate unique name from title (use ref for latest state)
-      const name = generateUniqueName(title, mediaBinItemsRef.current);
+      // Use name from backend (already unique)
+      const name = generatedAsset.name;
 
       const newMediaItem: MediaBinItem = {
         id: generateUUID(),
         name,
-        title,
         mediaType: contentType === 'video' ? "video" : contentType === 'audio' ? "audio" : "image",
-        mediaUrlLocal: null, // Not a blob URL
-        mediaUrlRemote: mediaUrl, // Use absolute URL
-        gcsUri: generatedAsset.gcs_uri, // GCS URI for Vertex AI analysis
+        mediaUrlLocal: null,
+        mediaUrlRemote: mediaUrl,
+        gcsUri: generatedAsset.gcs_uri,
         media_width: generatedAsset.width,
         media_height: generatedAsset.height,
         durationInSeconds: (contentType === 'video' || contentType === 'audio') ? (generatedAsset.duration_seconds || 8.0) : 0,
@@ -700,11 +689,11 @@ export function ChatBox({
       // Create success message that clearly indicates completion
       const generationMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Successfully generated ${contentType}: ${suggestedName || generatedFileName}. The ${contentType} has been added to your media library.`,
+        content: `Successfully generated ${contentType}: ${name}. The ${contentType} has been added to your media library.`,
         isUser: false,
         sender: 'tool',
         timestamp: new Date(),
-        isSystemMessage: true, // Show as plain text
+        isSystemMessage: true,
       };
 
       return { messages: [generationMessage], newMediaItem };
@@ -811,17 +800,13 @@ export function ChatBox({
             
           console.log(`🎬 [VIDEO ${index}] Video URL: ${videoUrl}`);
 
-          // Create descriptive title: "Query by Creator - Option N"
-          const title = `${query.charAt(0).toUpperCase() + query.slice(1)} by ${item.creator_name} - Option ${index + 1}`;
-
-          // Generate unique name from title (use ref for latest state)
-          const name = generateUniqueName(title, mediaBinItemsRef.current);
+          // Use name from backend (already unique)
+          const name = item.name;
 
           // Create MediaBinItem for each video
           const mediaItem: MediaBinItem = {
             id: generateUUID(),
             name,
-            title,
             mediaType: "video",
             mediaUrlLocal: null,
             mediaUrlRemote: videoUrl,
