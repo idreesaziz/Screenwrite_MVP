@@ -1,11 +1,12 @@
 """Anthropic Claude implementation of ChatProvider."""
 
-import json
 import logging
 import os
-from typing import List, Dict, Any, AsyncIterator, Optional
+from typing import List, Dict, Any, AsyncIterator, Optional, Type
 from anthropic import AsyncAnthropic
-from anthropic.types import Message, MessageParam, TextBlock, ToolUseBlock
+from anthropic.types import TextBlock
+import instructor
+from pydantic import BaseModel, create_model
 
 from services.base.ChatProvider import ChatProvider, ChatMessage, ChatResponse
 
@@ -45,14 +46,21 @@ class ClaudeChatProvider(ChatProvider):
         self.default_max_tokens = default_max_tokens
         self.default_thinking_budget = default_thinking_budget
         
-        self.client = AsyncAnthropic(api_key=self.api_key)
-        logger.info(f"Initialized Anthropic client with model: {default_model_name}")
+        # Initialize base Anthropic client for standard chat methods
+        self.base_client = AsyncAnthropic(api_key=self.api_key)
+        
+        # Initialize Instructor-wrapped client for structured output methods
+        self.client = instructor.from_anthropic(
+            AsyncAnthropic(api_key=self.api_key),
+            mode=instructor.Mode.ANTHROPIC_TOOLS
+        )
+        logger.info(f"Initialized Instructor-wrapped Anthropic client with model: {default_model_name}")
     
     def _convert_messages(
         self, 
         messages: List[ChatMessage], 
         enable_caching: bool = True
-    ) -> tuple[Optional[List[Dict[str, Any]]], List[MessageParam]]:
+    ) -> tuple[Optional[List[Dict[str, Any]]], List[Dict[str, Any]]]:
         """
         Convert ChatMessage list to Claude format with optional prompt caching.
         
@@ -143,7 +151,7 @@ class ClaudeChatProvider(ChatProvider):
                 "budget_tokens": think
             }
         
-        response = await self.client.messages.create(**request_params)
+        response = await self.base_client.messages.create(**request_params)
         
         # Extract text from response
         content_text = ""
@@ -214,77 +222,9 @@ class ClaudeChatProvider(ChatProvider):
         if system_blocks:
             request_params["system"] = system_blocks
         
-        async with self.client.messages.stream(**request_params) as stream:
+        async with self.base_client.messages.stream(**request_params) as stream:
             async for text in stream.text_stream:
                 yield text
-    
-    def _convert_schema_to_text(self, schema: Dict[str, Any], indent_level: int = 0) -> str:
-        """
-        Recursively convert JSON Schema to natural language instructions for Claude.
-        
-        Performs full traversal of the schema tree to generate comprehensive format instructions.
-        """
-        indent = "  " * indent_level
-        lines = []
-        
-        schema_type = schema.get("type")
-        description = schema.get("description", "")
-        
-        if schema_type == "object":
-            properties = schema.get("properties", {})
-            required_fields = schema.get("required", [])
-            
-            if properties:
-                lines.append(f"{indent}object with properties:")
-                for prop_name, prop_schema in properties.items():
-                    is_required = "(required)" if prop_name in required_fields else "(optional)"
-                    lines.append(f"{indent}  • {prop_name} {is_required}")
-                    
-                    # Recursively process property schema
-                    prop_lines = self._convert_schema_to_text(prop_schema, indent_level + 2)
-                    if prop_lines:
-                        lines.append(prop_lines)
-        
-        elif schema_type == "array":
-            lines.append(f"{indent}array")
-            if description:
-                lines.append(f"{indent}  Description: {description}")
-            
-            if "items" in schema:
-                lines.append(f"{indent}  Each item is:")
-                item_lines = self._convert_schema_to_text(schema["items"], indent_level + 2)
-                if item_lines:
-                    lines.append(item_lines)
-        
-        elif schema_type == "string":
-            enum_values = schema.get("enum")
-            if enum_values:
-                lines.append(f"{indent}string - one of: {', '.join(enum_values)}")
-            else:
-                lines.append(f"{indent}string")
-            
-            if description:
-                lines.append(f"{indent}  Description: {description}")
-        
-        elif schema_type == "number" or schema_type == "integer":
-            constraints = []
-            if "minimum" in schema:
-                constraints.append(f"minimum: {schema['minimum']}")
-            if "maximum" in schema:
-                constraints.append(f"maximum: {schema['maximum']}")
-            
-            constraint_str = f" ({', '.join(constraints)})" if constraints else ""
-            lines.append(f"{indent}{schema_type}{constraint_str}")
-            
-            if description:
-                lines.append(f"{indent}  Description: {description}")
-        
-        elif schema_type == "boolean":
-            lines.append(f"{indent}boolean")
-            if description:
-                lines.append(f"{indent}  Description: {description}")
-        
-        return "\n".join(lines)
     
     async def generate_chat_response_with_schema(
         self,
@@ -296,53 +236,57 @@ class ClaudeChatProvider(ChatProvider):
         **kwargs
     ) -> Dict[str, Any]:
         """
-        Generate a structured response matching a JSON schema using Claude's recommended approach.
+        Generate a structured response matching a JSON schema using Instructor.
         
-        Following Claude's documentation:
-        1. Convert schema to natural language instructions
-        2. Add instructions to system prompt
-        3. Prefill assistant response with opening brace
-        4. Parse the completed JSON response
+        Instructor handles:
+        - Automatic schema conversion to tool calls
+        - Robust JSON parsing with validation
+        - Automatic retries on validation failures
+        - Clean integration with Pydantic models
         """
         if not messages or not response_schema:
             raise ValueError("Messages and schema required")
         
-        # Convert messages with caching enabled (this will cache the full system prompt)
-        system_blocks, claude_messages = self._convert_messages(messages, enable_caching=False)
+        # Convert messages with caching enabled
+        system_blocks, claude_messages = self._convert_messages(messages, enable_caching=True)
         model = model_name or self.default_model_name
         temp = temperature if temperature is not None else self.default_temperature
         think = thinking_budget if thinking_budget is not None else self.default_thinking_budget
         
-        # Convert schema to Claude-friendly text instructions
-        schema_instructions = self._convert_schema_to_text(response_schema)
+        # Create dynamic Pydantic model from JSON schema
+        # Extract properties and required fields from schema
+        properties = response_schema.get("properties", {})
+        required_fields = response_schema.get("required", [])
         
-        # Build enhanced system content with schema instructions
-        base_system = system_blocks if isinstance(system_blocks, str) else (system_blocks[0]["text"] if system_blocks else "")
-        enhanced_system_text = base_system + f"\n\nYou must respond with valid JSON matching this exact structure:\n\n{schema_instructions}\n\nRespond with ONLY valid JSON, no explanations or markdown formatting."
+        # Build field definitions for Pydantic
+        field_definitions = {}
+        for field_name, field_schema in properties.items():
+            field_type = self._json_schema_type_to_python(field_schema)
+            is_required = field_name in required_fields
+            
+            if is_required:
+                field_definitions[field_name] = (field_type, ...)
+            else:
+                field_definitions[field_name] = (Optional[field_type], None)
         
-        # Create system blocks with caching for the enhanced system prompt
-        enhanced_system_blocks = [
-            {
-                "type": "text",
-                "text": enhanced_system_text,
-                "cache_control": {
-                    "type": "ephemeral",
-                    "ttl": "1h"
-                }
-            }
-        ]
+        # Create dynamic Pydantic model
+        DynamicModel = create_model(
+            'DynamicResponseModel',
+            **field_definitions
+        )
         
-        # Prefill assistant response with opening brace
-        prefilled_messages = claude_messages + [{"role": "assistant", "content": "{"}]
-        
+        # Build request parameters
         request_params = {
             "model": model,
-            "messages": prefilled_messages,
-            "system": enhanced_system_blocks,
+            "messages": claude_messages,
             "temperature": temp,
-            "max_tokens": 16384,  # Practical limit (Claude 4.5 supports up to 64K but SDK requires streaming for >10min responses)
+            "max_tokens": 16384,
+            "response_model": DynamicModel,
             **kwargs
         }
+        
+        if system_blocks:
+            request_params["system"] = system_blocks
         
         # Add extended thinking if thinking budget > 0
         if think > 0 and ("claude-4" in model.lower() or "claude-3-5" in model.lower()):
@@ -351,33 +295,46 @@ class ClaudeChatProvider(ChatProvider):
                 "budget_tokens": think
             }
         
-        response = await self.client.messages.create(**request_params)
+        # Use Instructor's create_with_completion to get both response and cache stats
+        response, completion = await self.client.chat.completions.create_with_completion(
+            **request_params
+        )
         
-        # Log cache performance for structured responses (using both logger and print)
-        if hasattr(response.usage, 'cache_read_input_tokens') and response.usage.cache_read_input_tokens > 0:
-            msg = f"✅ CACHE HIT (structured)! Read {response.usage.cache_read_input_tokens} tokens from cache"
+        # Log cache performance
+        if hasattr(completion.usage, 'cache_read_input_tokens') and completion.usage.cache_read_input_tokens > 0:
+            msg = f"✅ CACHE HIT (structured)! Read {completion.usage.cache_read_input_tokens} tokens from cache"
             logger.info(msg)
             print(f"\n{'='*80}\n{msg}\n{'='*80}\n")
-        if hasattr(response.usage, 'cache_creation_input_tokens') and response.usage.cache_creation_input_tokens > 0:
-            msg = f"📝 Cache write (structured): {response.usage.cache_creation_input_tokens} tokens written to cache"
+        if hasattr(completion.usage, 'cache_creation_input_tokens') and completion.usage.cache_creation_input_tokens > 0:
+            msg = f"📝 Cache write (structured): {completion.usage.cache_creation_input_tokens} tokens written to cache"
             logger.info(msg)
             print(f"\n{'='*80}\n{msg}\n{'='*80}\n")
         
-        # Extract text content from response
-        response_text = ""
-        for block in response.content:
-            if isinstance(block, TextBlock):
-                response_text += block.text
+        # Convert Pydantic model to dict
+        return response.model_dump()
+    
+    def _json_schema_type_to_python(self, field_schema: Dict[str, Any]) -> type:
+        """Convert JSON schema type to Python type for Pydantic."""
+        schema_type = field_schema.get("type")
         
-        # Prepend the opening brace we prefilled and parse
-        full_json = "{" + response_text
-        
-        try:
-            return json.loads(full_json)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse Claude's JSON response: {e}")
-            logger.error(f"Response text: {full_json[:500]}...")
-            raise RuntimeError(f"Claude did not return valid JSON: {e}")
+        if schema_type == "string":
+            return str
+        elif schema_type == "integer":
+            return int
+        elif schema_type == "number":
+            return float
+        elif schema_type == "boolean":
+            return bool
+        elif schema_type == "array":
+            items_schema = field_schema.get("items", {})
+            item_type = self._json_schema_type_to_python(items_schema)
+            return List[item_type]
+        elif schema_type == "object":
+            # For nested objects, use Dict[str, Any]
+            return Dict[str, Any]
+        else:
+            # Default to Any for unknown types
+            return Any
     
     async def count_tokens(
         self,
