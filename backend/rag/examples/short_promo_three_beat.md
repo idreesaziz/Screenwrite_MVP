@@ -13,7 +13,7 @@
 2. **FETCH** - Search for "product detail cinematic"
    → System returns: 3 videos found
 
-3. **CHAT** - "I found 3 cinematic videos. Now I'll generate the brand assets for the finale, then analyze everything together."
+3. **INFO** - "I found 3 cinematic videos. Now I'll generate the brand assets for the finale, then analyze everything together."
 
 4. **INFO** - "I'll generate a transparent logo graphic for your brand."
 
@@ -68,9 +68,11 @@
    
    End-card (promo-brand-endcard.png): [aesthetic-description], [color-palette] ([hex-codes]), [texture-description], optimal text colors: [text-color-recommendation] for high contrast.
 
-10. **INFO** - "Based on my analysis of all assets, I've selected the most cinematic segments that create a compelling three-beat narrative arc with a strong branded finale."
+10. **INFO** - "Based on my analysis of all assets, I've selected the most cinematic segments that create a compelling three-beat narrative arc with a strong branded finale. Each segment has clear text placement areas and strong visual interest."
 
-11. **INFO** - "Now I'll generate a voiceover script to narrate the promotional video. The script is: '[VOICEOVER-SCRIPT-TEXT]'. I'll generate the audio now."
+*[Extended Thinking Context - Model reasons internally about: segment selection criteria, narrative arc progression, timing strategy, emotional flow. Then outputs the INFO above with decisions.]*
+
+11. **INFO** - "Now I'll generate a voiceover to narrate the promotional video."
 
 12. **GENERATE** - Audio generation
    ```json
@@ -106,23 +108,11 @@
    → Result: Word-level timestamps:
    Word-by-word breakdown with start and end times in seconds (decimal precision to 3 places, e.g., 0.123s, 1.456s)
 
-16. **INFO** - "Now I'll reason through the text styling decisions and voiceover synchronization strategy."
+16. **INFO** - "I've designed the complete visual composition with text overlays, positioning, styling, and transitions that create emotional progression and visual rhythm."
 
-17. **INFO** - "I've analyzed the segments and designed the complete composition with text overlays, positioning, styling, and transitions. Let me present the plan."
+*[Extended Thinking Context - Model reasons internally about: clip selection & sequencing, overlay content strategy, positioning & continuity (center vs top/bottom center), styling choices (colors, sizing 80-120px, shadows vs outlines vs both, font weights), transition strategy (types and durations), timing strategy. Then outputs the INFO above with design decisions.]*
 
-18. **CHAT** - "*[Internal Reasoning - Not Output to User]:*
-*Before presenting the plan, I reason through these dimensions:*
-
-1. **Clip Selection & Sequencing:** Which segments best represent each beat? What trim ranges maximize visual interest while staying concise?
-2. **Overlay Content Strategy:** What messaging creates emotional progression? Short, punchy messages = opportunity for bold, large sizing that commands attention.
-3. **Overlay Positioning & Continuity:** Based on probe data (colors, brightness, clear regions), which anchor positions provide best legibility? Default to 'center' for maximum impact—it's the most powerful position, commanding full attention. Use 'top center' or 'bottom center' only when the center region has critical action or visual clutter. How does positioning guide the viewer's eye through the narrative?
-4. **Overlay Styling:** What text colors contrast with each background? For promotional videos, favor large, bold sizing (80px-120px range) that fills the frame with confidence. Mix and match styling treatments across beats for visual variety—use shadows on some beats, outlines on others, or combine both. Vary font weights (bold vs regular) to create rhythm. What shadows/outlines ensure legibility against busy backgrounds?
-5. **Transition Strategy:** Which transition types ('fade', 'Wipe Right', etc.) and durations (0.5s, 1.0s) match the emotional tone of each beat shift?
-6. **Timing Strategy:** When should text appear/exit relative to clip action to maximize impact without overwhelming the visual?
-
-*[Output to User - Polished Plan]:*
-
-Here's my complete plan for your promotional video:
+17. **CHAT** - "Here's my complete plan for the visual elements of your promotional video:
 
 I'll create a cinematic four-beat structure that builds emotional engagement through craft, artistry, impact, and a strong brand finish.
 
@@ -154,14 +144,11 @@ I'll create a cinematic four-beat structure that builds emotional engagement thr
 
 *Continuity note:* All beats use centered positioning for consistent focus. Styling varies across beats—alternating between shadow-only (Beat 1), outline-only (Beat 2), shadow+outline combo (Beat 3), and clean minimal with logo+text (Beat 4)—creating visual rhythm while maintaining cohesion. Font choices progress from modern sans (Montserrat) → neutral (Inter) → rounded (Poppins) → display (Bebas Neue) for finale. Logo graphic with text creates professional branded finish.
 
-**Voiceover Integration:**
-*   Voiceover spans the entire video, providing continuous narration
-*   Audio will be split and placed across beats to match visual pacing
-*   I'll synchronize voiceover segments with video clips after placing the visual elements
-
-Does this work? Say 'yes' to proceed."
+Does this visual structure work? Say 'yes' to proceed."
 
     → User: "yes"
+
+18. **INFO** - "I will now place all visual elements on the timeline."
 
 19. **EDIT** - "1. Add video 'Video 1' at 0.0s on the timeline, trimmed to start from [clip-start-time]s in the source video and end at [clip-end-time]s in the source video.
 2. At [text-timing]s on the timeline, add BlurText '[BEAT-1-MESSAGE]' in [text-color], 100px 'Montserrat', bold weight, positioned at 'center', with [shadow-color] text shadow (4px offset).
@@ -177,38 +164,11 @@ Does this work? Say 'yes' to proceed."
 12. At [text-timing]s on the timeline, add BlurText '[BRAND-NAME]' in [brand-color], 90px 'Bebas Neue', bold weight, positioned at 'center'.
 13. At [text-timing]s on the timeline, add BlurText '[CTA-MESSAGE]' in [cta-color], 50px 'Inter', regular weight, positioned at 'bottom center'."
 
-20. **INFO** - "Now I'll reason through the voiceover placement strategy based on the current composition structure and word-level timestamps."
+20. **INFO** - "I've determined how to split and synchronize the voiceover across the four beats based on the composition timing and word-level timestamps."
 
-21. **INFO** - "*[Internal Reasoning - Not Output to User]:*
+*[Extended Thinking Context - Model reasons internally about: current composition structure (beat start times and durations), voiceover word timestamps, audio clip placement strategy (which words correspond to which beats, exact startFrom/endAt values), synchronization considerations (alignment with beat starts, decimal precision). Then outputs the INFO above with synchronization decisions.]*
 
-*I need to analyze the current composition and determine how to split and place the voiceover:*
-
-1. **Current Composition Structure:**
-   - Beat 1 (Video 1): Starts at composition time X, duration Y seconds
-   - Beat 2 (Video 2): Starts at composition time X, duration Y seconds
-   - Beat 3 (Video 3): Starts at composition time X, duration Y seconds
-   - Beat 4 (End-card): Starts at composition time X, duration Y seconds
-   - Total composition duration: Z seconds
-
-2. **Voiceover Word Timestamps:**
-   - Total voiceover duration from analysis
-   - Identify which words/phrases correspond to each beat based on content
-   - Group words by semantic meaning matching each beat's theme
-   - Note precise start/end times for each word group (using decimal precision from analysis)
-
-3. **Audio Clip Placement Strategy:**
-   - For each beat, determine the corresponding word range in the voiceover
-   - Calculate exact startFrom and endAt values from word timestamps (decimal precision)
-   - Place each audio segment at the composition timeline position where that beat starts
-   - Ensure audio segments align with video beat starts for synchronization
-
-4. **Synchronization Considerations:**
-   - Each audio segment should align with the start of its corresponding video beat
-   - Use precise decimal timestamps from word-level analysis (e.g., 1.234s not 1.2s)
-   - Set volume appropriately (e.g., 0.8) for clear narration
-   - Each segment uses startFrom/endAt to trim from the source audio file precisely
-
-*Now I'll execute the voiceover placement edits.*"
+21. **INFO** - "I will now place the audio elements on the timeline."
 
 22. **EDIT** - "Audio placement instructions using precise decimal timestamps from analysis:
 1. Add audio from the voiceover file at the start time of Beat 1, trimmed to the exact word range for Beat 1 (using startFrom and endAt with decimal precision).
@@ -216,5 +176,7 @@ Does this work? Say 'yes' to proceed."
 3. Add audio from the voiceover file at the start time of Beat 3, trimmed to the exact word range for Beat 3.
 4. Add audio from the voiceover file at the start time of Beat 4, trimmed to the exact word range for Beat 4.
 All segments use volume 0.8."
+
+23. **CHAT** - "Your promotional video is complete! I've created a four-beat cinematic structure with synchronized voiceover, professional text styling, and a strong branded finale."
 
 **→ DONE**

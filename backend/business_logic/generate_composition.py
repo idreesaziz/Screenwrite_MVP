@@ -22,6 +22,100 @@ from prompts.composition_prompts import build_blueprint_prompt
 logger = logging.getLogger(__name__)
 
 
+def fix_image_aspect_ratios(tracks: List[Dict]) -> List[Dict]:
+    """
+    Fix image/video aspect ratios by adding height:auto or width:auto when one dimension is set.
+    
+    When width or height is specified (as percentage or fixed value) on Img/Video elements,
+    the other dimension should be 'auto' to preserve aspect ratio. This function adds the
+    missing auto property to prevent distortion.
+    
+    Algorithm:
+    - For each track → clips → elements
+    - Parse element strings (format: "Tag;prop:value;...")
+    - If element is Img or Video:
+      - If width is set but height is not → add height:auto
+      - If height is set but width is not → add width:auto
+      - If both set or neither set → no change needed
+    
+    Args:
+        tracks: List of track dictionaries with 'clips' arrays
+        
+    Returns:
+        Modified tracks with aspect ratio fixes applied
+    """
+    fix_count = 0
+    
+    for track_idx, track in enumerate(tracks):
+        clips = track.get('clips', [])
+        
+        for clip_idx, clip in enumerate(clips):
+            element = clip.get('element', {})
+            elements = element.get('elements', [])
+            
+            fixed_elements = []
+            for elem_str in elements:
+                # Parse element string: "Tag;prop1:value1;prop2:value2;..."
+                if not elem_str or ';' not in elem_str:
+                    fixed_elements.append(elem_str)
+                    continue
+                
+                parts = elem_str.split(';')
+                tag = parts[0]
+                
+                # Only fix Img and Video elements
+                if tag not in ['Img', 'Video']:
+                    fixed_elements.append(elem_str)
+                    continue
+                
+                # Parse properties into dict
+                props = {}
+                for part in parts[1:]:
+                    if ':' in part:
+                        key, value = part.split(':', 1)
+                        props[key] = value
+                
+                # Check if width/height need auto complement
+                has_width = 'width' in props
+                has_height = 'height' in props
+                
+                needs_fix = False
+                if has_width and not has_height:
+                    props['height'] = 'auto'
+                    needs_fix = True
+                    fix_count += 1
+                    logger.info(
+                        f"🔧 Fixed aspect ratio: Added height:auto to {tag} "
+                        f"(track {track_idx}, clip '{clip.get('id')}')"
+                    )
+                elif has_height and not has_width:
+                    props['width'] = 'auto'
+                    needs_fix = True
+                    fix_count += 1
+                    logger.info(
+                        f"🔧 Fixed aspect ratio: Added width:auto to {tag} "
+                        f"(track {track_idx}, clip '{clip.get('id')}')"
+                    )
+                
+                # Reconstruct element string
+                if needs_fix:
+                    reconstructed = tag
+                    for key, value in props.items():
+                        reconstructed += f';{key}:{value}'
+                    fixed_elements.append(reconstructed)
+                else:
+                    fixed_elements.append(elem_str)
+            
+            # Update elements if any were fixed
+            if element.get('elements') != fixed_elements:
+                element['elements'] = fixed_elements
+    
+    if fix_count > 0:
+        logger.info(f"✅ Fixed {fix_count} image/video aspect ratio(s) across all tracks")
+    
+    return tracks
+
+
 def resolve_track_overlaps(tracks: List[Dict]) -> List[Dict]:
     """
     Resolve overlapping clips on the same track by shifting clips to the right.
@@ -193,6 +287,9 @@ class CompositionGenerationService:
             
             # Safety check: Resolve any overlapping clips on the same track
             result_dict = resolve_track_overlaps(result_dict)
+            
+            # Safety check: Fix image/video aspect ratios
+            result_dict = fix_image_aspect_ratios(result_dict)
             
             # Convert dict back to JSON string
             composition_json = json.dumps(result_dict)

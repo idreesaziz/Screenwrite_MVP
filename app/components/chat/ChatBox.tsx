@@ -1170,7 +1170,7 @@ export function ChatBox({
         sender: 'system',
         timestamp: new Date(),
         isSystemMessage: true,
-        alreadyInUI: true, // Mark as already added to UI
+        // Don't mark as alreadyInUI so it gets sent to backend as context
       };
       
       // Show fetching message immediately in UI

@@ -100,7 +100,7 @@ def get_chat_provider() -> ChatProvider:
         return ClaudeChatProvider(
             default_model_name=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
             default_temperature=1.0,
-            default_thinking_budget=0
+            default_thinking_budget=2000
         )
     elif provider_type == "openai":
         return OpenAIChatProvider(
@@ -143,7 +143,7 @@ def get_chat_provider_by_name(provider_name: str, thinking_budget: int = 8000) -
         return ClaudeChatProvider(
             default_model_name=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
             default_temperature=1.0,
-            default_thinking_budget=0
+            default_thinking_budget=2000
         )
     elif provider_name == "openai":
         return OpenAIChatProvider(
