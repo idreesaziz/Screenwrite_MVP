@@ -70,8 +70,8 @@ class AgentService:
         logger.info(f"Processing conversation with {len(conversation_history) if conversation_history else 0} messages")
         
         try:
-            # Build static system prompt (will be cached by provider)
-            system_prompt = build_agent_system_prompt()
+            # Build static system prompt base (will be cached by provider)
+            system_prompt_base = build_agent_system_prompt()
             
             # Retrieve relevant example using LLM-based RAG
             retrieved_example = None
@@ -93,6 +93,12 @@ class AgentService:
                 except Exception as e:
                     logger.error(f"Error during LLM-based RAG: {e}")
                     logger.info("Continuing without RAG example")
+            
+            # Append RAG example to system prompt (cached, not in conversation)
+            system_prompt = system_prompt_base
+            if retrieved_example:
+                system_prompt += f"\n\n---\n\n# REFERENCE EXAMPLE FOR AGENTIC BEHAVIOR\n\nThe following example from '{retrieved_filename}' demonstrates the agentic workflow pattern you should follow. Study how it progresses through steps autonomously. Use this as a behavioral guide, but adapt the specific actions to the current user request.\n\n{retrieved_example}\n\n---\n\nNow proceed with the actual conversation below, following the agentic pattern demonstrated in the example above."
+                logger.info(f"📎 Appended RAG example ({retrieved_filename}) to system prompt for caching")
             
             # Build context for the agent
             context_parts = []
@@ -130,28 +136,18 @@ class AgentService:
             ]
             
             # Add conversation history as actual message turns
-            # IMPORTANT: Prepend RAG example + dynamic context to the FIRST user message to preserve cache
+            # Dynamic context prepended ONLY to first user message (composition, media library)
             if conversation_history:
                 logger.info(f"📚 Adding {len(conversation_history)} conversation messages as actual message turns")
                 for i, msg in enumerate(conversation_history):
                     role = msg.get('role', 'user')
                     content = msg.get('content', '')
                     
-                    # Prepend RAG example and context to the first user message
+                    # Prepend dynamic context to the first user message only
                     if i == 0 and role == 'user':
-                        prefix_parts = []
-                        
-                        # Add RAG example first if available
-                        if retrieved_example:
-                            prefix_parts.append(f"# REFERENCE EXAMPLE\n\nThe following is a reference example from '{retrieved_filename}' that demonstrates best practices for similar requests. Use it as a guide for structure and workflow patterns, but adapt it to the current request:\n\n{retrieved_example}\n\n---")
-                            logger.debug(f"  Added RAG example ({retrieved_filename}) to first user message")
-                        
                         # Add dynamic context
-                        prefix_parts.append(full_context)
-                        
-                        # Combine prefix with actual user message
-                        content = f"{chr(10).join(prefix_parts)}\n\n---\n\n{content}"
-                        logger.debug(f"  Prepended RAG example + dynamic context to first user message")
+                        content = f"{full_context}\n\n---\n\n{content}"
+                        logger.debug(f"  Prepended dynamic context to first user message")
                     
                     messages.append(ChatMessage(role=role, content=content))
                     logger.debug(f"  Added {role} message: {content[:80]}...")
@@ -186,7 +182,8 @@ class AgentService:
                     "session_id": session_id,
                     "timestamp": timestamp,
                     "total_messages": len(messages),
-                    "note": "Dynamic context (composition, media library, duration) prepended to first user message to preserve cache",
+                    "note": "RAG example appended to system prompt (cached). Dynamic context prepended to first user message only.",
+                    "rag_example_used": retrieved_filename if retrieved_example else None,
                     "messages_sent_to_ai": messages_for_log,
                     "system_prompt_static": messages[0].content if messages and messages[0].role == "system" else None,
                     "conversation_messages": [
