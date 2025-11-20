@@ -5,12 +5,12 @@ import { Button } from "~/components/ui/button";
 interface ProviderPairing {
   id: string;
   editEngine: "gemini" | "claude";
-  agent: "gemini" | "claude" | "openai";
+  agent: "gemini" | "gemini-3-low" | "gemini-3-high" | "claude" | "openai";
   label: string;
   description: string;
   recommended?: boolean;
   best?: boolean;
-  costLevel: 1 | 2 | 3 | 4; // 1 = cheapest, 4 = most expensive
+  costLevel: 1 | 2 | 3 | 4 | 5; // 1 = cheapest, 5 = most expensive
   speedLevel: 1 | 2 | 3; // 1 = fastest, 3 = slowest
 }
 
@@ -24,6 +24,24 @@ const PROVIDER_PAIRINGS: ProviderPairing[] = [
     recommended: true,
     costLevel: 1,
     speedLevel: 1,
+  },
+  {
+    id: "gemini-gemini-3-low",
+    editEngine: "gemini",
+    agent: "gemini-3-low",
+    label: "Gemini 2.5 Flash + Gemini 3 Pro (Low Thinking)",
+    description: "Affordable. Advanced reasoning with controlled thinking budget.",
+    costLevel: 2,
+    speedLevel: 1,
+  },
+  {
+    id: "gemini-gemini-3-high",
+    editEngine: "gemini",
+    agent: "gemini-3-high",
+    label: "Gemini 2.5 Flash + Gemini 3 Pro (High Thinking)",
+    description: "Mid-range. Maximum reasoning with extended thinking.",
+    costLevel: 3,
+    speedLevel: 2,
   },
   {
     id: "gemini-claude",
@@ -44,12 +62,21 @@ const PROVIDER_PAIRINGS: ProviderPairing[] = [
     speedLevel: 2,
   },
   {
+    id: "claude-gemini-3-high",
+    editEngine: "claude",
+    agent: "gemini-3-high",
+    label: "Claude Sonnet 4.5 + Gemini 3 Pro (High)",
+    description: "Premium. Claude edits with cutting-edge Gemini 3 reasoning.",
+    best: true,
+    costLevel: 4,
+    speedLevel: 2,
+  },
+  {
     id: "claude-claude",
     editEngine: "claude",
     agent: "claude",
     label: "Claude Sonnet 4.5 + Claude Sonnet 4.5",
     description: "Premium. Maximum quality and reasoning capability.",
-    best: true,
     costLevel: 3,
     speedLevel: 2,
   },
@@ -66,7 +93,7 @@ const PROVIDER_PAIRINGS: ProviderPairing[] = [
 
 interface ProviderPairingModalProps {
   isOpen: boolean;
-  onSelect: (editProvider: "gemini" | "claude", agentProvider: "gemini" | "claude" | "openai") => void;
+  onSelect: (editProvider: "gemini" | "claude", agentProvider: "gemini" | "gemini-3-low" | "gemini-3-high" | "claude" | "openai") => void;
 }
 
 export function ProviderPairingModal({ isOpen, onSelect }: ProviderPairingModalProps) {
@@ -140,7 +167,7 @@ export function ProviderPairingModal({ isOpen, onSelect }: ProviderPairingModalP
                       <div className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3 text-muted-foreground" />
                         <div className="flex gap-0.5">
-                          {[1, 2, 3, 4].map((level) => (
+                          {[1, 2, 3, 4, 5].map((level) => (
                             <div
                               key={level}
                               className={`w-1.5 h-3 rounded-sm ${

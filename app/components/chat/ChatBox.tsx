@@ -126,7 +126,7 @@ interface ChatBoxProps {
   getToken: GetTokenFn;
   // Provider selection
   initialEditProvider?: "gemini" | "claude";
-  initialAgentProvider?: "gemini" | "claude" | "openai";
+  initialAgentProvider?: "gemini" | "gemini-3-low" | "gemini-3-high" | "claude" | "openai";
 }
 
 export function ChatBox({
@@ -1543,7 +1543,15 @@ export function ChatBox({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-6 text-xs">
-                  {selectedModel === "gemini" ? "Gemini" : selectedModel === "claude" ? "Claude" : "GPT-4.1"}
+                  {selectedModel === "gemini" 
+                    ? "Gemini 2.5" 
+                    : selectedModel === "gemini-3-low"
+                    ? "Gemini 3 Low"
+                    : selectedModel === "gemini-3-high"
+                    ? "Gemini 3 High"
+                    : selectedModel === "claude" 
+                    ? "Claude" 
+                    : "GPT-4.1"}
                   <ChevronDown className="w-3 h-3 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
@@ -1552,7 +1560,19 @@ export function ChatBox({
                   onClick={() => setSelectedModel("gemini")}
                   className="text-xs"
                 >
-                  Gemini
+                  Gemini 2.5
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedModel("gemini-3-low")}
+                  className="text-xs"
+                >
+                  Gemini 3 Low
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedModel("gemini-3-high")}
+                  className="text-xs"
+                >
+                  Gemini 3 High
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setSelectedModel("claude")}
