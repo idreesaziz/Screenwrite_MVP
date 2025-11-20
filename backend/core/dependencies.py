@@ -19,6 +19,7 @@ from services.base.VoiceGenerationProvider import VoiceGenerationProvider
 from services.google.GeminiMediaAnalysisProvider import GeminiMediaAnalysisProvider
 from services.google.GCStorageProvider import GCStorageProvider
 from services.google.GeminiChatProvider import GeminiChatProvider
+from services.google.Gemini3ChatProvider import Gemini3ChatProvider
 from services.anthropic.ClaudeChatProvider import ClaudeChatProvider
 from services.openai.OpenAIChatProvider import OpenAIChatProvider
 from services.pexels.PexelsMediaProvider import PexelsMediaProvider
@@ -138,6 +139,22 @@ def get_chat_provider_by_name(provider_name: str, thinking_budget: int = 8000) -
             default_model_name=os.getenv("CHAT_MODEL", "gemini-2.5-flash"),
             default_temperature=1.0,
             default_thinking_budget=thinking_budget
+        )
+    elif provider_name == "gemini-3-low":
+        return Gemini3ChatProvider(
+            project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location="global",
+            default_model_name="gemini-3-pro-preview",
+            default_temperature=1.0,
+            default_thinking_level="low"
+        )
+    elif provider_name == "gemini-3-high":
+        return Gemini3ChatProvider(
+            project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location="global",
+            default_model_name="gemini-3-pro-preview",
+            default_temperature=1.0,
+            default_thinking_level="high"
         )
     elif provider_name == "claude":
         return ClaudeChatProvider(
