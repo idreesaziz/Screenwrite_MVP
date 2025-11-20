@@ -659,6 +659,7 @@ export function ChatBox({
       const newMediaItem: MediaBinItem = {
         id: generateUUID(),
         name,
+        title: name,
         mediaType: contentType === 'video' ? "video" : contentType === 'audio' ? "audio" : "image",
         mediaUrlLocal: null,
         mediaUrlRemote: mediaUrl,
@@ -807,6 +808,7 @@ export function ChatBox({
           const mediaItem: MediaBinItem = {
             id: generateUUID(),
             name,
+            title: name,
             mediaType: "video",
             mediaUrlLocal: null,
             mediaUrlRemote: videoUrl,
@@ -882,13 +884,13 @@ export function ChatBox({
     console.log("🧠 Processing conversational message with unified workflow:", messageContent);
 
     // Initialize unified workflow state
-    let allResponseMessages: Message[] = [];
+    // We maintain a local history that is perfectly synchronous with what we want the agent to see
+    // This ensures the agent sees its own actions and doesn't repeat them
+    let conversationHistory: Message[] = [...currentMessages];
+    
     let continueWorkflow = true;
     let iterationCount = 0;
     const MAX_ITERATIONS = 20; // Prevent infinite loops
-    
-    // Track generated items during this workflow (they won't appear in mediaBinItems prop until re-render)
-    let generatedItemsThisWorkflow: MediaBinItem[] = [];
     
     // Create AbortController for cancellation
     const abortController = new AbortController();
@@ -899,139 +901,96 @@ export function ChatBox({
     
     // Start the loading indicator for the entire workflow
     setIsInSynthLoop(true);
+
+    // Helper to add message to both UI and local history sequentially
+    const addMessageToHistory = (message: Message) => {
+        // Add to local history for the agent's next turn
+        conversationHistory.push(message);
+        // Add to UI immediately
+        onMessagesChange(prev => [...prev, message]);
+    };
     
     try {
-      // Unified workflow loop: synth → route → execute → check continuation → repeat until sleep
+      // Unified workflow loop: synth → execute → update history → repeat
       while (continueWorkflow && continueWorkflowRef.current && iterationCount < MAX_ITERATIONS) {
         iterationCount++;
         console.log(`🔄 Unified workflow iteration ${iterationCount}`);
       
-      try {
-        // Build current conversation state (including all new messages from this workflow)
-        // IMPORTANT: Only include messages that should be in conversation history
-        // System messages with alreadyInUI=true are shown in UI but NOT sent to backend
-        const conversationMessages: ConversationMessage[] = [
-          ...currentMessages
-            .filter(msg => !msg.alreadyInUI) // Exclude UI-only messages
-            .map(msg => ({
+        try {
+            // Prepare context for the synth
+            // We map the Message objects to ConversationMessage objects expected by the synth
+            const conversationMessages: ConversationMessage[] = conversationHistory.map(msg => ({
               id: msg.id,
               content: msg.content,
               isUser: msg.isUser,
               timestamp: msg.timestamp,
               sender: msg.sender ?? (msg.isUser ? 'user' : 'assistant')
-            })),
-          ...allResponseMessages
-            .filter(msg => !msg.alreadyInUI) // Exclude UI-only messages
-            .map(msg => ({
-              id: msg.id,
-              content: msg.content,
-              isUser: msg.isUser,
-              timestamp: msg.timestamp,
-              sender: msg.sender ?? (msg.isUser ? 'user' : 'assistant')
-            }))
-        ];
-        
-        console.log(`📚 Built conversation with ${conversationMessages.length} messages (${currentMessages.length} current + ${allResponseMessages.length} new):`,
-          conversationMessages.map((m, i) => ({ 
-            index: i, 
-            isUser: m.isUser, 
-            preview: m.content.substring(0, 60) + '...'
-          }))
-        );
+            }));
 
-        // Build synth context with latest state using ref (always current, even during async workflow)
-        const currentMediaBin = mediaBinItemsRef.current;
-        const synthContext: SynthContext = {
-          messages: conversationMessages,
-          currentComposition: currentComposition ? JSON.parse(currentComposition) : undefined,
-          mediaLibrary: currentMediaBin, // Use ref to get latest state including newly generated items
-          compositionDuration: undefined,
-          provider: selectedModel // Pass selected agent provider
-        };
-        
-        console.log(`📚 Media library has ${currentMediaBin.length} items for iteration ${iterationCount}`);
+            // Build synth context with latest state using ref (always current)
+            const currentMediaBin = mediaBinItemsRef.current;
+            const synthContext: SynthContext = {
+                messages: conversationMessages,
+                currentComposition: currentComposition ? JSON.parse(currentComposition) : undefined,
+                mediaLibrary: currentMediaBin,
+                compositionDuration: undefined,
+                provider: selectedModel
+            };
 
-        // Call synth for decision
-        await logSynthCall("conversation_analysis", synthContext);
-        
-        const synthResponse = await synth.processMessage(synthContext, abortController.signal);
-        await logSynthResponse(synthResponse);
-        
-        console.log(`🎯 Synth response type: ${synthResponse.type}`);
+            console.log(`📚 Media library has ${currentMediaBin.length} items for iteration ${iterationCount}`);
+            await logSynthCall("conversation_analysis", synthContext);
+            
+            // Get the next action from the agent
+            const synthResponse = await synth.processMessage(synthContext, abortController.signal);
+            await logSynthResponse(synthResponse);
+            
+            console.log(`🎯 Synth response type: ${synthResponse.type}`);
 
-        // Route to appropriate handler and execute action
-        const stepMessages = await executeResponseAction(synthResponse, conversationMessages, synthContext, abortController.signal);
-        
-        console.log(`📝 Step ${iterationCount} returned ${stepMessages.length} message(s):`, 
-          stepMessages.map(m => ({ isSystem: m.isSystemMessage, content: m.content.substring(0, 50) + '...' }))
-        );
-        
-        // Add step messages to our collection
-        allResponseMessages.push(...stepMessages);
-        
-        // Update UI immediately with new messages (skip those already added)
-        const newMessagesForUI = stepMessages.filter(m => !m.alreadyInUI);
-        if (newMessagesForUI.length > 0) {
-          onMessagesChange(prevMessages => [...prevMessages, ...newMessagesForUI]);
+            // Execute the action and update history
+            // We pass addMessageToHistory so the action can append messages sequentially
+            const shouldContinue = await executeResponseAction(
+                synthResponse, 
+                synthContext, 
+                addMessageToHistory, 
+                abortController.signal
+            );
+
+            continueWorkflow = shouldContinue;
+
+        } catch (error) {
+            console.error(`❌ Unified workflow iteration ${iterationCount} failed:`, error);
+            await logSynthResponse({ error: error instanceof Error ? error.message : String(error) });
+            
+            const errorMessage: Message = {
+                id: (Date.now() + iterationCount).toString(),
+                content: "I'm having trouble processing your request. Let me try a different approach.",
+                isUser: false,
+                sender: 'system',
+                timestamp: new Date(),
+                isSystemMessage: true
+            };
+            addMessageToHistory(errorMessage);
+            continueWorkflow = false;
         }
-        
-        console.log(`📚 Total messages in history for next iteration: ${conversationMessages.length + stepMessages.length}`);
-
-        // Check if workflow should continue
-        if (synthResponse.type === 'chat') {
-          console.log("💬 Chat response - stopping unified workflow");
-          continueWorkflow = false;
-        } else if (synthResponse.type === 'edit') {
-          console.log("✅ Edit response - stopping unified workflow after implementation");
-          continueWorkflow = false;
-        } else if (stepMessages.some(msg => msg.hasRetryButton)) {
-          console.log("⏸️ Retry button message - stopping workflow until retry");
-          continueWorkflow = false;
-        } else {
-          console.log(`🔄 ${synthResponse.type} response - workflow will continue with updated conversation`);
-          // No need to set currentMessageContent - the AI will see the updated conversation history
-        }
-        
-      } catch (error) {
-        console.error(`❌ Unified workflow iteration ${iterationCount} failed:`, error);
-        await logSynthResponse({ error: error instanceof Error ? error.message : String(error) });
-        
-        const errorMessage: Message = {
-          id: (Date.now() + iterationCount).toString(),
-          content: "I'm having trouble processing your request. Let me try a different approach.",
-          isUser: false,
-          sender: 'system',
-          timestamp: new Date(),
-        };
-        
-        // Add to both collections for consistency (UI handled here, no double addition)
-        allResponseMessages.push(errorMessage);
-        onMessagesChange(prevMessages => [...prevMessages, errorMessage]);
-        continueWorkflow = false;
       }
-    }
 
-    if (iterationCount >= MAX_ITERATIONS) {
-      console.warn("⚠️ Unified workflow hit max iterations limit");
-      const maxIterationMessage: Message = {
-        id: Date.now().toString(),
-        content: "I've completed several steps but need to pause here. How can I help you next?",
-        isUser: false,
-        sender: 'system',
-        timestamp: new Date(),
-      };
-      allResponseMessages.push(maxIterationMessage);
-      onMessagesChange(prevMessages => [...prevMessages, maxIterationMessage]);
-    }
+      if (iterationCount >= MAX_ITERATIONS) {
+          console.warn("⚠️ Unified workflow hit max iterations limit");
+          const maxIterationMessage: Message = {
+            id: Date.now().toString(),
+            content: "I've completed several steps but need to pause here. How can I help you next?",
+            isUser: false,
+            sender: 'system',
+            timestamp: new Date(),
+            isSystemMessage: true
+          };
+          addMessageToHistory(maxIterationMessage);
+      }
 
-    // Auto-collapse any analysis result messages (removed - now handled immediately when creating messages)
-    
-    // Save log after complete workflow
-    await logWorkflowComplete();
-    
+      await logWorkflowComplete();
+
     } catch (error) {
       console.error("❌ Unified workflow failed:", error);
-      // Check if error is due to abort
       if (error instanceof Error && error.name === 'AbortError') {
         console.log("🛑 Workflow was cancelled by user");
         const cancelMessage: Message = {
@@ -1040,223 +999,194 @@ export function ChatBox({
           isUser: false,
           sender: 'system',
           timestamp: new Date(),
+          isSystemMessage: true
         };
         onMessagesChange(prevMessages => [...prevMessages, cancelMessage]);
       } else {
-        // Add error message to UI
         const errorMessage: Message = {
           id: Date.now().toString(),
           content: "I'm having trouble processing your request. Please try again.",
           isUser: false,
           sender: 'system',
           timestamp: new Date(),
+          isSystemMessage: true
         };
         onMessagesChange(prevMessages => [...prevMessages, errorMessage]);
       }
     } finally {
-      // Always clear the loading indicator and controller when workflow ends
       setIsInSynthLoop(false);
       abortControllerRef.current = null;
       continueWorkflowRef.current = false;
     }
-    
-    // Unified workflow handles all UI updates internally
-    return;
   };
 
-  // Execute the appropriate action based on response type (no nested synth calls)
+  // Execute the appropriate action based on response type
+  // Returns true if workflow should continue, false if it should halt
   const executeResponseAction = async (
     synthResponse: SynthResponse,
-    conversationMessages: ConversationMessage[],
     synthContext: SynthContext,
+    addMessage: (msg: Message) => void,
     signal?: AbortSignal
-  ): Promise<Message[]> => {
+  ): Promise<boolean> => {
     console.log(`🎬 Executing action for response type: ${synthResponse.type}`);
     
-    if (synthResponse.type === 'probe') {
-      // Probe request - analyze media files
-      
-      // Support both batch format (files array) and legacy single file format
-      const filesToAnalyze = synthResponse.files || 
-        (synthResponse.fileName ? [{ fileName: synthResponse.fileName, question: synthResponse.question || 'Describe what you see in this media.' }] : []);
-      
-      const fileNames = filesToAnalyze.map(f => f.fileName).join(', ');
-      
-      // Show analyzing message in UI
-      const analyzingMessage: Message = {
-        id: Date.now().toString(),
-        content: `Analysing ${filesToAnalyze.length} file(s): ${fileNames}`,
-        isUser: false,
-        timestamp: new Date(),
-        isSystemMessage: true,
-        alreadyInUI: true,
-        sender: 'system'
-      };
-      onMessagesChange(prevMessages => [...prevMessages, analyzingMessage]);
-      
-      // Execute probe
-      const probeResults = await handleProbeRequestInternal(filesToAnalyze, signal);
-      
-      return [analyzingMessage, ...probeResults];
-      
-    } else if (synthResponse.type === 'generate') {
-      // Generate request - create image, video, logo, or audio
-      console.log("🎨 Executing generation:", synthResponse.prompt, synthResponse.suggestedName);
+    if (synthResponse.type === 'info') {
+        // Info response - just display and continue
+        const message: Message = {
+            id: generateUUID(),
+            content: synthResponse.content,
+            isUser: false,
+            timestamp: new Date(),
+            sender: 'assistant'
+        };
+        addMessage(message);
+        return true; // Continue loop
+    }
+    
+    if (synthResponse.type === 'chat') {
+        // Chat response - display and HALT
+        const message: Message = {
+            id: generateUUID(),
+            content: synthResponse.content,
+            isUser: false,
+            timestamp: new Date(),
+            sender: 'assistant'
+        };
+        addMessage(message);
+        return false; // HALT loop
+    }
 
-      const contentTypeText = synthResponse.content_type === 'video' 
-        ? 'video' 
-        : synthResponse.content_type === 'logo' 
-          ? 'logo' 
-          : synthResponse.content_type === 'audio'
-            ? 'audio'
-            : 'image';
+    if (synthResponse.type === 'fetch') {
+        // 1. Announce action
+        const announcement: Message = {
+            id: generateUUID(),
+            content: `Fetching stock videos: ${synthResponse.query}`,
+            isUser: false,
+            timestamp: new Date(),
+            isSystemMessage: true,
+            sender: 'assistant'
+        };
+        addMessage(announcement);
 
-      // 1) Add a concise assistant decision message that WILL be included in conversation history
-      //    This helps the agent see its own prior action on the next pass and avoid re-generating.
-      const proposedName = (synthResponse.suggestedName || '').trim();
-      const decisionMessage: Message = {
-        id: (Date.now()).toString() + '-dec',
-        content: proposedName
-          ? `Generating ${contentTypeText}: ${proposedName}`
-          : `Generating ${contentTypeText}`,
-        isUser: false,
-        timestamp: new Date(),
-        isSystemMessage: true, // Natural assistant/system-style line, included in history (no alreadyInUI flag)
-        sender: 'assistant'
-      };
+        // 2. Execute action
+        const results = await handleFetchRequestInternal('pexels', synthResponse.query!, 3, signal);
+        
+        // 3. Add results
+        results.forEach(msg => addMessage(msg));
+        
+        return true; // Continue loop
+    }
 
-  // 2) Create a UI-only progress message so the user sees activity immediately (excluded from conversation)
-      const generatingMessage: Message = {
-        id: Date.now().toString(),
-        content: `Generating ${contentTypeText}: ${synthResponse.prompt}`,
-        isUser: false,
-        timestamp: new Date(),
-        isSystemMessage: true,
-        alreadyInUI: true,
-        sender: 'system'
-      };
-      onMessagesChange(prevMessages => [...prevMessages, generatingMessage]);
+    if (synthResponse.type === 'generate') {
+        // 1. Announce action
+        const contentTypeText = synthResponse.content_type || 'image';
+        const announcement: Message = {
+            id: generateUUID(),
+            content: `Generating ${contentTypeText}: ${synthResponse.prompt}`,
+            isUser: false,
+            timestamp: new Date(),
+            isSystemMessage: true,
+            sender: 'assistant'
+        };
+        addMessage(announcement);
 
-  // 3) Perform generation
-      const generateResults = await handleGenerateRequestInternal(
-        synthResponse.prompt!,
-        synthResponse.suggestedName!,
-        synthResponse.content,
-        synthResponse.content_type || 'image',
-        synthResponse.seedImageFileName,
-        synthResponse.voice_settings,
-        undefined,
-        signal
-      );
-
-      // Immediately update the ref with the new media item (no delay needed!)
-      if (generateResults.newMediaItem) {
-        mediaBinItemsRef.current = [...mediaBinItemsRef.current, generateResults.newMediaItem];
-        console.log(`📦 Immediately added ${generateResults.newMediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
-      }
-
-  // Return decision message (included in history), UI-only generating line, and the success/failure message(s)
-      return [decisionMessage, generatingMessage, ...generateResults.messages];
-      
-    } else if (synthResponse.type === 'fetch') {
-      // Fetch request - search stock videos
-      console.log("🎬 Executing stock video fetch:", synthResponse.query, synthResponse.suggestedName);
-      
-      // Create feedback message to add to conversation history
-      const fetchingMessage: Message = {
-        id: Date.now().toString(),
-        content: `Fetching stock videos: ${synthResponse.query}`,
-        isUser: false,
-        sender: 'system',
-        timestamp: new Date(),
-        isSystemMessage: true,
-        // Don't mark as alreadyInUI so it gets sent to backend as context
-      };
-      
-      // Show fetching message immediately in UI
-      onMessagesChange(prevMessages => [...prevMessages, fetchingMessage]);
-      
-      const fetchResults = await handleFetchRequestInternal(
-        'pexels', // Default to pexels for now
-        synthResponse.query!, 
-        3, // Default to 3 results (matches backend default)
-        signal
-      );
-      
-      // Return BOTH the fetching message AND the fetch results for complete history
-      return [fetchingMessage, ...fetchResults];
-      
-    } else if (synthResponse.type === 'edit') {
-      // Edit instructions - send to backend
-      console.log("🎬 Executing edit:", synthResponse.content);
-      console.log("🔍 DEBUG: selectedModel =", selectedModel);
-      console.log("🔍 DEBUG: selectedEditProvider =", selectedEditProvider);
-      await logEditExecution(synthResponse.content);
-      
-      if (onGenerateComposition) {
-        const success = await onGenerateComposition(
-          synthResponse.content, 
-          mediaBinItems, 
-          selectedModel,
-          selectedEditProvider,
-          signal
+        // 2. Execute action
+        const result = await handleGenerateRequestInternal(
+            synthResponse.prompt!,
+            synthResponse.suggestedName!,
+            synthResponse.content,
+            synthResponse.content_type || 'image',
+            synthResponse.seedImageFileName,
+            synthResponse.voice_settings,
+            undefined,
+            signal
         );
+
+        // 3. Add results
+        // Note: handleGenerateRequestInternal already updates mediaBinItemsRef if successful
+        result.messages.forEach(msg => addMessage(msg));
+
+        return true; // Continue loop
+    }
+
+    if (synthResponse.type === 'probe') {
+        // 1. Announce action
+        const filesToAnalyze = synthResponse.files || 
+            (synthResponse.fileName ? [{ fileName: synthResponse.fileName, question: synthResponse.question || 'Describe what you see in this media.' }] : []);
+        
+        const fileNames = filesToAnalyze.map(f => f.fileName).join(', ');
+        const announcement: Message = {
+            id: generateUUID(),
+            content: `Analyzing ${filesToAnalyze.length} file(s): ${fileNames}`,
+            isUser: false,
+            timestamp: new Date(),
+            isSystemMessage: true,
+            sender: 'assistant'
+        };
+        addMessage(announcement);
+
+        // 2. Execute action
+        const results = await handleProbeRequestInternal(filesToAnalyze, signal);
+
+        // 3. Add results
+        results.forEach(msg => addMessage(msg));
+
+        return true; // Continue loop
+    }
+
+    if (synthResponse.type === 'edit') {
+        // 1. Announce action
+        const announcement: Message = {
+            id: generateUUID(),
+            content: `Applying edits...`,
+            isUser: false,
+            timestamp: new Date(),
+            isSystemMessage: true,
+            sender: 'assistant'
+        };
+        addMessage(announcement);
+
+        // 2. Execute action
+        console.log("🎬 Executing edit:", synthResponse.content);
+        await logEditExecution(synthResponse.content);
+        
+        let success = false;
+        if (onGenerateComposition) {
+            success = await onGenerateComposition(
+                synthResponse.content, 
+                mediaBinItemsRef.current, 
+                selectedModel,
+                selectedEditProvider,
+                signal
+            );
+        }
         await logEditResult(success);
         
+        // 3. Result
         const resultMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: success ? "Edit implemented successfully!" : "Failed to implement the edit. Please try again.",
-          isUser: false,
-          timestamp: new Date(),
-          isSystemMessage: true,
+            id: generateUUID(),
+            content: success ? "Edit implemented successfully!" : "Failed to implement the edit. Please try again.",
+            isUser: false,
+            timestamp: new Date(),
+            isSystemMessage: true,
+            sender: 'tool'
         };
+        addMessage(resultMessage);
         
-        return [resultMessage];
-      } else {
-        return [{
-          id: (Date.now() + 1).toString(),
-          content: "Edit instructions ready, but no implementation handler available.",
-          isUser: false,
-          timestamp: new Date(),
-          isSystemMessage: true,
-        }];
-      }
-      
-    } else if (synthResponse.type === 'info') {
-      // Info response - just display
-      console.log("ℹ️ Executing info response");
-      await logChatResponse(synthResponse.content);
-      
-      return [{
-        id: (Date.now() + 1).toString(),
-        content: synthResponse.content,
-        isUser: false,
-        timestamp: new Date(),
-      }];
-      
-    } else if (synthResponse.type === 'chat') {
-      // Chat response - display and mark end of workflow
-      console.log("� Executing chat response");
-      await logChatResponse(synthResponse.content);
-      
-      return [{
-        id: (Date.now() + 1).toString(),
-        content: synthResponse.content,
-        isUser: false,
-        timestamp: new Date(),
-      }];
-      
-    } else {
-      // Fallback for unknown types
-      console.log("❓ Executing fallback for unknown type:", synthResponse.type);
-      
-      return [{
-        id: (Date.now() + 1).toString(),
-        content: synthResponse.content,
-        isUser: false,
-        timestamp: new Date(),
-      }];
+        return true; // Continue loop
     }
+
+    // Fallback for unknown types
+    console.log("❓ Executing fallback for unknown type:", synthResponse.type);
+    const fallbackMsg: Message = {
+        id: generateUUID(),
+        content: synthResponse.content,
+        isUser: false,
+        timestamp: new Date(),
+        sender: 'assistant'
+    };
+    addMessage(fallbackMsg);
+    return true;
   };
 
   const handleSendMessage = async (includeAllMedia = false) => {
@@ -1479,6 +1409,17 @@ export function ChatBox({
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Helper to generate unique name for media items
+  const generateUniqueName = (baseName: string, existingItems: MediaBinItem[]): string => {
+    let name = baseName;
+    let counter = 1;
+    while (existingItems.some(item => item.name === name)) {
+      name = `${baseName} (${counter})`;
+      counter++;
+    }
+    return name;
   };
 
   return (
@@ -2017,7 +1958,7 @@ export function ChatBox({
                   >
                     <div className="w-3 h-3 bg-muted-foreground/20 rounded flex items-center justify-center">
                       {item.mediaType === "video" ? (
-                        <FileVideo className="h-2 w-2 text-muted-foreground" />
+                                               <FileVideo className="h-2 w-2 text-muted-foreground" />
                       ) : item.mediaType === "image" ? (
                         <FileImage className="h-2 w-2 text-muted-foreground" />
                       ) : item.mediaType === "audio" ? (
