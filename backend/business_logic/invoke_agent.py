@@ -125,6 +125,9 @@ class AgentService:
             
             # Combine dynamic context (goes in first user message to preserve cache)
             full_context = "\n\n".join(context_parts)
+            from datetime import datetime
+            context_timestamp = datetime.utcnow().isoformat() + "Z"
+            context_message_content = f"CURRENT PROJECT SNAPSHOT @ {context_timestamp}\n\n{full_context}"
             
             # Call chat provider with structured output schema
             logger.debug("Calling chat provider for agent response...")
@@ -134,6 +137,7 @@ class AgentService:
             messages = [
                 ChatMessage(role="system", content=system_prompt)
             ]
+            messages.append(ChatMessage(role="system", content=context_message_content))
             
             # Add conversation history as actual message turns
             # Dynamic context prepended ONLY to first user message (composition, media library)
@@ -142,13 +146,6 @@ class AgentService:
                 for i, msg in enumerate(conversation_history):
                     role = msg.get('role', 'user')
                     content = msg.get('content', '')
-                    
-                    # Prepend dynamic context to the first user message only
-                    if i == 0 and role == 'user':
-                        # Add dynamic context
-                        content = f"{full_context}\n\n---\n\n{content}"
-                        logger.debug(f"  Prepended dynamic context to first user message")
-                    
                     messages.append(ChatMessage(role=role, content=content))
                     logger.debug(f"  Added {role} message: {content[:80]}...")
             else:
@@ -171,7 +168,7 @@ class AgentService:
                 messages_for_log.append({
                     "index": i,
                     "role": msg.role,
-                    "content": msg.content if msg.role != "system" else "(static system prompt - cached)",
+                    "content": msg.content if not (msg.role == "system" and i == 0) else "(static system prompt - cached)",
                     "content_length": len(msg.content)
                 })
             
@@ -187,8 +184,12 @@ class AgentService:
                     "messages_sent_to_ai": messages_for_log,
                     "system_prompt_static": messages[0].content if messages and messages[0].role == "system" else None,
                     "conversation_messages": [
-                        {"role": msg.role, "content": msg.content}
-                        for msg in messages[1:] if msg.role != "system"
+                        {
+                            "role": msg.role,
+                            "content": msg.content if not (idx == 0 and msg.role == "system") else "(static system prompt - cached)"
+                        }
+                        for idx, msg in enumerate(messages)
+                        if not (msg.role == "system" and idx == 0)
                     ]
                 }, f, indent=2)
             

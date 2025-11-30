@@ -29,6 +29,7 @@ import { type MediaBinItem, type TimelineState } from "../timeline/types";
 import { cn } from "~/lib/utils";
 import axios from "axios";
 import { apiUrl, getApiBaseUrl } from "~/utils/api";
+import type { AgentProvider, EditProvider } from "./providerTypes";
 import { generateUUID } from "~/utils/uuid";
 import type { GetTokenFn } from "~/utils/authApi";
 import { 
@@ -125,8 +126,8 @@ interface ChatBoxProps {
   // Authentication
   getToken: GetTokenFn;
   // Provider selection
-  initialEditProvider?: "gemini" | "claude";
-  initialAgentProvider?: "gemini" | "gemini-3-low" | "gemini-3-high" | "claude" | "openai";
+  initialEditProvider?: EditProvider;
+  initialAgentProvider?: AgentProvider;
 }
 
 export function ChatBox({
@@ -167,8 +168,17 @@ export function ChatBox({
   useEffect(() => {
     mediaBinItemsRef.current = mediaBinItems;
   }, [mediaBinItems]);
-  const [selectedModel, setSelectedModel] = useState<string>(initialAgentProvider); // AI model selection (for agent)
-  const [selectedEditProvider, setSelectedEditProvider] = useState<string>(initialEditProvider); // Edit engine provider
+
+  // Keep a ref to the latest composition so async workflows can always access current state
+  const currentCompositionRef = useRef<string | undefined>(currentComposition);
+
+  // Update ref whenever prop changes
+  useEffect(() => {
+    currentCompositionRef.current = currentComposition;
+  }, [currentComposition]);
+
+  const [selectedModel, setSelectedModel] = useState<AgentProvider>(initialAgentProvider); // AI model selection (for agent)
+  const [selectedEditProvider, setSelectedEditProvider] = useState<EditProvider>(initialEditProvider); // Edit engine provider
   const [sendWithMedia, setSendWithMedia] = useState(false); // Track send mode
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
@@ -842,9 +852,13 @@ export function ChatBox({
       }
 
       // Create the selection message with real video thumbnails
+      const addedNames = result.items.map((item: any) => item.name).filter(Boolean);
+      const addedNamesText = addedNames.length > 0
+        ? ` as: ${addedNames.join(', ')}`
+        : '';
       const videoOptionsMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `I found ${result.items.length} stock videos for "${query}". All videos have been added to your media library. Click to preview:`,
+        content: `I found ${result.items.length} stock videos for "${query}". All videos have been added to your media library${addedNamesText}. Click to preview:`,
         isUser: false,
         sender: 'tool',
         timestamp: new Date(),
@@ -929,9 +943,10 @@ export function ChatBox({
 
             // Build synth context with latest state using ref (always current)
             const currentMediaBin = mediaBinItemsRef.current;
+            const currentComp = currentCompositionRef.current;
             const synthContext: SynthContext = {
                 messages: conversationMessages,
-                currentComposition: currentComposition ? JSON.parse(currentComposition) : undefined,
+                currentComposition: currentComp ? JSON.parse(currentComp) : undefined,
                 mediaLibrary: currentMediaBin,
                 compositionDuration: undefined,
                 provider: selectedModel
@@ -1457,16 +1472,34 @@ export function ChatBox({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-6 text-xs">
-                  {selectedEditProvider === "gemini" ? "Gemini" : "Claude"}
+                  {selectedEditProvider === "gemini" 
+                    ? "Gemini 2.5" 
+                    : selectedEditProvider === "gemini-3-low"
+                    ? "Gemini 3 Low"
+                    : selectedEditProvider === "gemini-3-high"
+                    ? "Gemini 3 High"
+                    : "Claude"}
                   <ChevronDown className="w-3 h-3 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="bottom" className="w-32">
+              <DropdownMenuContent align="start" side="bottom" className="w-40">
                 <DropdownMenuItem 
                   onClick={() => setSelectedEditProvider("gemini")}
                   className="text-xs"
                 >
-                  Gemini
+                  Gemini 2.5
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedEditProvider("gemini-3-low")}
+                  className="text-xs"
+                >
+                  Gemini 3 Low
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSelectedEditProvider("gemini-3-high")}
+                  className="text-xs"
+                >
+                  Gemini 3 High
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setSelectedEditProvider("claude")}
