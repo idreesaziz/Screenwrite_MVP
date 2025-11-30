@@ -99,8 +99,10 @@ async def generate_composition(
         
         # If model_name is just the provider name (e.g., "claude", "gemini"), use None to get provider default
         effective_model_name = None
-        if request.model_name and request.model_name.lower() not in ["gemini", "claude", "openai"]:
-            effective_model_name = request.model_name
+        if request.model_name:
+            disallowed_names = {"gemini", "claude", "openai", "gemini-3-low", "gemini-3-high"}
+            if request.model_name.lower() not in disallowed_names:
+                effective_model_name = request.model_name
         
         # Generate composition
         result = await service.generate_composition(

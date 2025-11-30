@@ -246,6 +246,7 @@ class CompositionGenerationService:
         Returns:
             CompositionGenerationResult with generated composition or error
         """
+        safe_model_name = model_name
         try:
             logger.info(
                 f"Generating composition for user {user_id}, session {session_id}: {user_request[:100]}"
@@ -272,11 +273,15 @@ class CompositionGenerationService:
             ]
             
             # Generate with AI provider (structured output)
+            blocked_model_names = {"gemini", "claude", "openai", "gemini-3-low", "gemini-3-high"}
+            if safe_model_name and safe_model_name.lower() in blocked_model_names:
+                safe_model_name = None
+
             result_dict = await self.provider.generate_chat_response_with_schema(
                 messages=messages,
                 response_schema=composition_schema,
                 temperature=temperature,
-                model_name=model_name
+                model_name=safe_model_name
             )
             
             # Handle both formats: {"tracks": [...]} or just [...]
@@ -290,7 +295,6 @@ class CompositionGenerationService:
             
             # Safety check: Fix image/video aspect ratios
             result_dict = fix_image_aspect_ratios(result_dict)
-            
             # Convert dict back to JSON string
             composition_json = json.dumps(result_dict)
             
@@ -312,7 +316,7 @@ class CompositionGenerationService:
                     "user_id": user_id,
                     "session_id": session_id,
                     "user_request": user_request,
-                    "model_name": model_name or self.provider.default_model_name,
+                    "model_name": safe_model_name or self.provider.default_model_name,
                     "temperature": temperature,
                     "media_library_count": len(media_library) if media_library else 0,
                     "had_current_composition": current_composition is not None,
@@ -332,7 +336,7 @@ class CompositionGenerationService:
             # Log successful generation
             logger.info(
                 f"✅ Generated composition: {duration}s, "
-                f"model={model_name or 'default'}"
+                f"model={safe_model_name or 'default'}"
             )
             
             return CompositionGenerationResult(
@@ -340,7 +344,7 @@ class CompositionGenerationService:
                 composition_code=composition_json,
                 explanation=f"Generated composition for: {user_request}",
                 duration=duration,
-                model_used=model_name or self.provider.default_model_name,
+                model_used=safe_model_name or self.provider.default_model_name,
                 metadata={"tracks_count": len(result_dict)}
             )
             
@@ -351,7 +355,7 @@ class CompositionGenerationService:
                 composition_code="[]",  # Empty composition fallback
                 explanation="Failed to generate composition",
                 duration=5.0,
-                model_used=model_name or "unknown",
+                model_used=safe_model_name or "unknown",
                 error_message=str(e)
             )
     
