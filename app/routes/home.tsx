@@ -48,6 +48,7 @@ import { useNavigate } from "react-router";
 import TimelineView from "../components/custom-timeline/TimelineView"; // direct relative path to bust alias cache
 import { ChatBox } from "~/components/chat/ChatBox";
 import { ProviderPairingModal } from "~/components/chat/ProviderPairingModal";
+import type { AgentProvider, EditProvider } from "~/components/chat/providerTypes";
 
 interface Message {
   id: string;
@@ -72,12 +73,12 @@ export default function TimelineEditor() {
   
   // Provider pairing state
   const [showProviderModal, setShowProviderModal] = useState<boolean>(true);
-  const [selectedEditProvider, setSelectedEditProvider] = useState<"gemini" | "claude">("gemini");
-  const [selectedAgentProvider, setSelectedAgentProvider] = useState<"gemini" | "claude" | "openai">("gemini");
+  const [selectedEditProvider, setSelectedEditProvider] = useState<EditProvider>("gemini");
+  const [selectedAgentProvider, setSelectedAgentProvider] = useState<AgentProvider>("gemini");
   
   const handleProviderPairingSelect = (
-    editProvider: "gemini" | "claude",
-    agentProvider: "gemini" | "claude" | "openai"
+    editProvider: EditProvider,
+    agentProvider: AgentProvider
   ) => {
     setSelectedEditProvider(editProvider);
     setSelectedAgentProvider(agentProvider);

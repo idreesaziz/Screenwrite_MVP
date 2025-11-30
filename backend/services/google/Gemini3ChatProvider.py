@@ -117,9 +117,10 @@ class Gemini3ChatProvider(ChatProvider):
         temp = temperature if temperature is not None else self.default_temperature
         think_level = thinking_level if thinking_level is not None else self.default_thinking_level
         
-        # Convert thinking level to budget - Gemini 3 uses thinking_budget, not thinking_level
-        # Low thinking: 4000 tokens, High thinking: 16000 tokens
-        think_budget = 4000 if think_level == "low" else 16000
+        # Use official ThinkingLevel enum from google.genai.types
+        # Low thinking: types.ThinkingLevel.LOW
+        # High thinking: types.ThinkingLevel.HIGH
+        thinking_level_enum = types.ThinkingLevel.LOW if think_level == "low" else types.ThinkingLevel.HIGH
         
         config_params = {
             'temperature': temp,
@@ -130,7 +131,7 @@ class Gemini3ChatProvider(ChatProvider):
                 types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
                 types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
             ],
-            'thinking_config': types.ThinkingConfig(thinking_budget=think_budget),
+            'thinking_config': types.ThinkingConfig(thinking_level=thinking_level_enum),
             **kwargs
         }
         
@@ -209,6 +210,19 @@ class Gemini3ChatProvider(ChatProvider):
             if hasattr(chunk, 'text') and chunk.text:
                 yield chunk.text
     
+    def _clean_json_response(self, text: str) -> str:
+        """Clean up JSON response from model output."""
+        if not text:
+            return "{}"
+            
+        # Remove markdown code blocks if present
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0]
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0]
+            
+        return text.strip()
+
     async def generate_chat_response_with_schema(
         self,
         messages: List[ChatMessage],
@@ -234,8 +248,6 @@ class Gemini3ChatProvider(ChatProvider):
         config_params = {
             'temperature': temp,
             'top_p': 0.95,
-            'response_mime_type': 'application/json',
-            'response_schema': response_schema,
             'safety_settings': [
                 types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
                 types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
@@ -243,6 +255,8 @@ class Gemini3ChatProvider(ChatProvider):
                 types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
             ],
             'thinking_config': types.ThinkingConfig(thinking_level=thinking_level_enum),
+            'response_mime_type': 'application/json',
+            'response_json_schema': response_schema,
             **kwargs
         }
         
@@ -255,7 +269,11 @@ class Gemini3ChatProvider(ChatProvider):
             config=types.GenerateContentConfig(**config_params)
         )
         
-        return json.loads(response.text)
+        # With response_json_schema, the model should return valid JSON
+        # But we still clean it just in case, as thinking models can sometimes be verbose
+        text = self._clean_json_response(response.text)
+            
+        return json.loads(text)
     
     async def count_tokens(self, messages: List[ChatMessage], model_name: Optional[str] = None, **kwargs) -> int:
         if not messages:

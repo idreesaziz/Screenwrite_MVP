@@ -1,11 +1,11 @@
 import React from "react";
 import { Bot, Sparkles, Code, Zap, DollarSign } from "lucide-react";
-import { Button } from "~/components/ui/button";
+import type { AgentProvider, EditProvider } from "./providerTypes";
 
 interface ProviderPairing {
   id: string;
-  editEngine: "gemini" | "claude";
-  agent: "gemini" | "gemini-3-low" | "gemini-3-high" | "claude" | "openai";
+  editEngine: EditProvider;
+  agent: AgentProvider;
   label: string;
   description: string;
   recommended?: boolean;
@@ -44,6 +44,34 @@ const PROVIDER_PAIRINGS: ProviderPairing[] = [
     speedLevel: 2,
   },
   {
+    id: "gemini-3-low-gemini-3-low",
+    editEngine: "gemini-3-low",
+    agent: "gemini-3-low",
+    label: "Gemini 3 Pro (Low) + Gemini 3 Pro (Low)",
+    description: "Balanced. Structured reasoning for both editing and agent orchestration.",
+    costLevel: 3,
+    speedLevel: 2,
+  },
+  {
+    id: "gemini-3-high-gemini-3-low",
+    editEngine: "gemini-3-high",
+    agent: "gemini-3-low",
+    label: "Gemini 3 Pro (High) + Gemini 3 Pro (Low)",
+    description: "Use a deep-thinking edit engine with a budget-conscious agent controller.",
+    costLevel: 3,
+    speedLevel: 2,
+  },
+  {
+    id: "gemini-3-high-gemini-3-high",
+    editEngine: "gemini-3-high",
+    agent: "gemini-3-high",
+    label: "Gemini 3 Pro (High) + Gemini 3 Pro (High)",
+    description: "Premium. Maximum reasoning depth on both agent and edit engine layers.",
+    best: true,
+    costLevel: 4,
+    speedLevel: 3,
+  },
+  {
     id: "gemini-claude",
     editEngine: "gemini",
     agent: "claude",
@@ -67,7 +95,6 @@ const PROVIDER_PAIRINGS: ProviderPairing[] = [
     agent: "gemini-3-high",
     label: "Claude Sonnet 4.5 + Gemini 3 Pro (High)",
     description: "Premium. Claude edits with cutting-edge Gemini 3 reasoning.",
-    best: true,
     costLevel: 4,
     speedLevel: 2,
   },
@@ -93,7 +120,7 @@ const PROVIDER_PAIRINGS: ProviderPairing[] = [
 
 interface ProviderPairingModalProps {
   isOpen: boolean;
-  onSelect: (editProvider: "gemini" | "claude", agentProvider: "gemini" | "gemini-3-low" | "gemini-3-high" | "claude" | "openai") => void;
+  onSelect: (editProvider: EditProvider, agentProvider: AgentProvider) => void;
 }
 
 export function ProviderPairingModal({ isOpen, onSelect }: ProviderPairingModalProps) {

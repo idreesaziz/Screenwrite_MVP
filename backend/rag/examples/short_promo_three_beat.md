@@ -26,9 +26,9 @@
 6. **INFO** - "I'll create a clean end-card background for the finale."
 
 7. **GENERATE** - Image generation
-    → content: "Generating a clean, professional brand end-card for the finale."
+    → content: "Generating a clean, professional brand end-card background for the finale."
     → content_type: "image"
-    → prompt: "16:9 professional brand end-card, minimal clean design, ample negative space for text overlay, [brand-aesthetic] color palette, subtle texture, elegant and modern, suitable as promotional video end-screen"
+    → prompt: "16:9 professional brand end-card background, minimal clean design, ample negative space for text overlay, [brand-aesthetic] color palette, subtle texture, elegant and modern, suitable as promotional video end-screen"
     → suggestedName: "promo-brand-endcard"
 
 8. **INFO** - "Now I'll analyze all the videos and the end-card to identify the best cinematic moments and text placement opportunities."
