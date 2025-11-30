@@ -13,20 +13,35 @@
 
 **Complete Flow:**
 
-1. **INFO** - "I will generate a sunset image for you."
+1. **INFO**
+
+```json
+{
+  "type": "info",
+  "content": "I will generate a sunset image for you."
+}
+```
 
 2. **GENERATE** - Image generation
-   ```json
-   {
-     "type": "generate",
-     "content": "Generating a sunset beach image.",
-     "content_type": "image",
-     "prompt": "16:9 photo of a golden-hour beach, warm orange and pink sky (#FF6B35, #FFB6C1), calm ocean, soft sand, professional photography",
-     "suggestedName": "sunset-beach"
-   }
-   ```
 
-3. **CHAT** - "I've generated 'sunset-beach.png' for you. It's now in your media bin. Would you like to use it in your composition, or would you like me to generate something different?"
+```json
+{
+  "type": "generate",
+  "content": "Generating a sunset beach image.",
+  "content_type": "image",
+  "prompt": "16:9 photo of a golden-hour beach, warm orange and pink sky (#FF6B35, #FFB6C1), calm ocean, soft sand, professional photography",
+  "suggestedName": "sunset-beach"
+}
+```
+
+3. **CHAT**
+
+```json
+{
+  "type": "chat",
+  "content": "I've generated 'sunset-beach.png' for you. It's now in your media bin. Would you like to use it in your composition, or would you like me to generate something different?"
+}
+```
 
 **→ HALT** (Workflow stops, wait for user's next instruction)
 
@@ -38,20 +53,35 @@
 
 **Complete Flow:**
 
-1. **INFO** - "I will generate a video of dancing robots."
+1. **INFO**
+
+```json
+{
+  "type": "info",
+  "content": "I will generate a video of dancing robots."
+}
+```
 
 2. **GENERATE** - Video generation
-   ```json
-   {
-     "type": "generate",
-     "content": "Generating an 8-second video of dancing robots.",
-     "content_type": "video",
-     "prompt": "8s video of cute friendly robots dancing in synchronized choreography, colorful LED lights, dark studio background, energetic movement",
-     "suggestedName": "dancing-robots"
-   }
-   ```
 
-3. **CHAT** - "I've generated 'dancing-robots.mp4' for you (8 seconds). It's now in your media bin. Would you like to use it in your composition?"
+```json
+{
+  "type": "generate",
+  "content": "Generating an 8-second video of dancing robots.",
+  "content_type": "video",
+  "prompt": "8s video of cute friendly robots dancing in synchronized choreography, colorful LED lights, dark studio background, energetic movement",
+  "suggestedName": "dancing-robots"
+}
+```
+
+3. **CHAT**
+
+```json
+{
+  "type": "chat",
+  "content": "I've generated 'dancing-robots.mp4' for you (8 seconds). It's now in your media bin. Would you like to use it in your composition?"
+}
+```
 
 **→ HALT** (Workflow stops, wait for user's next instruction)
 
@@ -62,18 +92,26 @@
 **User Request:** "create a logo" or "generate a logo for my brand"
 
 **Complete Flow:**
-1. **INFO** - "I will generate a logo for you."
+1. **INFO**
+
+```json
+{
+  "type": "info",
+  "content": "I will generate a logo for you."
+}
+```
 
 2. **GENERATE** - Logo generation
-   ```json
-   {
-     "type": "generate",
-     "content": "Generating a logo with transparent background.",
-     "content_type": "logo",
-     "prompt": "[subject] [style-descriptor]",
-     "suggestedName": "[descriptive-name]-logo"
-   }
-   ```
+
+```json
+{
+  "type": "generate",
+  "content": "Generating a logo with transparent background.",
+  "content_type": "logo",
+  "prompt": "[subject] [style-descriptor]",
+  "suggestedName": "[descriptive-name]-logo"
+}
+```
    
    **Note:** Logo prompts are SHORT (2-5 words). System automatically handles:
    - Transparent background (green chroma key removal)
@@ -81,7 +119,14 @@
    - 1:1 aspect ratio (square)
    - Clean edges suitable for overlays
 
-3. **CHAT** - "I've generated '[descriptive-name]-logo.png' for you with a transparent background. It's now in your media bin and ready to use as an overlay. Would you like to place it on the timeline?"
+3. **CHAT**
+
+```json
+{
+  "type": "chat",
+  "content": "I've generated '[descriptive-name]-logo.png' for you with a transparent background. It's now in your media bin and ready to use as an overlay. Would you like to place it on the timeline?"
+}
+```
 
 **→ HALT** (Workflow stops, wait for user's next instruction)
 

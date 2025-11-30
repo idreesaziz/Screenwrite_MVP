@@ -9,25 +9,40 @@
 
 **Complete Flow:**
 
-1. **INFO** - "I will generate voice-over narration for you."
+1. **INFO**
+
+```json
+{
+  "type": "info",
+  "content": "I will generate voice-over narration for you."
+}
+```
 
 2. **GENERATE** - Audio generation
-   ```json
-   {
-     "type": "generate",
-     "content": "Generating voice-over narration.",
-     "content_type": "audio",
-     "prompt": "Welcome to our product showcase. Today we're excited to introduce our latest innovation that will transform the way you work.",
-     "suggestedName": "intro-narration",
-     "voice_settings": {
-       "voice_id": "Aoede",
-       "language_code": "en-US",
-       "style_prompt": "Speak with confidence and authority"
-     }
-   }
-   ```
 
-3. **CHAT** - "I've generated 'intro-narration.mp3' for you. It's now in your media bin and ready to use. Would you like to place it on the timeline?"
+```json
+{
+  "type": "generate",
+  "content": "Generating voice-over narration.",
+  "content_type": "audio",
+  "prompt": "Welcome to our product showcase. Today we're excited to introduce our latest innovation that will transform the way you work.",
+  "suggestedName": "intro-narration",
+  "voice_settings": {
+    "voice_id": "Aoede",
+    "language_code": "en-US",
+    "style_prompt": "Speak with confidence and authority"
+  }
+}
+```
+
+3. **CHAT**
+
+```json
+{
+  "type": "chat",
+  "content": "I've generated 'intro-narration.mp3' for you. It's now in your media bin and ready to use. Would you like to place it on the timeline?"
+}
+```
 
 **→ HALT** (Workflow stops, wait for user's next instruction)
 

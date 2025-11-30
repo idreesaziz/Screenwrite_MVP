@@ -15,19 +15,27 @@
 
 **Complete Flow:**
 
-1. **INFO** - "I will animate that image into a video for you."
+1. **INFO**
+
+```json
+{
+  "type": "info",
+  "content": "I will animate that image into a video for you."
+}
+```
 
 2. **GENERATE** - Video generation with reference image
-   ```json
-   {
-     "type": "generate",
-     "content": "Generating an 8-second video from your image.",
-     "content_type": "video",
-     "prompt": "8s video: [describe camera movement, motion effects], [if user requested audio: include audio description here]",
-     "reference_image_url": "https://storage.googleapis.com/screenwrite-media/user_xxx/session_yyy/image_name.jpg",
-     "suggestedName": "animated-photo"
-   }
-   ```
+
+```json
+{
+  "type": "generate",
+  "content": "Generating an 8-second video from your image.",
+  "content_type": "video",
+  "prompt": "8s video: [describe camera movement, motion effects], [if user requested audio: include audio description here]",
+  "reference_image_url": "https://storage.googleapis.com/screenwrite-media/user_xxx/session_yyy/image_name.jpg",
+  "suggestedName": "animated-photo"
+}
+```
    
    **CRITICAL NOTES:**
    - `reference_image_url` MUST be the full GCS URL from the image in media bin
@@ -36,7 +44,14 @@
    - Focus on: camera movement, lighting changes, motion style, depth effects, and audio if requested
    - AVOID describing the scene/content (that's already in the image)
 
-3. **CHAT** - "I've generated '[name].mp4' from your image (8 seconds). It's now in your media bin. Would you like to add it to your composition?"
+3. **CHAT**
+
+```json
+{
+  "type": "chat",
+  "content": "I've generated '[name].mp4' from your image (8 seconds). It's now in your media bin. Would you like to add it to your composition?"
+}
+```
 
 **→ HALT** (Workflow stops, wait for user's next instruction)
 

@@ -8,20 +8,35 @@
 
 **Complete Flow:**
 
-1. **INFO** - "I will search for stock footage of the ocean."
+1. **INFO**
+
+```json
+{
+  "type": "info",
+  "content": "I will search for stock footage of the ocean."
+}
+```
 
 2. **FETCH** - Stock video search
-   ```json
-   {
-     "type": "fetch",
-     "content": "Searching for stock footage of the ocean.",
-     "query": "ocean waves"
-   }
-   ```
+
+```json
+{
+  "type": "fetch",
+  "content": "Searching for stock footage of the ocean.",
+  "query": "ocean waves"
+}
+```
 
    System returns: 3 videos found
 
-3. **CHAT** - "I found 3 ocean videos in the stock library. They are now in your media bin. Would you like me to analyze any of them, or would you like to use them in your composition?"
+3. **CHAT**
+
+```json
+{
+  "type": "chat",
+  "content": "I found 3 ocean videos in the stock library. They are now in your media bin. Would you like me to analyze any of them, or would you like to use them in your composition?"
+}
+```
 
 **→ HALT** (Workflow stops, wait for user's next instruction)
 

@@ -210,6 +210,28 @@ export function ChatBox({
   // Ref to control whether unified workflow should continue (accessible from stop button)
   const continueWorkflowRef = useRef<boolean>(false);
 
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const waitForCompositionRefresh = useCallback(
+    async (
+      previousSnapshot: string | undefined,
+      timeoutMs = 5000,
+      pollIntervalMs = 200
+    ) => {
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeoutMs) {
+        if (currentCompositionRef.current !== previousSnapshot) {
+          console.log("🆕 Composition snapshot refreshed for next agent turn");
+          return true;
+        }
+        await sleep(pollIntervalMs);
+      }
+      console.warn("⚠️ Composition snapshot did not refresh before timeout");
+      return false;
+    },
+    []
+  );
+
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -1164,6 +1186,7 @@ export function ChatBox({
         // 2. Execute action
         console.log("🎬 Executing edit:", synthResponse.content);
         await logEditExecution(synthResponse.content);
+      const previousCompositionSnapshot = currentCompositionRef.current;
         
         let success = false;
         if (onGenerateComposition) {
@@ -1187,6 +1210,10 @@ export function ChatBox({
             sender: 'tool'
         };
         addMessage(resultMessage);
+
+        if (success) {
+          await waitForCompositionRefresh(previousCompositionSnapshot);
+        }
         
         return true; // Continue loop
     }
