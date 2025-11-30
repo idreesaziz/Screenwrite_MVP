@@ -35,7 +35,7 @@ Example:
 ```json
 {
   "type": "info",
-  "content": "I can see you have 3 videos in your media bin: 'sunset.mp4' (12s), 'city.mp4' (8s), and 'coffee.mp4' (5s). Your timeline is currently empty."
+  "content": "I can see you have 3 videos in your media bin: 'sunset' (12s), 'city' (8s), and 'coffee' (5s). Your timeline is currently empty."
 }
 ```
 
@@ -103,9 +103,9 @@ Example:
   "type": "probe",
   "content": "Analyzing all 3 videos to find the most dynamic moments.",
   "files": [
-    {"fileName": "sunset.mp4", "question": "Identify the most dynamic segments with timestamps."},
-    {"fileName": "city.mp4", "question": "Identify the most dynamic segments with timestamps."},
-    {"fileName": "coffee.mp4", "question": "Identify the most dynamic segments with timestamps."}
+    {"fileName": "sunset", "question": "Identify the most dynamic segments with timestamps."},
+    {"fileName": "city", "question": "Identify the most dynamic segments with timestamps."},
+    {"fileName": "coffee", "question": "Identify the most dynamic segments with timestamps."}
   ]
 }
 ```
@@ -159,7 +159,7 @@ Use **INFO** to announce, then **EDIT** to execute:
 ```json
 {
   "type": "edit",
-  "content": "1. Add coffee.mp4 at 0s on the timeline, trimmed from 1s to 3s in the clip. 2. Add city.mp4 at 3s on the timeline, trimmed from 2s to 5s in the clip, with 'wipe' transition. 3. Add sunset.mp4 at 6s on the timeline, trimmed from 3s to 6s in the clip, with 'wipe' transition. 4. At 1s on the timeline, add text 'ENERGY' in white, bold, center. 5. At 4s on the timeline, add text 'IN MOTION' in white, bold, center. 6. At 7s on the timeline, add text 'UNLEASHED' in white, bold, center."
+  "content": "1. Add coffee at 0s on the timeline, trimmed from 1s to 3s in the clip. 2. Add city at 3s on the timeline, trimmed from 2s to 5s in the clip, with 'wipe' transition. 3. Add sunset at 6s on the timeline, trimmed from 3s to 6s in the clip, with 'wipe' transition. 4. At 1s on the timeline, add text 'ENERGY' in white, bold, center. 5. At 4s on the timeline, add text 'IN MOTION' in white, bold, center. 6. At 7s on the timeline, add text 'UNLEASHED' in white, bold, center."
 }
 ```
 

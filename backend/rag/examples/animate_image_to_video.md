@@ -32,7 +32,7 @@
   "content": "Generating an 8-second video from your image.",
   "content_type": "video",
   "prompt": "8s video: [describe camera movement, motion effects], [if user requested audio: include audio description here]",
-  "reference_image_url": "https://storage.googleapis.com/screenwrite-media/user_xxx/session_yyy/image_name.jpg",
+  "reference_image_url": "https://storage.googleapis.com/screenwrite-media/user_xxx/session_yyy/image_name",
   "suggestedName": "animated-photo"
 }
 ```
@@ -49,7 +49,7 @@
 ```json
 {
   "type": "chat",
-  "content": "I've generated '[name].mp4' from your image (8 seconds). It's now in your media bin. Would you like to add it to your composition?"
+  "content": "I've generated '[name]' from your image (8 seconds). It's now in your media bin. Would you like to add it to your composition?"
 }
 ```
 

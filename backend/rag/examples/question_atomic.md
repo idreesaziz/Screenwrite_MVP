@@ -12,7 +12,7 @@
    ```json
    {
      "type": "chat",
-     "content": "The video 'background.mp4' is 12 seconds long. Would you like to use it in your composition?"
+    "content": "The video 'background' is 12 seconds long. Would you like to use it in your composition?"
    }
    ```
 
@@ -32,7 +32,7 @@
    ```json
    {
      "type": "chat",
-     "content": "You have 3 videos in your media bin: 'background.mp4' (12s), 'intro-clip.mp4' (5s), and 'Ocean Waves 1' (8s). Would you like to use any of these?"
+    "content": "You have 3 videos in your media bin: 'background' (12s), 'intro-clip' (5s), and 'Ocean Waves 1' (8s). Would you like to use any of these?"
    }
    ```
 
@@ -68,7 +68,7 @@
    ```json
    {
      "type": "chat",
-     "content": "Your timeline currently has: 'background.mp4' from 0-12s, and 'Welcome' text from 2-5s. The total duration is 12 seconds. What would you like to add or change?"
+    "content": "Your timeline currently has: 'background' from 0-12s, and 'Welcome' text from 2-5s. The total duration is 12 seconds. What would you like to add or change?"
    }
    ```
 

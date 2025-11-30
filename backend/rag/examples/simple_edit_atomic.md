@@ -54,7 +54,7 @@
    ```json
    {
      "type": "edit",
-     "content": "Move the 'logo.png' image to the top right corner."
+    "content": "Move the 'logo' image to the top right corner."
    }
    ```
 
@@ -74,7 +74,7 @@
    ```json
    {
      "type": "edit",
-     "content": "Extend the 'background.mp4' clip to end at 15 seconds on the timeline instead of 10 seconds."
+    "content": "Extend the 'background' clip to end at 15 seconds on the timeline instead of 10 seconds."
    }
    ```
 

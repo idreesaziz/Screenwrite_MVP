@@ -40,7 +40,7 @@
 ```json
 {
   "type": "chat",
-  "content": "I've generated 'intro-narration.mp3' for you. It's now in your media bin and ready to use. Would you like to place it on the timeline?"
+  "content": "I've generated 'intro-narration' for you. It's now in your media bin and ready to use. Would you like to place it on the timeline?"
 }
 ```
 
@@ -226,9 +226,9 @@
 ## Integration with Timeline
 
 After generation, voice-over audio can be:
-1. **Placed directly** - "Add intro-narration.mp3 at 0s on the timeline as background audio"
-2. **Probed for segments** - "Analyze intro-narration.mp3 to find natural pauses for splitting"
-3. **Trimmed and positioned** - "Use intro-narration.mp3 from 2s to 8s, place at 5s on the timeline"
-4. **Volume adjusted** - "Add intro-narration.mp3 with 80% volume"
+1. **Placed directly** - "Add intro-narration at 0s on the timeline as background audio"
+2. **Probed for segments** - "Analyze intro-narration to find natural pauses for splitting"
+3. **Trimmed and positioned** - "Use intro-narration from 2s to 8s, place at 5s on the timeline"
+4. **Volume adjusted** - "Add intro-narration with 80% volume"
 
 The audio file is treated like any other media asset in the library once generated.

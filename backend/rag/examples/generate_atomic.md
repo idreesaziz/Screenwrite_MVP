@@ -39,7 +39,7 @@
 ```json
 {
   "type": "chat",
-  "content": "I've generated 'sunset-beach.png' for you. It's now in your media bin. Would you like to use it in your composition, or would you like me to generate something different?"
+  "content": "I've generated 'sunset-beach' for you. It's now in your media bin. Would you like to use it in your composition, or would you like me to generate something different?"
 }
 ```
 
@@ -79,7 +79,7 @@
 ```json
 {
   "type": "chat",
-  "content": "I've generated 'dancing-robots.mp4' for you (8 seconds). It's now in your media bin. Would you like to use it in your composition?"
+  "content": "I've generated 'dancing-robots' for you (8 seconds). It's now in your media bin. Would you like to use it in your composition?"
 }
 ```
 
@@ -124,7 +124,7 @@
 ```json
 {
   "type": "chat",
-  "content": "I've generated '[descriptive-name]-logo.png' for you with a transparent background. It's now in your media bin and ready to use as an overlay. Would you like to place it on the timeline?"
+  "content": "I've generated '[descriptive-name]-logo' for you with a transparent background. It's now in your media bin and ready to use as an overlay. Would you like to place it on the timeline?"
 }
 ```
 
