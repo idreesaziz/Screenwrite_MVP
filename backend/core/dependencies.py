@@ -5,9 +5,10 @@ Provides factory functions for creating provider instances with proper
 configuration and dependency injection for FastAPI endpoints.
 """
 
+import logging
 import os
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, Tuple
 
 from services.base.MediaAnalysisProvider import MediaAnalysisProvider
 from services.base.StorageProvider import StorageProvider
@@ -26,6 +27,9 @@ from services.pexels.PexelsMediaProvider import PexelsMediaProvider
 from services.google.ImagenGenerationProvider import ImagenGenerationProvider
 from services.google.VEOGenerationProvider import VEOGenerationProvider
 from services.google.GoogleTTSProvider import GoogleTTSProvider
+
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache()
@@ -73,66 +77,11 @@ def get_storage_provider() -> StorageProvider:
     )
 
 
-@lru_cache()
-def get_chat_provider() -> ChatProvider:
-    """
-    Factory function for ChatProvider (default/agent provider).
+def _build_chat_provider(provider_key: Optional[str], thinking_budget: int = 8000) -> ChatProvider:
+    """Instantiate a chat provider based on the normalized provider key."""
+    key = (provider_key or "gemini").strip().lower()
     
-    Returns a singleton instance of the configured chat provider.
-    Uses @lru_cache() to ensure only one instance is created.
-    
-    Currently returns GeminiChatProvider (Google AI API).
-    Future: Support multiple providers via env variable.
-    
-    Returns:
-        ChatProvider instance (GeminiChatProvider)
-    """
-    provider_type = os.getenv("CHAT_PROVIDER", "gemini")
-    
-    if provider_type == "gemini":
-        return GeminiChatProvider(
-            project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            default_model_name=os.getenv("CHAT_MODEL", "gemini-2.5-flash"),
-            default_temperature=1.0,
-            default_thinking_budget=8000
-        )
-    elif provider_type == "claude":
-        return ClaudeChatProvider(
-            default_model_name=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
-            default_temperature=1.0,
-            default_thinking_budget=2000
-        )
-    elif provider_type == "openai":
-        return OpenAIChatProvider(
-            default_model_name=os.getenv("OPENAI_MODEL", "gpt-4.1"),
-            default_temperature=1.0,
-            default_reasoning_effort="medium"
-        )
-    else:
-        raise ValueError(f"Unsupported chat provider: {provider_type}")
-
-
-def get_chat_provider_by_name(provider_name: str, thinking_budget: int = 8000) -> ChatProvider:
-    """
-    Factory function for creating ChatProvider instances dynamically.
-    
-    This allows per-request provider selection (e.g., from frontend UI).
-    NOT cached - creates new instance each time for per-request flexibility.
-    
-    Args:
-        provider_name: Provider name ("gemini" or "claude")
-        thinking_budget: Thinking budget for extended thinking mode
-    
-    Returns:
-        ChatProvider instance (GeminiChatProvider or ClaudeChatProvider)
-    
-    Raises:
-        ValueError: If provider_name is not supported
-    """
-    provider_name = provider_name.lower()
-    
-    if provider_name == "gemini":
+    if key == "gemini":
         return GeminiChatProvider(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
@@ -140,36 +89,85 @@ def get_chat_provider_by_name(provider_name: str, thinking_budget: int = 8000) -
             default_temperature=1.0,
             default_thinking_budget=thinking_budget
         )
-    elif provider_name == "gemini-3-low":
+    elif key in {"gemini-3", "gemini-3-low", "gemini-3-high"}:
+        level = "high" if key.endswith("high") else "low"
         return Gemini3ChatProvider(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location="global",
             default_model_name="gemini-3-pro-preview",
             default_temperature=1.0,
-            default_thinking_level="low"
+            default_thinking_level=level
         )
-    elif provider_name == "gemini-3-high":
-        return Gemini3ChatProvider(
-            project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location="global",
-            default_model_name="gemini-3-pro-preview",
-            default_temperature=1.0,
-            default_thinking_level="high"
-        )
-    elif provider_name == "claude":
+    elif key == "claude":
         return ClaudeChatProvider(
             default_model_name=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
             default_temperature=1.0,
             default_thinking_budget=2000
         )
-    elif provider_name == "openai":
+    elif key == "openai":
         return OpenAIChatProvider(
             default_model_name=os.getenv("OPENAI_MODEL", "gpt-4.1"),
             default_temperature=1.0,
             default_reasoning_effort="medium"
         )
     else:
-        raise ValueError(f"Unsupported chat provider: {provider_name}")
+        raise ValueError(f"Unsupported chat provider: {provider_key}")
+
+
+def _normalize_gemini3_provider_key(provider_key: str) -> str:
+    """Collapse gemini-3 aliases down to explicit low/high variants."""
+    key = provider_key.lower()
+    if key == "gemini-3":
+        return "gemini-3-low"
+    return key
+
+
+def resolve_chat_provider(
+    provider_name: Optional[str],
+    requested_model: Optional[str],
+    thinking_budget: int = 8000
+) -> Tuple[ChatProvider, Optional[str]]:
+    """Return a provider instance and a sanitized model override.
+    
+    Ensures Gemini 2.5 requests use the Gemini provider, Gemini 3 requests
+    use the Gemini 3 provider, and prevents unsupported combinations where
+    thinking levels would be sent to non-Gemini-3 models.
+    """
+    normalized_provider = (provider_name or "gemini").strip().lower()
+    model_override = requested_model
+    model_lower = model_override.lower() if model_override else None
+    disallowed_overrides = {"gemini", "claude", "openai", "gemini-3-low", "gemini-3-high"}
+    if model_lower in disallowed_overrides:
+        logger.debug("Ignoring reserved model override '%s'", model_override)
+        model_override = None
+        model_lower = None
+    is_gemini3_model = bool(model_lower and model_lower.startswith("gemini-3"))
+    provider_key = normalized_provider
+    if is_gemini3_model and provider_key == "gemini":
+        provider_key = "gemini-3-low"
+        logger.info("Routing Gemini 3 model '%s' through Gemini 3 provider", model_override)
+    if provider_key in {"gemini-3", "gemini-3-low", "gemini-3-high"}:
+        provider_key = _normalize_gemini3_provider_key(provider_key)
+        if model_override and not is_gemini3_model:
+            logger.warning(
+                "Dropping non-Gemini-3 override '%s' for provider '%s'",
+                model_override,
+                provider_key
+            )
+            model_override = None
+    provider = _build_chat_provider(provider_key, thinking_budget)
+    return provider, model_override
+
+
+@lru_cache()
+def get_chat_provider() -> ChatProvider:
+    """Singleton ChatProvider for default use cases."""
+    return _build_chat_provider(os.getenv("CHAT_PROVIDER", "gemini"))
+
+
+def get_chat_provider_by_name(provider_name: str, thinking_budget: int = 8000) -> ChatProvider:
+    """Backwards-compatible factory for explicitly requested providers."""
+    return _build_chat_provider(provider_name, thinking_budget)
 
 
 def get_media_analysis_service():

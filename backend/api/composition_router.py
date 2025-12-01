@@ -13,7 +13,7 @@ from models.requests.CompositionGenerationRequest import CompositionGenerationRe
 from models.responses.CompositionGenerationResponse import CompositionGenerationResponse
 from business_logic.generate_composition import CompositionGenerationService
 from core.security import get_current_user
-from core.dependencies import get_composition_service, get_chat_provider_by_name
+from core.dependencies import resolve_chat_provider
 
 
 logger = logging.getLogger(__name__)
@@ -90,19 +90,15 @@ async def generate_composition(
         # DEBUG: Log incoming provider and model name
         logger.info(f"🔍 DEBUG: Received provider={request.provider}, model_name={request.model_name}")
         
-        # Get chat provider based on request (dynamic per-request selection)
-        chat_provider = get_chat_provider_by_name(request.provider or "gemini")
+        # Resolve provider/model pairing based on request configuration
+        chat_provider, effective_model_name = resolve_chat_provider(
+            provider_name=request.provider,
+            requested_model=request.model_name
+        )
         
         # Create service with selected provider
         # NOTE: Cannot use Depends() here since provider comes from request body
         service = CompositionGenerationService(chat_provider=chat_provider)
-        
-        # If model_name is just the provider name (e.g., "claude", "gemini"), use None to get provider default
-        effective_model_name = None
-        if request.model_name:
-            disallowed_names = {"gemini", "claude", "openai", "gemini-3-low", "gemini-3-high"}
-            if request.model_name.lower() not in disallowed_names:
-                effective_model_name = request.model_name
         
         # Generate composition
         result = await service.generate_composition(

@@ -273,10 +273,6 @@ class CompositionGenerationService:
             ]
             
             # Generate with AI provider (structured output)
-            blocked_model_names = {"gemini", "claude", "openai", "gemini-3-low", "gemini-3-high"}
-            if safe_model_name and safe_model_name.lower() in blocked_model_names:
-                safe_model_name = None
-
             result_dict = await self.provider.generate_chat_response_with_schema(
                 messages=messages,
                 response_schema=composition_schema,

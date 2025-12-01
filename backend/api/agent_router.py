@@ -11,7 +11,7 @@ from typing import Dict
 from models.requests.AgentRequest import AgentRequest
 from models.responses.AgentResponse import AgentResponse
 from business_logic.invoke_agent import AgentService
-from core.dependencies import get_agent_service, get_chat_provider_by_name
+from core.dependencies import get_agent_service, resolve_chat_provider
 from core.security import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ async def agent_chat(request: AgentRequest, user: Dict = Depends(get_current_use
         logger.error("Invalid JWT: missing user_id or session_id")
         raise HTTPException(status_code=400, detail="Invalid JWT: missing user_id or session_id")
 
-    chat_provider = get_chat_provider_by_name(request.provider or "gemini")
+    chat_provider, _ = resolve_chat_provider(request.provider, None)
     service = AgentService(chat_provider=chat_provider)
 
     try:
