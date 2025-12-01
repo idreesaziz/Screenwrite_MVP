@@ -50,8 +50,7 @@ async def agent_chat(request: AgentRequest, user: Dict = Depends(get_current_use
                 elif s == 'system':
                     role = 'system'
                 elif s == 'tool':
-                    role = 'user'
-                    content = f"[TOOL] {content}"
+                    role = 'tool'
                 else:
                     role = 'user'
             else:

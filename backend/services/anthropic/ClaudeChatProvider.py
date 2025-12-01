@@ -82,9 +82,10 @@ class ClaudeChatProvider(ChatProvider):
                 # Collect system messages as content blocks
                 system_content.append(msg.content)
             else:
-                # Claude uses "user" and "assistant" roles directly
+                # Map role: tool stays as tool, user/assistant unchanged
+                role = msg.role if msg.role in ["user", "assistant", "tool"] else "user"
                 claude_messages.append({
-                    "role": msg.role if msg.role in ["user", "assistant"] else "user",
+                    "role": role,
                     "content": msg.content
                 })
         

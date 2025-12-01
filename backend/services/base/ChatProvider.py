@@ -21,7 +21,7 @@ class ChatMessage:
         content: The text content of the message
         metadata: Optional additional data (timestamps, tokens, etc.)
     """
-    role: str  # 'user', 'assistant', 'system'
+    role: str  # 'user', 'assistant', 'system', 'tool'
     content: str
     metadata: Optional[Dict[str, Any]] = None
 

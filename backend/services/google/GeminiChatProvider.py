@@ -84,7 +84,10 @@ class GeminiChatProvider(ChatProvider):
             if msg.role == "system":
                 system_instruction = msg.content if not system_instruction else system_instruction + "\n\n" + msg.content
             else:
-                role = "model" if msg.role == "assistant" else "user"
+                if msg.role == "assistant" or msg.role == "tool":
+                    role = "model"
+                else:
+                    role = "user"
                 contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg.content)]))
         
         return system_instruction, contents
