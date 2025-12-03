@@ -273,9 +273,3 @@ Edit implemented successfully!
 
 ---
 
-## Key Points:
-- Multi-phase workflow: fetch → generate → probe → plan → execute visuals → execute audio
-- Use INFO to announce progress throughout
-- Use SLEEP to get user confirmation before major edits
-- System tool responses are automatic - don't respond to them
-- After all edits complete, use SLEEP for final completion message

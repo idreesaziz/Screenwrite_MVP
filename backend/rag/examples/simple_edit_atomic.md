@@ -4,11 +4,9 @@
 - User requests a single, clear edit action with no dependencies
 - Simple atomic request that can be executed immediately
 
-**User Request:** "change the text color to red" or "make the font bigger" or "move the image to the left"
+**User Request:** "change the text color to red"
 
-**Complete Flow:**
-
-1. **AGENT - EDIT** (Direct execution)
+**AGENT - EDIT**
 ```json
 {
   "type": "edit",
@@ -16,12 +14,12 @@
 }
 ```
 
-2. **SYSTEM - Tool Response** (automatic confirmation, not from agent)
+**SYSTEM - Tool Response**
 ```
 Edit implemented successfully!
 ```
 
-3. **AGENT - SLEEP** (Pause workflow, wait for user)
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -31,13 +29,9 @@ Edit implemented successfully!
 
 ---
 
-## More Examples:
-
-### Example: Font Size Change
-
 **User Request:** "make the title text bigger"
 
-1. **AGENT - EDIT**
+**AGENT - EDIT**
 ```json
 {
   "type": "edit",
@@ -45,12 +39,12 @@ Edit implemented successfully!
 }
 ```
 
-2. **SYSTEM - Tool Response**
+**SYSTEM - Tool Response**
 ```
 Edit implemented successfully!
 ```
 
-3. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -60,11 +54,9 @@ Edit implemented successfully!
 
 ---
 
-### Example: Position Change
-
 **User Request:** "move the logo to the top right"
 
-1. **AGENT - EDIT**
+**AGENT - EDIT**
 ```json
 {
   "type": "edit",
@@ -72,12 +64,12 @@ Edit implemented successfully!
 }
 ```
 
-2. **SYSTEM - Tool Response**
+**SYSTEM - Tool Response**
 ```
 Edit implemented successfully!
 ```
 
-3. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -87,11 +79,9 @@ Edit implemented successfully!
 
 ---
 
-### Example: Duration Change
-
 **User Request:** "make the video clip longer"
 
-1. **AGENT - EDIT**
+**AGENT - EDIT**
 ```json
 {
   "type": "edit",
@@ -99,25 +89,15 @@ Edit implemented successfully!
 }
 ```
 
-2. **SYSTEM - Tool Response**
+**SYSTEM - Tool Response**
 ```
 Edit implemented successfully!
 ```
 
-3. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
   "content": "Done! I've extended the background video to 15 seconds on the timeline. Is that better?"
 }
 ```
-
----
-
-## Key Points:
-- Single, clear action with no ambiguity
-- No need for planning or confirmation
-- Execute immediately and report completion
-- Simple changes: color, size, position, duration, etc.
-- After edit completes, use SLEEP to pause and wait for next instruction
-- Tool messages are system confirmations - do not respond to them

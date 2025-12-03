@@ -4,11 +4,9 @@
 - User asks a simple question or requests information
 - No action needed, just provide answer
 
-**User Request:** "how long is the video?" or "what's in my media bin?" or "what can you do?"
+**User Request:** "how long is the video?"
 
-**Complete Flow:**
-
-1. **AGENT - SLEEP** (Direct answer, pause for user)
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -18,13 +16,9 @@
 
 ---
 
-## More Examples:
-
-### Example: Media Library Question
-
 **User Request:** "what videos do I have?"
 
-1. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -34,11 +28,9 @@
 
 ---
 
-### Example: Capability Question
-
 **User Request:** "what can you do?"
 
-1. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -48,22 +40,12 @@
 
 ---
 
-### Example: Composition Question
-
 **User Request:** "what's currently on the timeline?"
 
-1. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
   "content": "Your timeline currently has: 'background' from 0-12s, and 'Welcome' text from 2-5s. The total duration is 12 seconds. What would you like to add or change?"
 }
 ```
-
----
-
-## Key Points:
-- Direct SLEEP response with no other actions
-- Provide helpful, concise answers
-- End with a prompt to continue the conversation
-- No INFO, PROBE, GENERATE, FETCH, or EDIT needed

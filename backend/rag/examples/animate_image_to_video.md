@@ -44,10 +44,3 @@ Successfully generated video: animated-photo. The video has been added to your m
 
 ---
 
-## Key Points:
-- `reference_image_url`: Full GCS URL from the image in media bin
-- Prompt describes MOTION/CAMERA WORK, NOT content (content comes from the reference image)
-- Focus on: camera movement, lighting changes, motion style, depth effects
-- Always 8 seconds duration
-- Agent uses SLEEP to pause workflow
-- Do not respond to system generation confirmations

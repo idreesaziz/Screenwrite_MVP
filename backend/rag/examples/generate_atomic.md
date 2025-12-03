@@ -5,11 +5,9 @@
 - Simple atomic request with no dependencies or complex workflow
 - Examples: "generate a sunset image", "create a video of dancing robots", "make a logo for a coffee shop"
 
-**User Request:** "generate a sunset image" or "create a video of dancing robots" or "make a logo"
+**User Request:** "generate a sunset image"
 
-**Complete Flow:**
-
-1. **AGENT - INFO** (Announce next action)
+**AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -17,7 +15,7 @@
 }
 ```
 
-2. **AGENT - GENERATE** (Create media)
+**AGENT - GENERATE**
 ```json
 {
   "type": "generate",
@@ -28,12 +26,12 @@
 }
 ```
 
-3. **SYSTEM - Generation Result** (automatic, media added to bin)
+**SYSTEM - Generation Result**
 ```
 Successfully generated image: sunset-beach. The image has been added to your media library.
 ```
 
-4. **AGENT - SLEEP** (Pause workflow, wait for user)
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -43,11 +41,9 @@ Successfully generated image: sunset-beach. The image has been added to your med
 
 ---
 
-## Alternative: Video Generation
-
 **User Request:** "generate a video of dancing robots"
 
-1. **AGENT - INFO**
+**AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -71,21 +67,19 @@ Successfully generated image: sunset-beach. The image has been added to your med
 Successfully generated video: dancing-robots. The video has been added to your media library.
 ```
 
-4. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
-  "content": "I've generated 'dancing-robots' for you (8 seconds). It's now in your media bin. Would you like to use it in your composition?"
+  "content": "I've generated 'dancing-robots' video for you. It's now in your media bin. Ready to use it?"
 }
 ```
 
 ---
 
-## Alternative: Logo Generation
+**User Request:** "make a logo for my coffee shop"
 
-**User Request:** "create a logo" or "generate a logo for my brand"
-
-1. **AGENT - INFO**
+**AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -137,10 +131,3 @@ Successfully generated logo: coffee-logo. The logo has been added to your media 
 - SHORT simple prompts (e.g., "coffee cup minimalistic")
 - Transparent background (PNG)
 - Perfect for overlays on videos/images
-
----
-
-## Key Points:
-- System automatically adds generated media to library
-- Agent uses SLEEP to pause and wait for user input
-- Do not respond to system generation confirmations - they're tool outputs

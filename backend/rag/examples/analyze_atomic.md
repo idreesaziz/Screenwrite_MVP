@@ -4,11 +4,9 @@
 - User requests to analyze, watch, or understand media content
 - Simple atomic request with no complex workflow
 
-**User Request:** "watch background" or "analyze this video" or "what's in this image?"
+**User Request:** "watch background"
 
-**Complete Flow:**
-
-1. **AGENT - INFO** (Announce next action)
+**AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -16,7 +14,7 @@
 }
 ```
 
-2. **AGENT - PROBE** (Analyze media)
+**AGENT - PROBE**
 ```json
 {
   "type": "probe",
@@ -30,12 +28,12 @@
 }
 ```
 
-3. **SYSTEM - Analysis Result** (automatic, returned from probe tool)
+**SYSTEM - Analysis Result**
 ```
 The video is 12 seconds long and shows a tropical beach at sunset. At 0-4s, calm waves roll onto golden sand (#D4A574) with orange sky (#FF6B35). At 5-8s, camera pans right revealing palm trees (#2E7D32). At 9-12s, sun sets on horizon creating purple hues (#9C27B0). Peaceful, relaxing mood. Static camera with slow pan.
 ```
 
-4. **AGENT - SLEEP** (Pause workflow, wait for user)
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
@@ -45,11 +43,9 @@ The video is 12 seconds long and shows a tropical beach at sunset. At 0-4s, calm
 
 ---
 
-## Alternative: Batch Analysis
-
 **User Request:** "watch Video 1 and Video 2"
 
-1. **AGENT - INFO**
+**AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -57,7 +53,7 @@ The video is 12 seconds long and shows a tropical beach at sunset. At 0-4s, calm
 }
 ```
 
-2. **AGENT - PROBE**
+**AGENT - PROBE**
 ```json
 {
   "type": "probe",
@@ -75,24 +71,16 @@ The video is 12 seconds long and shows a tropical beach at sunset. At 0-4s, calm
 }
 ```
 
-3. **SYSTEM - Analysis Results** (automatic, returned from probe tool)
+**SYSTEM - Analysis Results**
 ```
 Video 1 analysis: [detailed analysis with timestamps and colors]
 Video 2 analysis: [detailed analysis with timestamps and colors]
 ```
 
-4. **AGENT - SLEEP**
+**AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
   "content": "I've analyzed both videos. Video 1 shows... Video 2 shows... Would you like to use either of these in your composition?"
 }
 ```
-
----
-
-## Key Points:
-- Use PROBE to analyze media files
-- System automatically returns analysis results
-- Agent summarizes findings and uses SLEEP to wait for user input
-- Do not respond to system analysis results - they're tool outputs, not conversation
