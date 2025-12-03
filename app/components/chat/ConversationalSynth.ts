@@ -46,7 +46,7 @@ export interface ProbeFile {
 }
 
 export interface SynthResponse {
-  type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch';
+  type: 'info' | 'sleep' | 'edit' | 'probe' | 'generate' | 'fetch';
   content: string;
   referencedFiles?: string[]; // @-mentioned files
   files?: ProbeFile[]; // For probe responses - array of media files to analyze (images, videos, audio, URLs)
@@ -193,7 +193,7 @@ Your job is to generate the next appropriate response based on the conversation 
       
       // Always return API error and exit the loop - no retrying
       return {
-        type: 'chat',
+        type: 'sleep',
         content: "There was an API error. Please try again later.",
         referencedFiles
       };
@@ -352,7 +352,7 @@ Your job is to generate the next appropriate response based on the conversation 
   private async callGeminiAPIStructured(
     systemInstruction: string, 
     prompt: string
-  ): Promise<{ type: 'info' | 'chat' | 'edit' | 'probe' | 'generate' | 'fetch'; content: string; files?: ProbeFile[]; fileName?: string; question?: string; prompt?: string; suggestedName?: string; content_type?: 'image' | 'video'; seedImageFileName?: string; query?: string }> {
+  ): Promise<{ type: 'info' | 'sleep' | 'edit' | 'probe' | 'generate' | 'fetch'; content: string; files?: ProbeFile[]; fileName?: string; question?: string; prompt?: string; suggestedName?: string; content_type?: 'image' | 'video'; seedImageFileName?: string; query?: string }> {
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment.");
     }
@@ -362,7 +362,7 @@ Your job is to generate the next appropriate response based on the conversation 
       properties: {
         "type": {
           "type": "STRING",
-          "enum": ["info", "chat", "edit", "probe", "generate", "fetch"]
+          "enum": ["info", "sleep", "edit", "probe", "generate", "fetch"]
         },
         "files": {
           "type": "ARRAY",
@@ -465,7 +465,7 @@ Your job is to generate the next appropriate response based on the conversation 
       try {
         const parsedResponse = JSON.parse(responseText);
         
-        if (!parsedResponse.type || !parsedResponse.content || !["info", "chat", "edit", "probe", "generate", "fetch"].includes(parsedResponse.type)) {
+        if (!parsedResponse.type || !parsedResponse.content || !["info", "sleep", "edit", "probe", "generate", "fetch"].includes(parsedResponse.type)) {
           throw new Error('Invalid structured response from Gemini API');
         }
 
@@ -501,7 +501,7 @@ Your job is to generate the next appropriate response based on the conversation 
   }
 
   /**
-   * Stream chat responses for better UX (only for type: 'chat' responses)
+   * Stream chat responses for better UX (only for type: 'sleep' responses)
    */
   async streamChatResponse(
     context: SynthContext,

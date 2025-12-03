@@ -201,7 +201,7 @@ class AgentService:
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["info", "chat", "edit", "probe", "generate", "fetch"],
+                        "enum": ["info", "sleep", "edit", "probe", "generate", "fetch"],
                         "description": "The action type for this response"
                     },
                     "content": {
@@ -337,10 +337,10 @@ class AgentService:
                     logger.debug(f"Added default content for probe response: {agent_response['content']}")
             
             # Validate response type
-            valid_types = ["info", "chat", "edit", "probe", "generate", "fetch"]
+            valid_types = ["info", "sleep", "edit", "probe", "generate", "fetch"]
             if agent_response.get("type") not in valid_types:
-                logger.warning(f"Invalid response type: {agent_response.get('type')}, defaulting to 'chat'")
-                agent_response["type"] = "chat"
+                logger.warning(f"Invalid response type: {agent_response.get('type')}, defaulting to 'sleep'")
+                agent_response["type"] = "sleep"
             
             # Add metadata placeholder (token usage would come from model if available)
             if "metadata" not in agent_response:
@@ -353,7 +353,7 @@ class AgentService:
         except Exception as e:
             logger.error(f"Unexpected error in agent chat: {str(e)}", exc_info=True)
             return {
-                "type": "chat",
+                "type": "sleep",
                 "content": "Something went wrong with the server. Would you like to retry or try something else?",
                 "error": str(e)
             }

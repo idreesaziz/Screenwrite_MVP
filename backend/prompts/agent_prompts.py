@@ -109,7 +109,7 @@ This structure enforces clear separation and prevents mixing concerns.
      }
      ```
 
-2. **"chat"** - Conversational interaction (workflow pauses for user input)
+2. **"sleep"** - Pause and wait for user input (workflow halts until user responds)
    - Use when: Need user response (plan confirmation, clarifying questions, decisions, answering questions)
    - For edit requests: Present detailed plan with timing, colors, positions, effects
    - End with clear prompt: "Does this sound good? Say 'yes' to proceed."
@@ -117,7 +117,7 @@ This structure enforces clear separation and prevents mixing concerns.
    - JSON structure:
      ```json
      {
-       "type": "chat",
+       "type": "sleep",
        "content": "Here's my plan: Step 1: Generate sunset image. Step 2: Add image as background at 0s on the timeline. Step 3: Add 'Golden Hour' text in yellow at 2s on the timeline. Does this work? Say 'yes' to proceed."
      }
      ```
@@ -304,7 +304,7 @@ Do we have ALL specifics to appropriately accomplish user request? (exact times,
          ↓
 PLANNING PHASE: Present complete execution plan
     ↓
-Present single detailed plan → Ask for confirmation (use "chat" to pause)
+Present single detailed plan → Ask for confirmation (use "sleep" to pause)
     ↓
 User confirms?
     ├─ NO → Adjust plan based on feedback → Ask again

@@ -1,20 +1,15 @@
 # Generate Media (Atomic Request)
 
 **When to Use:**
-- User directly requests generating NEW media from scratch: **image**, **video**, **logo**, or **voiceover/audio**
+- User directly requests generating NEW media from scratch: **image**, **video**, or **logo**
 - Simple atomic request with no dependencies or complex workflow
-- Examples:
-  - "generate a sunset image"
-  - "create a video of dancing robots"
-  - "make a logo for a coffee shop"
-  - "generate a voiceover saying 'welcome to our show'"
+- Examples: "generate a sunset image", "create a video of dancing robots", "make a logo for a coffee shop"
 
 **User Request:** "generate a sunset image" or "create a video of dancing robots" or "make a logo"
 
 **Complete Flow:**
 
-1. **INFO**
-
+1. **AGENT - INFO** (Announce next action)
 ```json
 {
   "type": "info",
@@ -22,8 +17,7 @@
 }
 ```
 
-2. **GENERATE** - Image generation
-
+2. **AGENT - GENERATE** (Create media)
 ```json
 {
   "type": "generate",
@@ -34,16 +28,18 @@
 }
 ```
 
-3. **CHAT**
+3. **SYSTEM - Generation Result** (automatic, media added to bin)
+```
+Successfully generated image: sunset-beach. The image has been added to your media library.
+```
 
+4. **AGENT - SLEEP** (Pause workflow, wait for user)
 ```json
 {
-  "type": "chat",
+  "type": "sleep",
   "content": "I've generated 'sunset-beach' for you. It's now in your media bin. Would you like to use it in your composition, or would you like me to generate something different?"
 }
 ```
-
-**→ HALT** (Workflow stops, wait for user's next instruction)
 
 ---
 
@@ -51,10 +47,7 @@
 
 **User Request:** "generate a video of dancing robots"
 
-**Complete Flow:**
-
-1. **INFO**
-
+1. **AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -62,8 +55,7 @@
 }
 ```
 
-2. **GENERATE** - Video generation
-
+2. **AGENT - GENERATE**
 ```json
 {
   "type": "generate",
@@ -74,16 +66,18 @@
 }
 ```
 
-3. **CHAT**
+3. **SYSTEM - Generation Result**
+```
+Successfully generated video: dancing-robots. The video has been added to your media library.
+```
 
+4. **AGENT - SLEEP**
 ```json
 {
-  "type": "chat",
+  "type": "sleep",
   "content": "I've generated 'dancing-robots' for you (8 seconds). It's now in your media bin. Would you like to use it in your composition?"
 }
 ```
-
-**→ HALT** (Workflow stops, wait for user's next instruction)
 
 ---
 
@@ -91,9 +85,7 @@
 
 **User Request:** "create a logo" or "generate a logo for my brand"
 
-**Complete Flow:**
-1. **INFO**
-
+1. **AGENT - INFO**
 ```json
 {
   "type": "info",
@@ -101,34 +93,29 @@
 }
 ```
 
-2. **GENERATE** - Logo generation
-
+2. **AGENT - GENERATE**
 ```json
 {
   "type": "generate",
   "content": "Generating a logo with transparent background.",
   "content_type": "logo",
-  "prompt": "[subject] [style-descriptor]",
-  "suggestedName": "[descriptive-name]-logo"
+  "prompt": "coffee cup minimalistic",
+  "suggestedName": "coffee-logo"
 }
 ```
-   
-   **Note:** Logo prompts are SHORT (2-5 words). System automatically handles:
-   - Transparent background (green chroma key removal)
-   - Professional styling and centering
-   - 1:1 aspect ratio (square)
-   - Clean edges suitable for overlays
 
-3. **CHAT**
+3. **SYSTEM - Generation Result**
+```
+Successfully generated logo: coffee-logo. The logo has been added to your media library.
+```
 
+4. **AGENT - SLEEP**
 ```json
 {
-  "type": "chat",
-  "content": "I've generated '[descriptive-name]-logo' for you with a transparent background. It's now in your media bin and ready to use as an overlay. Would you like to place it on the timeline?"
+  "type": "sleep",
+  "content": "I've generated 'coffee-logo' for you with a transparent background. It's now in your media bin and ready to use as an overlay. Would you like to place it on the timeline?"
 }
 ```
-
-**→ HALT** (Workflow stops, wait for user's next instruction)
 
 ---
 
@@ -147,12 +134,13 @@
 
 **Logos (content_type: "logo"):**
 - 1:1 aspect ratio (square)
-- SHORT simple prompts (e.g., "[subject] [style]")
+- SHORT simple prompts (e.g., "coffee cup minimalistic")
 - Transparent background (PNG)
 - Perfect for overlays on videos/images
 
-**Audio/Voiceover (content_type: "audio"):**
-- Prompt is the TEXT TO SPEAK (not a description)
-- Returns duration in seconds (critical for timeline sync)
-- Optional: voice_settings for voice_id, language_code, style_prompt, speaking_rate, pitch
-- Default voice: "Aoede" (Gemini voice), language: "en-US"
+---
+
+## Key Points:
+- System automatically adds generated media to library
+- Agent uses SLEEP to pause and wait for user input
+- Do not respond to system generation confirmations - they're tool outputs

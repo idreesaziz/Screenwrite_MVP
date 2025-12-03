@@ -1080,8 +1080,8 @@ export function ChatBox({
         return true; // Continue loop
     }
     
-    if (synthResponse.type === 'chat') {
-        // Chat response - display and HALT
+    if (synthResponse.type === 'sleep') {
+        // Sleep response - display and HALT
         const message: Message = {
             id: generateUUID(),
             content: synthResponse.content,

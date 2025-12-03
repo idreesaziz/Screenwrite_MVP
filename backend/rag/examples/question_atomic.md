@@ -8,15 +8,13 @@
 
 **Complete Flow:**
 
-1. **CHAT** - Direct answer
-   ```json
-   {
-     "type": "chat",
-    "content": "The video 'background' is 12 seconds long. Would you like to use it in your composition?"
-   }
-   ```
-
-**→ HALT** (Workflow stops, wait for user's next instruction)
+1. **AGENT - SLEEP** (Direct answer, pause for user)
+```json
+{
+  "type": "sleep",
+  "content": "The video 'background' is 12 seconds long. Would you like to use it in your composition?"
+}
+```
 
 ---
 
@@ -26,17 +24,13 @@
 
 **User Request:** "what videos do I have?"
 
-**Complete Flow:**
-
-1. **CHAT**
-   ```json
-   {
-     "type": "chat",
-    "content": "You have 3 videos in your media bin: 'background' (12s), 'intro-clip' (5s), and 'Ocean Waves 1' (8s). Would you like to use any of these?"
-   }
-   ```
-
-**→ HALT**
+1. **AGENT - SLEEP**
+```json
+{
+  "type": "sleep",
+  "content": "You have 3 videos in your media bin: 'background' (12s), 'intro-clip' (5s), and 'Ocean Waves 1' (8s). Would you like to use any of these?"
+}
+```
 
 ---
 
@@ -44,17 +38,13 @@
 
 **User Request:** "what can you do?"
 
-**Complete Flow:**
-
-1. **CHAT**
-   ```json
-   {
-     "type": "chat",
-     "content": "I can help you create and edit videos! I can search for stock footage, generate images and videos, analyze media content, add text overlays with animations, apply transitions, and much more. What would you like to create?"
-   }
-   ```
-
-**→ HALT**
+1. **AGENT - SLEEP**
+```json
+{
+  "type": "sleep",
+  "content": "I can help you create and edit videos! I can search for stock footage, generate images and videos, analyze media content, add text overlays with animations, apply transitions, and much more. What would you like to create?"
+}
+```
 
 ---
 
@@ -62,40 +52,18 @@
 
 **User Request:** "what's currently on the timeline?"
 
-**Complete Flow:**
-
-1. **CHAT**
-   ```json
-   {
-     "type": "chat",
-    "content": "Your timeline currently has: 'background' from 0-12s, and 'Welcome' text from 2-5s. The total duration is 12 seconds. What would you like to add or change?"
-   }
-   ```
-
-**→ HALT**
-
----
-
-### Example: Help Question
-
-**User Request:** "how do I add text?"
-
-**Complete Flow:**
-
-1. **CHAT**
-   ```json
-   {
-     "type": "chat",
-     "content": "To add text, just tell me what you want it to say, when it should appear, and where you want it positioned. For example: 'Add text that says Welcome at 2 seconds in the center'. Would you like to add some text now?"
-   }
-   ```
-
-**→ HALT**
+1. **AGENT - SLEEP**
+```json
+{
+  "type": "sleep",
+  "content": "Your timeline currently has: 'background' from 0-12s, and 'Welcome' text from 2-5s. The total duration is 12 seconds. What would you like to add or change?"
+}
+```
 
 ---
 
 ## Key Points:
-- Direct chat response with no other actions
+- Direct SLEEP response with no other actions
 - Provide helpful, concise answers
 - End with a prompt to continue the conversation
 - No INFO, PROBE, GENERATE, FETCH, or EDIT needed
