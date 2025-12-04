@@ -82,8 +82,9 @@ class ClaudeChatProvider(ChatProvider):
                 # Collect system messages as content blocks
                 system_content.append(msg.content)
             else:
-                # Map role: tool stays as tool, user/assistant unchanged
-                role = msg.role if msg.role in ["user", "assistant", "tool"] else "user"
+                # Map role: tool→assistant (matches Gemini's tool→model pattern)
+                # Claude API only accepts "user" or "assistant" roles
+                role = "assistant" if msg.role in ["assistant", "tool"] else "user"
                 claude_messages.append({
                     "role": role,
                     "content": msg.content
