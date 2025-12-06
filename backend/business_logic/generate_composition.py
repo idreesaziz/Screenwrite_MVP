@@ -291,8 +291,8 @@ class CompositionGenerationService:
             
             # Safety check: Fix image/video aspect ratios
             result_dict = fix_image_aspect_ratios(result_dict)
-            # Convert dict back to JSON string
-            composition_json = json.dumps(result_dict)
+            # Convert dict back to JSON string with proper formatting for diffs
+            composition_json = json.dumps(result_dict, indent=2)
             
             # Calculate duration from composition
             duration = self._calculate_duration(composition_json)
@@ -348,7 +348,7 @@ class CompositionGenerationService:
             logger.error(f"❌ Composition generation failed: {str(e)}", exc_info=True)
             return CompositionGenerationResult(
                 success=False,
-                composition_code="[]",  # Empty composition fallback
+                composition_code="[\n]",  # Empty composition fallback (formatted)
                 explanation="Failed to generate composition",
                 duration=5.0,
                 model_used=safe_model_name or "unknown",
