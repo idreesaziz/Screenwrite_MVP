@@ -81,6 +81,7 @@ interface Message {
   fileName?: string; // Associated file name for analysis
   alreadyInUI?: boolean; // Internal flag: message already added to UI, skip duplicate addition
   word_timestamps?: Array<{word: string; start: number; end: number}>; // Word-level timestamps for audio generation
+  compositionDiff?: {before: string; after: string}; // Composition diff for edit operations
 }
 
 interface ChatBoxProps {
@@ -1208,7 +1209,7 @@ export function ChatBox({
         // 2. Execute action
         console.log("🎬 Executing edit:", synthResponse.content);
         await logEditExecution(synthResponse.content);
-      const previousCompositionSnapshot = currentCompositionRef.current;
+        const previousCompositionSnapshot = currentCompositionRef.current;
         
         let success = false;
         if (onGenerateComposition) {
@@ -1222,7 +1223,29 @@ export function ChatBox({
         }
         await logEditResult(success);
         
-        // 3. Result
+        // 3. Show composition diff (if successful)
+        if (success) {
+            await waitForCompositionRefresh(previousCompositionSnapshot);
+            
+            const newCompositionSnapshot = currentCompositionRef.current;
+            
+            // Add diff message (collapsed by default)
+            const diffMessage: Message = {
+                id: generateUUID(),
+                content: "Composition changes:",
+                isUser: false,
+                timestamp: new Date(),
+                isSystemMessage: true,
+                sender: 'tool',
+                compositionDiff: {
+                    before: previousCompositionSnapshot || '[]',
+                    after: newCompositionSnapshot || '[]'
+                }
+            };
+            addMessage(diffMessage);
+        }
+        
+        // 4. Result
         const resultMessage: Message = {
             id: generateUUID(),
             content: success ? "Edit implemented successfully!" : "Failed to implement the edit. Please try again.",
@@ -1232,10 +1255,6 @@ export function ChatBox({
             sender: 'tool'
         };
         addMessage(resultMessage);
-
-        if (success) {
-          await waitForCompositionRefresh(previousCompositionSnapshot);
-        }
         
         return true; // Continue loop
     }
@@ -1429,6 +1448,56 @@ export function ChatBox({
       }
       return newSet;
     });
+  };
+
+  const createDiff = (before: string, after: string) => {
+    // Simple line-by-line diff
+    const beforeLines = before.split('\n');
+    const afterLines = after.split('\n');
+    const maxLines = Math.max(beforeLines.length, afterLines.length);
+    
+    const diffLines: Array<{type: 'same' | 'removed' | 'added'; content: string}> = [];
+    
+    // Simple algorithm: compare line by line
+    let beforeIdx = 0;
+    let afterIdx = 0;
+    
+    while (beforeIdx < beforeLines.length || afterIdx < afterLines.length) {
+      const beforeLine = beforeLines[beforeIdx] || '';
+      const afterLine = afterLines[afterIdx] || '';
+      
+      if (beforeLine === afterLine) {
+        diffLines.push({type: 'same', content: beforeLine});
+        beforeIdx++;
+        afterIdx++;
+      } else {
+        // Check if next lines match (simple lookahead)
+        const beforeNext = beforeLines[beforeIdx + 1] || '';
+        const afterNext = afterLines[afterIdx + 1] || '';
+        
+        if (beforeLine && afterLine && beforeNext === afterLine) {
+          // Line removed from before
+          diffLines.push({type: 'removed', content: beforeLine});
+          beforeIdx++;
+        } else if (beforeLine && afterLine && afterNext === beforeLine) {
+          // Line added to after
+          diffLines.push({type: 'added', content: afterLine});
+          afterIdx++;
+        } else {
+          // Both different - show as removed and added
+          if (beforeIdx < beforeLines.length) {
+            diffLines.push({type: 'removed', content: beforeLine});
+            beforeIdx++;
+          }
+          if (afterIdx < afterLines.length) {
+            diffLines.push({type: 'added', content: afterLine});
+            afterIdx++;
+          }
+        }
+      }
+    }
+    
+    return diffLines;
   };
 
   const formatMessageText = (text: string) => {
@@ -1746,6 +1815,39 @@ export function ChatBox({
                                   <span className="text-muted-foreground text-[10px]">
                                     {ts.start.toFixed(2)}s-{ts.end.toFixed(2)}s
                                   </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Composition diff collapsible UI */}
+                    {message.compositionDiff && (
+                      <div className="mt-2 border border-border/50 rounded-md overflow-hidden">
+                        <button
+                          onClick={() => toggleMessageCollapsed(`${message.id}-diff`)}
+                          className="w-full px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs"
+                        >
+                          <span className="font-medium">Show composition changes</span>
+                          <ChevronDown className={`h-3 w-3 transition-transform ${
+                            !collapsedMessages.has(`${message.id}-diff`) ? '' : 'rotate-180'
+                          }`} />
+                        </button>
+                        {collapsedMessages.has(`${message.id}-diff`) && (
+                          <div className="p-3 bg-muted/20 max-h-96 overflow-auto">
+                            <div className="font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+                              {createDiff(message.compositionDiff.before, message.compositionDiff.after).map((line, idx) => (
+                                <div key={idx} className={`${
+                                  line.type === 'removed' ? 'bg-red-500/10 text-red-400 border-l-2 border-red-500 pl-2' :
+                                  line.type === 'added' ? 'bg-green-500/10 text-green-400 border-l-2 border-green-500 pl-2' :
+                                  'text-muted-foreground/60'
+                                }`}>
+                                  <span className="inline-block w-4 text-muted-foreground/40 mr-2 select-none">
+                                    {line.type === 'removed' ? '-' : line.type === 'added' ? '+' : ' '}
+                                  </span>
+                                  {line.content || '\u00A0'}
                                 </div>
                               ))}
                             </div>
