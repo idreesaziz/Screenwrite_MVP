@@ -64,31 +64,24 @@ class ClaudeChatProvider(ChatProvider):
         """
         Convert ChatMessage list to Claude format with optional prompt caching.
         
-        Claude expects:
-        - system: separate system parameter (can be string or list of content blocks)
-        - messages: list of user/assistant messages
-        
-        When caching is enabled, system prompts are converted to content blocks
-        with cache_control for 1-hour TTL.
+        For agent workflows, conversation history is serialized as plain text
+        to bypass Claude's message alternation requirements. This allows:
+        - Consecutive assistant messages (INFO → ACTION → tool result)
+        - Autonomous multi-step workflows
+        - Natural agent conversation patterns
         
         Returns:
             (system_blocks, messages_list)
         """
         system_content = []
-        claude_messages = []
+        conversation_messages = []
         
+        # Separate system messages from conversation
         for msg in messages:
             if msg.role == "system":
-                # Collect system messages as content blocks
                 system_content.append(msg.content)
             else:
-                # Map role: tool→assistant (matches Gemini's tool→model pattern)
-                # Claude API only accepts "user" or "assistant" roles
-                role = "assistant" if msg.role in ["assistant", "tool"] else "user"
-                claude_messages.append({
-                    "role": role,
-                    "content": msg.content
-                })
+                conversation_messages.append(msg)
         
         # Convert system content to format with caching
         system_blocks = None
@@ -111,6 +104,27 @@ class ClaudeChatProvider(ChatProvider):
             else:
                 # Return as simple string for non-cached requests
                 system_blocks = combined_system
+        
+        # Convert conversation to plain text format (bypasses role alternation)
+        if conversation_messages:
+            conversation_text = "=== CONVERSATION HISTORY ===\n\n"
+            
+            for msg in conversation_messages:
+                if msg.role == "user":
+                    conversation_text += f"USER: {msg.content}\n\n"
+                elif msg.role in ["assistant", "tool"]:
+                    conversation_text += f"AGENT: {msg.content}\n\n"
+            
+            conversation_text += "=== END HISTORY ===\n\nGenerate the next AGENT response (ONLY ONE response, not multiple):"
+            
+            # Return as single user message
+            claude_messages = [{
+                "role": "user",
+                "content": conversation_text
+            }]
+        else:
+            # No conversation yet - should not happen but handle gracefully
+            claude_messages = []
         
         return system_blocks, claude_messages
     
