@@ -1148,8 +1148,7 @@ export function ChatBox({
 
     if (synthResponse.type === 'probe') {
         // 1. Announce action
-        const filesToAnalyze = synthResponse.files || 
-            (synthResponse.fileName ? [{ fileName: synthResponse.fileName, question: synthResponse.question || 'Describe what you see in this media.' }] : []);
+        const filesToAnalyze = synthResponse.files || [];
         
         const fileNames = filesToAnalyze.map(f => f.fileName).join(', ');
         const announcement: Message = {

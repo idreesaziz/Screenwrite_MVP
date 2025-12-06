@@ -227,16 +227,7 @@ class AgentService:
                         },
                         "nullable": True
                     },
-                    "fileName": {
-                        "type": "string",
-                        "description": "For probe type (legacy single file): the exact name from the media library (e.g., \"Beach Video (2)\"). Frontend resolves names to URLs automatically.",
-                        "nullable": True
-                    },
-                    "question": {
-                        "type": "string",
-                        "description": "For probe type (legacy single file): question to ask about the media",
-                        "nullable": True
-                    },
+
                     "content_type": {
                         "type": "string",
                         "enum": ["image", "video", "logo", "audio"],
@@ -302,12 +293,11 @@ class AgentService:
             
             # Emit explicit probe details to logs for quick forensics
             if agent_response.get("type") == "probe":
-                # Support both batch (files array) and legacy single file format
                 if agent_response.get("files"):
                     file_count = len(agent_response.get("files", []))
                     file_names = [f.get("fileName", "unknown") for f in agent_response.get("files", [])]
                     logger.info(
-                        "Batch probe emission: %d files | fileNames=%s",
+                        "Probe emission: %d files | fileNames=%s",
                         file_count,
                         ", ".join(file_names)
                     )
@@ -319,22 +309,14 @@ class AgentService:
                         if not file_obj.get("question"):
                             logger.warning(f"File {i} missing question, using default")
                             file_obj["question"] = "Describe what you see in this media."
-                else:
-                    logger.info(
-                        "Single probe emission: fileName=%s | question=%s",
-                        agent_response.get("fileName"),
-                        (agent_response.get("question") or "")[:200]
-                    )
-                
-                # Ensure probe responses have content field for validation
-                if not agent_response.get("content"):
-                    if agent_response.get("files"):
-                        file_count = len(agent_response.get("files", []))
+                    
+                    # Ensure probe responses have content field for validation
+                    if not agent_response.get("content"):
                         agent_response["content"] = f"Analyzing {file_count} file(s)..."
-                    else:
-                        file_name = agent_response.get("fileName", "media")
-                        agent_response["content"] = f"Analyzing {file_name}..."
-                    logger.debug(f"Added default content for probe response: {agent_response['content']}")
+                        logger.debug(f"Added default content for probe response: {agent_response['content']}")
+                else:
+                    logger.error("Probe response missing 'files' array")
+                    raise ValueError("Probe type requires 'files' array with fileName and question for each file")
             
             # Validate response type
             valid_types = ["info", "sleep", "edit", "probe", "generate", "fetch"]
