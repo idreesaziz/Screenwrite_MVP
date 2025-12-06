@@ -88,18 +88,45 @@ class Gemini3ChatProvider(ChatProvider):
             logger.info(f"Initialized Google AI API with API key, Gemini 3 model: {default_model_name}, thinking_level: {default_thinking_level}")
     
     def _convert_messages(self, messages: List[ChatMessage]):
-        system_instruction = None
-        contents = []
+        """
+        Convert ChatMessage list to Gemini format.
         
+        For agent workflows, conversation history is serialized as plain text
+        to bypass alternation requirements. This allows:
+        - Consecutive model messages (INFO → ACTION → tool result)
+        - Autonomous multi-step workflows
+        - Natural agent conversation patterns
+        
+        Returns:
+            (system_instruction, contents)
+        """
+        system_instruction = None
+        conversation_messages = []
+        
+        # Separate system messages from conversation
         for msg in messages:
             if msg.role == "system":
                 system_instruction = msg.content if not system_instruction else system_instruction + "\n\n" + msg.content
             else:
-                if msg.role == "assistant" or msg.role == "tool":
-                    role = "model"
-                else:
-                    role = "user"
-                contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg.content)]))
+                conversation_messages.append(msg)
+        
+        # Convert conversation to plain text format (bypasses role alternation)
+        if conversation_messages:
+            conversation_text = "=== CONVERSATION HISTORY ===\n\n"
+            
+            for msg in conversation_messages:
+                if msg.role == "user":
+                    conversation_text += f"USER: {msg.content}\n\n"
+                elif msg.role in ["assistant", "tool"]:
+                    conversation_text += f"AGENT: {msg.content}\n\n"
+            
+            conversation_text += "=== END HISTORY ===\n\nGenerate the next AGENT response (ONLY ONE response, not multiple):"
+            
+            # Return as single user message
+            contents = [types.Content(role="user", parts=[types.Part.from_text(text=conversation_text)])]
+        else:
+            # No conversation yet - should not happen but handle gracefully
+            contents = []
         
         return system_instruction, contents
     
