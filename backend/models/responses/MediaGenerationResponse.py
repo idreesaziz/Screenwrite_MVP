@@ -1,7 +1,7 @@
 """Response models for media generation endpoints."""
 
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, List, Dict, Any
 
 
 class GeneratedAsset(BaseModel):
@@ -18,6 +18,10 @@ class GeneratedAsset(BaseModel):
     height: int = Field(description="Asset height in pixels (0 for audio)")
     duration_seconds: Optional[float] = Field(default=None, description="Duration in seconds (video/audio)")
     file_size: int = Field(description="File size in bytes")
+    word_timestamps: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Word-level timestamps from Whisper (audio only): [{word, start, end}, ...]"
+    )
 
 
 class MediaGenerationResponse(BaseModel):

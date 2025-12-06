@@ -215,7 +215,8 @@ async def generate_media(
                     width=result.width,
                     height=result.height,
                     duration_seconds=result.duration_seconds,  # CRITICAL for timeline
-                    file_size=result.file_size
+                    file_size=result.file_size,
+                    word_timestamps=result.word_timestamps  # Whisper word-level timestamps
                 ),
                 operation_id=None,
                 error_message=None

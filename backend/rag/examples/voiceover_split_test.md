@@ -1,9 +1,9 @@
 # Voiceover Splitting Test (Atomic Workflow)
 
 **When to Use:**
-- Testing voiceover generation and word-level timestamp splitting
-- Debugging timestamp accuracy for word boundaries
-- Validating that start/end timestamps align correctly with audio
+- Testing voiceover generation with automatic word-level timestamps
+- Validating that Whisper timestamps align correctly with audio
+- Demonstrating word-by-word timeline placement
 
 **User Request:** "Generate a voiceover saying 'Welcome to our coffee shop' and show me the word timings"
 
@@ -11,7 +11,7 @@
 ```json
 {
   "type": "info",
-  "content": "I will generate a voiceover and split it into word-level timestamps for you."
+  "content": "I will generate a voiceover with word-level timestamps and place them on the timeline."
 }
 ```
 
@@ -21,38 +21,22 @@
   "type": "generate",
   "content": "Generating voiceover: 'Welcome to our coffee shop'",
   "content_type": "audio",
-  "prompt": "voiceover: Welcome to our coffee shop",
+  "prompt": "Welcome to our coffee shop",
   "suggestedName": "test-voiceover"
 }
 ```
 
 **SYSTEM - Generation Result**
 ```
-Successfully generated audio: test-voiceover. The audio has been added to your media library.
-```
+Successfully generated audio: test-voiceover (1.6 seconds). The audio has been added to your media library.
 
-**AGENT - PROBE**
-```json
-{
-  "type": "probe",
-  "content": "Getting word-level timestamps for test-voiceover to split the audio by words.",
-  "filenames": ["test-voiceover"]
-}
-```
-
-**SYSTEM - Analysis Result**
-```json
-{
-  "test-voiceover": {
-    "word_timestamps": [
-      {"word": "Welcome", "start": 0.0, "end": 0.5},
-      {"word": "to", "start": 0.5, "end": 0.65},
-      {"word": "our", "start": 0.65, "end": 0.85},
-      {"word": "coffee", "start": 0.85, "end": 1.25},
-      {"word": "shop", "start": 1.25, "end": 1.6}
-    ]
-  }
-}
+Word timestamps: [
+  {"word": "Welcome", "start": 0.0, "end": 0.5},
+  {"word": "to", "start": 0.5, "end": 0.65},
+  {"word": "our", "start": 0.65, "end": 0.85},
+  {"word": "coffee", "start": 0.85, "end": 1.25},
+  {"word": "shop", "start": 1.25, "end": 1.6}
+]
 ```
 
 **AGENT - PLACE**

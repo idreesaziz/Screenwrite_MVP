@@ -163,41 +163,23 @@ promo-brand-endcard: Modern minimal design, blue-gray palette (#546E7A, #ECEFF1)
 **SYSTEM - Generation Result**
 ```
 Successfully generated audio: promo-voiceover (4.8 seconds). The audio has been added to your media library.
+
+Word timestamps: [
+  {"word": "Discover", "start": 0.0, "end": 0.612},
+  {"word": "innovation.", "start": 0.68, "end": 1.425},
+  {"word": "Experience", "start": 1.95, "end": 2.621},
+  {"word": "excellence.", "start": 2.71, "end": 3.452},
+  {"word": "Transform", "start": 3.85, "end": 4.38},
+  {"word": "your", "start": 4.42, "end": 4.58},
+  {"word": "world.", "start": 4.62, "end": 4.98}
+]
 ```
 
 13. **AGENT - INFO**
 ```json
 {
   "type": "info",
-  "content": "Now I'll analyze the voiceover to get precise word-level timestamps for perfect synchronization with the video."
-}
-```
-
-14. **AGENT - PROBE**
-```json
-{
-  "type": "probe",
-  "content": "Analyzing voiceover for word-level timestamps.",
-  "files": [
-    {
-      "fileName": "promo-voiceover",
-      "question": "Provide word-level timestamps for the entire audio. For each word, include: the word text, start time in seconds (decimal precision), and end time in seconds (decimal precision)."
-    }
-  ]
-}
-```
-
-**SYSTEM - Probe Result**
-```
-Word-level timestamps:
-Discover (0.000-0.612), innovation (0.680-1.425), Experience (1.950-2.621), excellence (2.710-3.452), Transform (3.850-4.380), your (4.420-4.580), world (4.620-4.980)
-```
-
-15. **AGENT - INFO**
-```json
-{
-  "type": "info",
-  "content": "I've designed the complete visual composition with text overlays, positioning, styling, and transitions that create emotional progression and visual rhythm."
+  "content": "I've designed the complete visual composition with text overlays synchronized to the voiceover timestamps, creating emotional progression and visual rhythm."
 }
 ```
 

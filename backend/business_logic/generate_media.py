@@ -27,9 +27,11 @@ from services.base.VideoGenerationProvider import (
 )
 from services.base.VoiceGenerationProvider import (
     VoiceGenerationProvider,
-    VoiceGenerationRequest
+    VoiceGenerationRequest,
+    WhisperTimestamp
 )
 from services.base.StorageProvider import StorageProvider
+from services.openai.WhisperService import WhisperService
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +51,8 @@ class GeneratedAssetResult:
         width: int,
         height: int,
         file_size: int,
-        duration_seconds: Optional[float] = None
+        duration_seconds: Optional[float] = None,
+        word_timestamps: Optional[list] = None
     ):
         self.asset_id = asset_id
         self.name = name
@@ -62,6 +65,7 @@ class GeneratedAssetResult:
         self.height = height
         self.file_size = file_size
         self.duration_seconds = duration_seconds
+        self.word_timestamps = word_timestamps
 
 
 class MediaGenerationService:
@@ -95,6 +99,7 @@ class MediaGenerationService:
         self.video_provider = video_provider
         self.voice_provider = voice_provider
         self.storage_provider = storage_provider
+        self.whisper_service = WhisperService()  # Initialize Whisper for word-level timestamps
         
         # Track active video generation operations
         self.active_operations: Dict[str, Dict] = {}
@@ -586,8 +591,9 @@ Generate logo: """
         
         Workflow:
         1. Generate audio via Gemini TTS with prompt-based style control
-        2. Upload to cloud storage
-        3. Return URL with duration metadata (critical for timeline placement)
+        2. Transcribe audio with Whisper for word-level timestamps
+        3. Upload to cloud storage
+        4. Return URL with duration and word timestamps (critical for timeline placement)
         
         Args:
             text: Script text to convert to speech
@@ -601,7 +607,7 @@ Generate logo: """
             pitch: Voice pitch (-20.0 to 20.0, default 0.0)
             
         Returns:
-            GeneratedAssetResult with audio URL and duration
+            GeneratedAssetResult with audio URL, duration, and word timestamps
             
         Raises:
             RuntimeError: If voice generation or upload fails
@@ -624,14 +630,38 @@ Generate logo: """
             result = await self.voice_provider.generate_voice(request)
             logger.info(f"Voice generated: {result.duration_seconds:.2f}s, {len(result.audio_bytes)} bytes")
             
-            # Step 2: Get existing names and generate unique name
+            # Step 2: Transcribe with Whisper for word-level timestamps
+            word_timestamps = []
+            try:
+                # Extract language code (e.g., "en" from "en-US")
+                lang_code = language_code.split("-")[0] if "-" in language_code else language_code
+                logger.info(f"Transcribing audio with Whisper (language: {lang_code})")
+                
+                whisper_timestamps = await self.whisper_service.transcribe_with_timestamps(
+                    audio_bytes=result.audio_bytes,
+                    audio_format="mp3",
+                    language=lang_code
+                )
+                
+                # Convert WhisperTimestamp objects to dict for JSON serialization
+                word_timestamps = [
+                    {"word": ts.word, "start": ts.start, "end": ts.end}
+                    for ts in whisper_timestamps
+                ]
+                logger.info(f"✅ Extracted {len(word_timestamps)} word timestamps from Whisper")
+                
+            except Exception as whisper_error:
+                # Don't fail the whole operation if Whisper fails
+                logger.warning(f"Whisper transcription failed (continuing without timestamps): {whisper_error}")
+            
+            # Step 3: Get existing names and generate unique name
             existing_names = await self.storage_provider.get_existing_names(user_id, session_id)
             from utils.naming import create_generated_name, generate_unique_name
             asset_id = str(uuid.uuid4())
             base_name = create_generated_name(suggested_name, "audio", asset_id[:6])
             unique_name = generate_unique_name(base_name, existing_names)
             
-            # Step 3: Upload to cloud storage
+            # Step 4: Upload to cloud storage
             file_name = f"voiceover_{asset_id}.mp3"
             
             logger.info(f"Uploading voice-over to storage: {unique_name}")
@@ -646,7 +676,7 @@ Generate logo: """
             
             logger.info(f"✅ Voice-over generated and uploaded: {unique_name}")
             
-            # Step 4: Build result with duration
+            # Step 5: Build result with duration and word timestamps
             bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
             gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
             
@@ -661,7 +691,8 @@ Generate logo: """
                 width=0,
                 height=0,
                 file_size=len(result.audio_bytes),
-                duration_seconds=result.duration_seconds  # Essential for timeline!
+                duration_seconds=result.duration_seconds,  # Essential for timeline!
+                word_timestamps=word_timestamps if word_timestamps else None
             )
             
         except Exception as e:

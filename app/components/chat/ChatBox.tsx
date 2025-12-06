@@ -405,7 +405,8 @@ export function ChatBox({
         headers,
         body: JSON.stringify({
           videos: resolvedVideos, // Each video now includes its own question
-          max_concurrent: 4
+          max_concurrent: 4,
+          audio_timestamp: true  // Enable accurate word-level timestamps for audio
         }),
         signal
       });
@@ -720,9 +721,17 @@ export function ChatBox({
       }
 
       // Create success message that clearly indicates completion
+      let generationContent = `Successfully generated ${contentType}: ${name}. The ${contentType} has been added to your media library.`;
+      
+      // For audio with word timestamps, append them to the message for the AI agent
+      if (contentType === 'audio' && generatedAsset.word_timestamps && generatedAsset.word_timestamps.length > 0) {
+        const timestampsJson = JSON.stringify(generatedAsset.word_timestamps, null, 2);
+        generationContent += `\n\nWord timestamps: ${timestampsJson}`;
+      }
+      
       const generationMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Successfully generated ${contentType}: ${name}. The ${contentType} has been added to your media library.`,
+        content: generationContent,
         isUser: false,
         sender: 'tool',
         timestamp: new Date(),
@@ -1409,6 +1418,56 @@ export function ChatBox({
   };
 
   const formatMessageText = (text: string) => {
+    // Check if this message contains word timestamps
+    const timestampMatch = text.match(/^(.+?)\n\nWord timestamps:\s*(\[[\s\S]+\])$/);
+    
+    if (timestampMatch) {
+      const [, mainContent, timestampsJson] = timestampMatch;
+      try {
+        const timestamps = JSON.parse(timestampsJson);
+        const messageId = `timestamps-${Date.now()}-${Math.random()}`;
+        const isCollapsed = collapsedMessages.has(messageId);
+        
+        return (
+          <div>
+            <div>{formatText(mainContent)}</div>
+            <div className="mt-3 border border-border/50 rounded-md overflow-hidden">
+              <button
+                onClick={() => toggleMessageCollapsed(messageId)}
+                className="w-full px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs"
+              >
+                <span className="font-medium">Word Timestamps ({timestamps.length} words)</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${
+                  isCollapsed ? '' : 'rotate-180'
+                }`} />
+              </button>
+              {!isCollapsed && (
+                <div className="p-3 bg-muted/20 max-h-60 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-2 text-xs font-mono">
+                    {timestamps.map((ts: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 p-1 bg-background/50 rounded">
+                        <span className="font-medium">{ts.word}</span>
+                        <span className="text-muted-foreground text-[10px]">
+                          {ts.start.toFixed(2)}s - {ts.end.toFixed(2)}s
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      } catch (e) {
+        // If JSON parsing fails, fallback to regular formatting
+        return formatText(text);
+      }
+    }
+    
+    return formatText(text);
+  };
+  
+  const formatText = (text: string) => {
     // Simple markdown-like formatting
     return text
       .split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|^---+$|^#{1,6}\s+.+$)/gm)

@@ -12,6 +12,21 @@ from datetime import datetime
 
 
 @dataclass
+class WhisperTimestamp:
+    """
+    Word-level timestamp from Whisper transcription.
+    
+    Attributes:
+        word: The transcribed word
+        start: Start time in seconds (decimal)
+        end: End time in seconds (decimal)
+    """
+    word: str
+    start: float
+    end: float
+
+
+@dataclass
 class VoiceGenerationRequest:
     """
     Represents a request to generate speech from text.
@@ -54,6 +69,7 @@ class GeneratedVoiceResult:
         voice_model: Voice model used for generation
         audio_encoding: Format of audio (MP3, WAV, etc.)
         text_length: Number of characters in original text
+        word_timestamps: Word-level timestamps from Whisper (if available)
         metadata: Additional information about the generation
     """
     audio_bytes: bytes
@@ -63,6 +79,7 @@ class GeneratedVoiceResult:
     voice_model: str
     audio_encoding: str
     text_length: int
+    word_timestamps: Optional[List[WhisperTimestamp]] = None
     metadata: Optional[Dict[str, Any]] = None
 
 
