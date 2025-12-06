@@ -80,6 +80,7 @@ interface Message {
   isWaitingForAnalysis?: boolean; // For messages waiting on analysis result
   fileName?: string; // Associated file name for analysis
   alreadyInUI?: boolean; // Internal flag: message already added to UI, skip duplicate addition
+  word_timestamps?: Array<{word: string; start: number; end: number}>; // Word-level timestamps for audio generation
 }
 
 interface ChatBoxProps {
@@ -721,14 +722,9 @@ export function ChatBox({
       }
 
       // Create success message that clearly indicates completion
-      let generationContent = `Successfully generated ${contentType}: ${name}. The ${contentType} has been added to your media library.`;
+      const generationContent = `Successfully generated ${contentType}: ${name}. The ${contentType} has been added to your media library.`;
       
-      // For audio with word timestamps, append them to the message for the AI agent
-      if (contentType === 'audio' && generatedAsset.word_timestamps && generatedAsset.word_timestamps.length > 0) {
-        const timestampsJson = JSON.stringify(generatedAsset.word_timestamps, null, 2);
-        generationContent += `\n\nWord timestamps: ${timestampsJson}`;
-      }
-      
+      // For audio with word timestamps, create message with timestamps stored separately
       const generationMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: generationContent,
@@ -736,9 +732,27 @@ export function ChatBox({
         sender: 'tool',
         timestamp: new Date(),
         isSystemMessage: true,
+        word_timestamps: contentType === 'audio' && generatedAsset.word_timestamps ? generatedAsset.word_timestamps : undefined,
       };
+      
+      // For AI agent conversation history, include timestamps in a separate system message
+      const messages: Message[] = [generationMessage];
+      if (contentType === 'audio' && generatedAsset.word_timestamps && generatedAsset.word_timestamps.length > 0) {
+        // Add invisible message for AI agent with timestamp data
+        const timestampsJson = JSON.stringify(generatedAsset.word_timestamps, null, 2);
+        const agentTimestampMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          content: `Word timestamps: ${timestampsJson}`,
+          isUser: false,
+          sender: 'tool',
+          timestamp: new Date(),
+          isSystemMessage: true,
+          alreadyInUI: true, // Don't render this in UI
+        };
+        messages.push(agentTimestampMessage);
+      }
 
-      return { messages: [generationMessage], newMediaItem };
+      return { messages, newMediaItem };
 
     } catch (error) {
       console.error(`${contentType} generation failed:`, error);
@@ -1418,52 +1432,7 @@ export function ChatBox({
   };
 
   const formatMessageText = (text: string) => {
-    // Check if this message contains word timestamps
-    const timestampMatch = text.match(/^(.+?)\n\nWord timestamps:\s*(\[[\s\S]+\])$/);
-    
-    if (timestampMatch) {
-      const [, mainContent, timestampsJson] = timestampMatch;
-      try {
-        const timestamps = JSON.parse(timestampsJson);
-        const messageId = `timestamps-${Date.now()}-${Math.random()}`;
-        const isCollapsed = collapsedMessages.has(messageId);
-        
-        return (
-          <div>
-            <div>{formatText(mainContent)}</div>
-            <div className="mt-3 border border-border/50 rounded-md overflow-hidden">
-              <button
-                onClick={() => toggleMessageCollapsed(messageId)}
-                className="w-full px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs"
-              >
-                <span className="font-medium">Word Timestamps ({timestamps.length} words)</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${
-                  isCollapsed ? '' : 'rotate-180'
-                }`} />
-              </button>
-              {!isCollapsed && (
-                <div className="p-3 bg-muted/20 max-h-60 overflow-y-auto">
-                  <div className="grid grid-cols-3 gap-2 text-xs font-mono">
-                    {timestamps.map((ts: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2 p-1 bg-background/50 rounded">
-                        <span className="font-medium">{ts.word}</span>
-                        <span className="text-muted-foreground text-[10px]">
-                          {ts.start.toFixed(2)}s - {ts.end.toFixed(2)}s
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      } catch (e) {
-        // If JSON parsing fails, fallback to regular formatting
-        return formatText(text);
-      }
-    }
-    
+    // Simple markdown-like formatting
     return formatText(text);
   };
   
@@ -1749,10 +1718,42 @@ export function ChatBox({
               )}
               
               {messages.map((message) => (
+                // Skip messages marked as alreadyInUI (agent-only timestamp messages)
+                message.alreadyInUI ? null :
                 message.isSystemMessage ? (
-                  // Render system messages as raw text
+                  // Render system messages as raw text with optional word timestamps
                   <div key={message.id} className="px-3 py-1 text-xs text-muted-foreground">
-                    {message.content}
+                    <div>{message.content}</div>
+                    
+                    {/* Word timestamps collapsible UI */}
+                    {message.word_timestamps && message.word_timestamps.length > 0 && (
+                      <div className="mt-2 border border-border/50 rounded-md overflow-hidden max-w-md">
+                        <button
+                          onClick={() => toggleMessageCollapsed(message.id)}
+                          className="w-full px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs"
+                        >
+                          <span className="font-medium">Word Timestamps ({message.word_timestamps.length} words)</span>
+                          <ChevronDown className={`h-3 w-3 transition-transform ${
+                            !collapsedMessages.has(message.id) ? '' : 'rotate-180'
+                          }`} />
+                        </button>
+                        {collapsedMessages.has(message.id) && (
+                          <div className="p-3 bg-muted/20 max-h-60 overflow-y-auto">
+                            <div className="flex flex-wrap gap-2 text-xs font-mono">
+                              {message.word_timestamps.map((ts, idx) => (
+                                <div key={idx} className="flex items-center gap-2 px-2 py-1 bg-background/50 rounded border border-border/30">
+                                  <span className="font-medium">{ts.word}</span>
+                                  <span className="text-muted-foreground text-[10px]">
+                                    {ts.start.toFixed(2)}s-{ts.end.toFixed(2)}s
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     {message.hasRetryButton && (
                       <Button
                         size="sm"
