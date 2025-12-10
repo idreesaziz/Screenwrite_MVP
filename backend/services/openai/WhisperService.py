@@ -7,10 +7,11 @@ Provides high-precision word-level timestamps for generated voiceovers.
 import logging
 import os
 import io
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from openai import AsyncOpenAI
 import numpy as np
 from pydub import AudioSegment
+from pydub.silence import detect_silence
 
 from services.base.VoiceGenerationProvider import WhisperTimestamp
 
@@ -87,8 +88,16 @@ class WhisperService:
                 
                 logger.info(f"Extracted {len(word_timestamps)} word timestamps")
                 
-                # Refine timestamps by snapping to zero-crossings for cleaner cuts
-                word_timestamps = self._refine_timestamps(word_timestamps, audio_bytes, audio_format)
+                # Refine timestamps by snapping to silence gaps (for clean narration)
+                # Higher min_silence_duration filters out mid-word pauses
+                word_timestamps = self._refine_with_silence_detection(
+                    word_timestamps, 
+                    audio_bytes, 
+                    audio_format,
+                    silence_thresh_db=-40,
+                    min_silence_duration_ms=100,  # Increased to avoid mid-word pauses
+                    snap_window_ms=200
+                )
             else:
                 logger.warning("No word-level timestamps returned from Whisper")
             
@@ -98,94 +107,114 @@ class WhisperService:
             logger.error(f"Whisper transcription failed: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to transcribe audio: {str(e)}")
     
-    def _refine_timestamps(
+    def _refine_with_silence_detection(
         self,
         timestamps: List[WhisperTimestamp],
         audio_bytes: bytes,
         audio_format: str,
-        window_ms: int = 100
+        silence_thresh_db: int = -40,
+        min_silence_duration_ms: int = 50,
+        snap_window_ms: int = 150
     ) -> List[WhisperTimestamp]:
         """
-        Refine timestamps by snapping to nearest zero-crossings.
+        Refine word timestamps by snapping to nearest silence gaps.
         
-        Zero-crossing detection ensures clean audio cuts without pops or clicks.
+        For clean narration, natural pauses between words are silence gaps.
+        This snaps word boundaries to these gaps for cleaner cuts.
         
         Args:
             timestamps: Original timestamps from Whisper
             audio_bytes: Raw audio data
             audio_format: Audio format (mp3, wav, etc.)
-            window_ms: Search window in milliseconds (±window_ms around original timestamp)
+            silence_thresh_db: Silence threshold in dB (default: -40dB)
+            min_silence_duration_ms: Minimum silence duration to consider (default: 50ms)
+            snap_window_ms: Maximum distance to snap timestamps (default: 150ms)
             
         Returns:
-            Refined timestamps snapped to zero-crossings
+            Refined timestamps snapped to silence gaps
         """
         try:
-            # Load audio with pydub
+            # Load audio
             audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format=audio_format)
-            samples = np.array(audio.get_array_of_samples())
-            sample_rate = audio.frame_rate
             
-            logger.info(f"Refining {len(timestamps)} timestamps using zero-crossing detection (±{window_ms}ms window)")
+            logger.info(f"Detecting silence gaps (thresh={silence_thresh_db}dB, min_duration={min_silence_duration_ms}ms)")
             
+            # Detect all silence spans
+            silence_ranges = detect_silence(
+                audio,
+                min_silence_len=min_silence_duration_ms,
+                silence_thresh=silence_thresh_db
+            )
+            
+            # Convert to seconds and filter by duration threshold
+            silence_gaps = [
+                (start_ms / 1000.0, end_ms / 1000.0)
+                for start_ms, end_ms in silence_ranges
+                if (end_ms - start_ms) >= min_silence_duration_ms
+            ]
+            
+            # Add synthetic silence gap at the end of audio
+            audio_duration_s = len(audio) / 1000.0
+            silence_gaps.append((audio_duration_s, audio_duration_s + 0.1))
+            
+            logger.info(f"Found {len(silence_gaps)-1} silence gaps (>={min_silence_duration_ms}ms), added end gap")
+            
+            if not silence_gaps:
+                logger.warning("No silence gaps detected, using original timestamps")
+                return timestamps
+            
+            # Refine each timestamp by snapping to nearest silence
             refined = []
-            for ts in timestamps:
-                # Snap both start and end to zero-crossings
-                refined_start = self._snap_to_zero_crossing(ts.start, samples, sample_rate, window_ms)
-                refined_end = self._snap_to_zero_crossing(ts.end, samples, sample_rate, window_ms)
+            snap_window_s = snap_window_ms / 1000.0
+            
+            for i, ts in enumerate(timestamps):
+                gap_for_start, dist_start = self._find_closest_gap(ts.start, silence_gaps)
+                if gap_for_start and dist_start <= snap_window_s:
+                    new_start = gap_for_start[1]
+                else:
+                    new_start = ts.start
+
+                gap_for_end, dist_end = self._find_closest_gap(ts.end, silence_gaps)
+                if gap_for_end and dist_end <= snap_window_s:
+                    new_end = gap_for_end[0]
+                else:
+                    new_end = ts.end
+
+                if new_end <= new_start:
+                    new_start, new_end = ts.start, ts.end
                 
                 refined.append(WhisperTimestamp(
                     word=ts.word,
-                    start=refined_start,
-                    end=refined_end
+                    start=new_start,
+                    end=new_end
                 ))
             
-            logger.info(f"Timestamp refinement complete")
+            # Count how many were refined
+            refined_count = sum(
+                1 for i, ts in enumerate(timestamps)
+                if abs(refined[i].start - ts.start) > 0.001 or abs(refined[i].end - ts.end) > 0.001
+            )
+            
+            logger.info(f"Refined {refined_count}/{len(timestamps)} timestamps using silence detection")
             return refined
             
         except Exception as e:
-            logger.warning(f"Timestamp refinement failed, using original timestamps: {str(e)}")
-            return timestamps  # Graceful degradation
+            logger.warning(f"Silence detection failed, using original timestamps: {str(e)}")
+            return timestamps
     
-    def _snap_to_zero_crossing(
+    def _find_closest_gap(
         self,
-        time_s: float,
-        samples: np.ndarray,
-        sample_rate: int,
-        window_ms: int
-    ) -> float:
-        """
-        Find nearest zero-crossing within window around given time.
-        
-        Args:
-            time_s: Target time in seconds
-            samples: Audio samples array
-            sample_rate: Sample rate in Hz
-            window_ms: Search window in milliseconds
-            
-        Returns:
-            Time of nearest zero-crossing in seconds
-        """
-        center_sample = int(time_s * sample_rate)
-        window_samples = int((window_ms / 1000) * sample_rate)
-        
-        # Define search window
-        start = max(0, center_sample - window_samples)
-        end = min(len(samples), center_sample + window_samples)
-        
-        # Extract window
-        window = samples[start:end]
-        
-        # Find zero-crossings (sign changes)
-        # np.diff(np.sign(window)) will be non-zero at zero-crossings
-        sign_changes = np.diff(np.sign(window))
-        zero_crossings = np.where(sign_changes != 0)[0]
-        
-        if len(zero_crossings) > 0:
-            # Pick crossing nearest to center
-            relative_center = center_sample - start
-            nearest_idx = zero_crossings[np.argmin(np.abs(zero_crossings - relative_center))]
-            absolute_sample = start + nearest_idx
-            return absolute_sample / sample_rate
-        
-        # Fallback to original time if no zero-crossing found
-        return time_s
+        time: float,
+        silence_gaps: List[Tuple[float, float]]
+    ) -> Tuple[Optional[Tuple[float, float]], float]:
+        """Return the closest silence gap and its distance to the timestamp."""
+        closest_gap = None
+        best_dist = float('inf')
+
+        for gap_start, gap_end in silence_gaps:
+            dist = min(abs(time - gap_start), abs(time - gap_end))
+            if dist < best_dist:
+                best_dist = dist
+                closest_gap = (gap_start, gap_end)
+
+        return closest_gap, best_dist
