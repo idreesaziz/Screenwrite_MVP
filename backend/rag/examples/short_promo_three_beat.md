@@ -199,7 +199,7 @@ Word timestamps: [
 ```json
 {
   "type": "info",
-  "content": "I will now place all visual elements on the timeline."
+  "content": "I will now place all visual and audio elements on the timeline with synchronized voiceover."
 }
 ```
 
@@ -207,7 +207,7 @@ Word timestamps: [
 ```json
 {
   "type": "edit",
-  "content": "Add video 'Video 1' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s in the source. At <TIMELINE_TIME>s on the timeline, add BlurText 'Discover Innovation' in white, <SIZE>px '<FONT>' bold, center, dark shadow (<OFFSET>px). At <TIMELINE_TIME>s on the timeline, fade out the text over <DURATION>s. Add video 'Video 2' immediately after 'Video 1', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'fade' transition (<DURATION>s) to next on 'Video 1'. At <TIMELINE_TIME>s on the timeline, add SplitText 'Experience Excellence' in white, <SIZE>px '<FONT>' regular, center, outline (<WIDTH>px), mode 'words', stagger <STAGGER>. At <TIMELINE_TIME>s on the timeline, slide out text upward over <DURATION>s. Add video 'Video 3' immediately after 'Video 2', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'Wipe Right' transition (<DURATION>s) to next on 'Video 2'. At <TIMELINE_TIME>s on the timeline, add TypewriterText 'Transform Your World' in white, <SIZE>px '<FONT>' bold, center, shadow (<OFFSET>px) and outline (<WIDTH>px), typingSpeed <SPEED>. At <TIMELINE_TIME>s on the timeline, fade out text over <DURATION>s. Add image 'promo-abstract-bg' immediately after 'Video 3'. Add 'fade' transition (<DURATION>s) to next on 'Video 3'. At <TIMELINE_TIME>s on the timeline, add image 'brand-logo' at top center, <SIZE>% width. At <TIMELINE_TIME>s, add BlurText '[BRAND NAME]' in white, <SIZE>px '<FONT>' bold, center. At <TIMELINE_TIME>s, add BlurText '[CALL TO ACTION]' in white, <SIZE>px '<FONT>' regular, bottom center."
+  "content": "Add video 'Video 1' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s in the source. At <TIMELINE_TIME>s on the timeline, add BlurText 'Discover Innovation' in white, <SIZE>px '<FONT>' bold, center, dark shadow (<OFFSET>px). At <TIMELINE_TIME>s on the timeline, fade out the text over <DURATION>s. Add video 'Video 2' immediately after 'Video 1', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'fade' transition (<DURATION>s) to next on 'Video 1'. At <TIMELINE_TIME>s on the timeline, add SplitText 'Experience Excellence' in white, <SIZE>px '<FONT>' regular, center, outline (<WIDTH>px), mode 'words', stagger <STAGGER>. At <TIMELINE_TIME>s on the timeline, slide out text upward over <DURATION>s. Add video 'Video 3' immediately after 'Video 2', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'Wipe Right' transition (<DURATION>s) to next on 'Video 2'. At <TIMELINE_TIME>s on the timeline, add TypewriterText 'Transform Your World' in white, <SIZE>px '<FONT>' bold, center, shadow (<OFFSET>px) and outline (<WIDTH>px), typingSpeed <SPEED>. At <TIMELINE_TIME>s on the timeline, fade out text over <DURATION>s. Add image 'promo-abstract-bg' immediately after 'Video 3'. Add 'fade' transition (<DURATION>s) to next on 'Video 3'. At <TIMELINE_TIME>s on the timeline, add image 'brand-logo' at top center, <SIZE>% width. At <TIMELINE_TIME>s, add BlurText '[BRAND NAME]' in white, <SIZE>px '<FONT>' bold, center. At <TIMELINE_TIME>s, add BlurText '[CALL TO ACTION]' in white, <SIZE>px '<FONT>' regular, bottom center. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>."
 }
 ```
 
@@ -216,36 +216,7 @@ Word timestamps: [
 Edit implemented successfully!
 ```
 
-19. **AGENT - INFO**
-```json
-{
-  "type": "info",
-  "content": "I've determined how to split and synchronize the voiceover across the four beats based on the composition timing and word-level timestamps."
-}
-```
-
-20. **AGENT - INFO**
-```json
-{
-  "type": "info",
-  "content": "I will now place the audio elements on the timeline."
-}
-```
-
-21. **AGENT - EDIT**
-```json
-{
-  "type": "edit",
-  "content": "Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>."
-}
-```
-
-**SYSTEM - Tool Response**
-```
-Edit implemented successfully!
-```
-
-22. **AGENT - SLEEP**
+19. **AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
