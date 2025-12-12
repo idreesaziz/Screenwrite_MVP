@@ -78,6 +78,8 @@ class WhisperService:
             
             # Extract word-level timestamps
             word_timestamps = []
+            full_text = transcription.text if hasattr(transcription, 'text') else ""
+            
             if hasattr(transcription, 'words') and transcription.words:
                 for word_data in transcription.words:
                     word_timestamps.append(WhisperTimestamp(
@@ -86,7 +88,8 @@ class WhisperService:
                         end=word_data.end
                     ))
                 
-                logger.info(f"Extracted {len(word_timestamps)} word timestamps")
+                # Group words into sentences based on full text punctuation
+                word_timestamps = self._group_into_sentences(word_timestamps, full_text)
                 
                 # Refine timestamps by snapping to silence gaps (for clean narration)
                 # Higher min_silence_duration filters out mid-word pauses
@@ -94,9 +97,9 @@ class WhisperService:
                     word_timestamps, 
                     audio_bytes, 
                     audio_format,
-                    silence_thresh_db=-40,
-                    min_silence_duration_ms=100,  # Increased to avoid mid-word pauses
-                    snap_window_ms=200
+                    silence_thresh_db=-60,
+                    min_silence_duration_ms=150,
+                    snap_window_ms=500
                 )
             else:
                 logger.warning("No word-level timestamps returned from Whisper")
@@ -106,6 +109,49 @@ class WhisperService:
         except Exception as e:
             logger.error(f"Whisper transcription failed: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to transcribe audio: {str(e)}")
+    
+    def _group_into_sentences(self, word_timestamps: List[WhisperTimestamp], full_text: str) -> List[WhisperTimestamp]:
+        """Group word-level timestamps into sentences based on punctuation in full text."""
+        if not word_timestamps or not full_text:
+            return word_timestamps
+        
+        # Split full text into sentences
+        import re
+        sentences_text = re.split(r'([.!?])\s+', full_text)
+        
+        # Reconstruct sentences with their punctuation
+        sentences = []
+        for i in range(0, len(sentences_text) - 1, 2):
+            if i + 1 < len(sentences_text):
+                sentences.append(sentences_text[i] + sentences_text[i + 1])
+        # Handle last sentence if no punctuation at end
+        if len(sentences_text) % 2 == 1 and sentences_text[-1].strip():
+            sentences.append(sentences_text[-1])
+        
+        # Map words to sentences
+        result = []
+        word_idx = 0
+        
+        for sentence_text in sentences:
+            # Count words in this sentence (approximate)
+            sentence_words = sentence_text.strip().split()
+            sentence_word_count = len(sentence_words)
+            
+            # Collect timestamps for this sentence
+            sentence_timestamps = []
+            for _ in range(min(sentence_word_count, len(word_timestamps) - word_idx)):
+                if word_idx < len(word_timestamps):
+                    sentence_timestamps.append(word_timestamps[word_idx])
+                    word_idx += 1
+            
+            if sentence_timestamps:
+                result.append(WhisperTimestamp(
+                    word=sentence_text.strip(),
+                    start=sentence_timestamps[0].start,
+                    end=sentence_timestamps[-1].end
+                ))
+        
+        return result
     
     def _refine_with_silence_detection(
         self,
@@ -153,11 +199,10 @@ class WhisperService:
                 if (end_ms - start_ms) >= min_silence_duration_ms
             ]
             
-            # Add synthetic silence gap at the end of audio
+            # Add synthetic silence gaps at the start and end of audio
+            silence_gaps.insert(0, (-0.1, 0.0))  # Start gap
             audio_duration_s = len(audio) / 1000.0
-            silence_gaps.append((audio_duration_s, audio_duration_s + 0.1))
-            
-            logger.info(f"Found {len(silence_gaps)-1} silence gaps (>={min_silence_duration_ms}ms), added end gap")
+            silence_gaps.append((audio_duration_s, audio_duration_s + 0.1))  # End gap
             
             if not silence_gaps:
                 logger.warning("No silence gaps detected, using original timestamps")
@@ -169,19 +214,10 @@ class WhisperService:
             
             for i, ts in enumerate(timestamps):
                 gap_for_start, dist_start = self._find_closest_gap(ts.start, silence_gaps)
-                if gap_for_start and dist_start <= snap_window_s:
-                    new_start = gap_for_start[1]
-                else:
-                    new_start = ts.start
-
                 gap_for_end, dist_end = self._find_closest_gap(ts.end, silence_gaps)
-                if gap_for_end and dist_end <= snap_window_s:
-                    new_end = gap_for_end[0]
-                else:
-                    new_end = ts.end
-
-                if new_end <= new_start:
-                    new_start, new_end = ts.start, ts.end
+                
+                new_start = gap_for_start[1] if gap_for_start else ts.start
+                new_end = gap_for_end[0] if gap_for_end else ts.end
                 
                 refined.append(WhisperTimestamp(
                     word=ts.word,
@@ -189,13 +225,6 @@ class WhisperService:
                     end=new_end
                 ))
             
-            # Count how many were refined
-            refined_count = sum(
-                1 for i, ts in enumerate(timestamps)
-                if abs(refined[i].start - ts.start) > 0.001 or abs(refined[i].end - ts.end) > 0.001
-            )
-            
-            logger.info(f"Refined {refined_count}/{len(timestamps)} timestamps using silence detection")
             return refined
             
         except Exception as e:
