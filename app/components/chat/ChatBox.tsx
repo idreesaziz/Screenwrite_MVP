@@ -80,7 +80,7 @@ interface Message {
   isWaitingForAnalysis?: boolean; // For messages waiting on analysis result
   fileName?: string; // Associated file name for analysis
   alreadyInUI?: boolean; // Internal flag: message already added to UI, skip duplicate addition
-  word_timestamps?: Array<{word: string; start: number; end: number}>; // Word-level timestamps for audio generation
+  word_timestamps?: Array<{word: string; start: number; end: number}>; // Sentence-level timestamps for audio generation
   compositionDiff?: {before: string; after: string}; // Composition diff for edit operations
 }
 
@@ -725,7 +725,7 @@ export function ChatBox({
       // Create success message that clearly indicates completion
       const generationContent = `Successfully generated ${contentType}: ${name}. The ${contentType} has been added to your media library.`;
       
-      // For audio with word timestamps, create message with timestamps stored separately
+      // For audio with sentence timestamps, create message with timestamps stored separately
       const generationMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: generationContent,
@@ -743,7 +743,7 @@ export function ChatBox({
         const timestampsJson = JSON.stringify(generatedAsset.word_timestamps, null, 2);
         const agentTimestampMessage: Message = {
           id: (Date.now() + 2).toString(),
-          content: `Word timestamps: ${timestampsJson}`,
+          content: `Sentence timestamps: ${timestampsJson}`,
           isUser: false,
           sender: 'tool',
           timestamp: new Date(),
@@ -1790,18 +1790,18 @@ export function ChatBox({
                 // Skip messages marked as alreadyInUI (agent-only timestamp messages)
                 message.alreadyInUI ? null :
                 message.isSystemMessage ? (
-                  // Render system messages as raw text with optional word timestamps
+                  // Render system messages as raw text with optional sentence timestamps
                   <div key={message.id} className="px-3 py-1 text-xs text-muted-foreground">
                     <div>{message.content}</div>
                     
-                    {/* Word timestamps collapsible UI */}
+                    {/* Sentence timestamps collapsible UI */}}
                     {message.word_timestamps && message.word_timestamps.length > 0 && (
                       <div className="mt-2 border border-border/50 rounded-md overflow-hidden max-w-md">
                         <button
                           onClick={() => toggleMessageCollapsed(message.id)}
                           className="w-full px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs"
                         >
-                          <span className="font-medium">Word Timestamps ({message.word_timestamps.length} words)</span>
+                          <span className="font-medium">Sentence Timestamps ({message.word_timestamps.length} sentences)</span>
                           <ChevronDown className={`h-3 w-3 transition-transform ${
                             !collapsedMessages.has(message.id) ? '' : 'rotate-180'
                           }`} />

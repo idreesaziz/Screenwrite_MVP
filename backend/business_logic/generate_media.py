@@ -593,7 +593,7 @@ Generate logo: """
         1. Generate audio via Gemini TTS with prompt-based style control
         2. Transcribe audio with Whisper for word-level timestamps
         3. Upload to cloud storage
-        4. Return URL with duration and word timestamps (critical for timeline placement)
+        4. Return URL with duration and sentence timestamps (critical for timeline placement)
         
         Args:
             text: Script text to convert to speech
@@ -607,7 +607,7 @@ Generate logo: """
             pitch: Voice pitch (-20.0 to 20.0, default 0.0)
             
         Returns:
-            GeneratedAssetResult with audio URL, duration, and word timestamps
+            GeneratedAssetResult with audio URL, duration, and sentence timestamps
             
         Raises:
             RuntimeError: If voice generation or upload fails
@@ -648,7 +648,7 @@ Generate logo: """
                     {"word": ts.word, "start": ts.start, "end": ts.end}
                     for ts in whisper_timestamps
                 ]
-                logger.info(f"✅ Extracted {len(word_timestamps)} word timestamps from Whisper")
+                logger.info(f"✅ Extracted {len(word_timestamps)} sentence timestamps from Whisper")
                 
             except Exception as whisper_error:
                 # Don't fail the whole operation if Whisper fails
@@ -676,7 +676,7 @@ Generate logo: """
             
             logger.info(f"✅ Voice-over generated and uploaded: {unique_name}")
             
-            # Step 5: Build result with duration and word timestamps
+            # Step 5: Build result with duration and sentence timestamps
             bucket_name = self.storage_provider.bucket_name if hasattr(self.storage_provider, 'bucket_name') else "screenwrite-media"
             gcs_uri = f"gs://{bucket_name}/{upload_result.path}"
             

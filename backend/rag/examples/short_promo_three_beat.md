@@ -164,14 +164,10 @@ promo-abstract-bg: Modern minimal design, blue-gray palette (<HEX_COLOR>, <HEX_C
 ```
 Successfully generated audio: promo-voiceover (<DURATION> seconds). The audio has been added to your media library.
 
-Word timestamps: [
-  {"word": "Discover", "start": <TIME>, "end": <TIME>},
-  {"word": "innovation.", "start": <TIME>, "end": <TIME>},
-  {"word": "Experience", "start": <TIME>, "end": <TIME>},
-  {"word": "excellence.", "start": <TIME>, "end": <TIME>},
-  {"word": "Transform", "start": <TIME>, "end": <TIME>},
-  {"word": "your", "start": <TIME>, "end": <TIME>},
-  {"word": "world.", "start": <TIME>, "end": <TIME>}
+Sentence timestamps: [
+  {"word": "Sentence 1", "start": <TIME>, "end": <TIME>},
+  {"word": "Sentence 2", "start": <TIME>, "end": <TIME>},
+  {"word": "Sentence 3", "start": <TIME>, "end": <TIME>}
 ]
 ```
 

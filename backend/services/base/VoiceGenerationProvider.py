@@ -69,7 +69,7 @@ class GeneratedVoiceResult:
         voice_model: Voice model used for generation
         audio_encoding: Format of audio (MP3, WAV, etc.)
         text_length: Number of characters in original text
-        word_timestamps: Word-level timestamps from Whisper (if available)
+        word_timestamps: Sentence-level timestamps from Whisper (if available)
         metadata: Additional information about the generation
     """
     audio_bytes: bytes
