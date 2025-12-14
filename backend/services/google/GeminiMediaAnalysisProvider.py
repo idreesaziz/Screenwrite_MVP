@@ -17,6 +17,7 @@ Authentication is handled via Application Default Credentials (ADC):
 
 import os
 import logging
+import asyncio
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 from google import genai
@@ -174,7 +175,9 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                 logger.info("Detected YouTube URL, using FileData pattern with video/mp4")
                 from google.genai import types
 
-                response = self.client.models.generate_content(
+                # Run in thread pool for true async parallelism
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
                     model=model,
                     contents=types.Content(
                         role="user",
@@ -224,7 +227,10 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                 # Always add config (includes system_instruction for laconic responses)
                 generate_kwargs["config"] = types.GenerateContentConfig(**config_params)
                 
-                response = self.client.models.generate_content(**generate_kwargs)
+                # Run in thread pool for true async parallelism
+                response = await asyncio.to_thread(
+                    lambda: self.client.models.generate_content(**generate_kwargs)
+                )
             else:
                 raise ValueError(
                     f"Unsupported file URL format: {file_url}. "
