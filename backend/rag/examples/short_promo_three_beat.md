@@ -80,15 +80,15 @@ Successfully generated logo: brand-logo. The logo has been added to your media l
   "files": [
     {
       "fileName": "Video 1",
-      "question": "2-3 best segments: timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
+      "question": "4-5 best moments (up to 6 seconds each): timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
     },
     {
       "fileName": "Video 2",
-      "question": "2-3 best segments: timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
+      "question": "4-5 best moments (up to 6 seconds each): timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
     },
     {
       "fileName": "Video 3",
-      "question": "2-3 best segments: timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
+      "question": "4-5 best moments (up to 6 seconds each): timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
     }
   ]
 }
@@ -96,16 +96,18 @@ Successfully generated logo: brand-logo. The logo has been added to your media l
 
 **SYSTEM - Probe Results**
 ```
-Video 1: 0-4s close-up detail #FFFFFF top | 5-9s wide shot soft focus #FFFFFF bottom
-Video 2: 2-6s slow motion product #1A1A1A center | 7-11s dynamic action #FFFFFF top
-Video 3: 0-5s lifestyle scene #FFFFFF center | 6-10s close detail #1A1A1A bottom
+Video 1: 0-3s dramatic opening #FFFFFF top | 4-8s close-up detail #FFFFFF center | 10-14s wide reveal #FFFFFF bottom | 16-20s emotional peak #1A1A1A top
+Video 2: 1-4s slow motion intro #1A1A1A center | 6-10s product highlight #FFFFFF top | 12-15s dynamic action #FFFFFF center | 18-22s closing shot #FFFFFF bottom
+Video 3: 0-5s establishing shot #FFFFFF top | 7-11s key moment #FFFFFF center | 14-18s detail close-up #1A1A1A bottom | 20-24s finale #FFFFFF top
 ```
+
+**SELECTION NOTE:** Select sparsely across all videos to maximize variety. Pick 1 best segment per video for each beat - don't reuse the same video multiple times unless necessary.
 
 8. **AGENT - INFO**
 ```json
 {
   "type": "info",
-  "content": "Based on my analysis of all assets, I've selected the most cinematic segments that create a compelling three-beat narrative arc with a strong branded finale. Each segment has clear text placement areas and strong visual interest."
+  "content": "Based on the analysis, I've selected: Video 1 4-8s for the opening (close-up detail), Video 2 12-15s for the middle (dynamic action), and Video 3 7-11s for the climax (key moment). Each from a different video for maximum variety."
 }
 ```
 
