@@ -22,7 +22,7 @@
   "files": [
     {
       "fileName": "background",
-      "question": "Provide a comprehensive analysis: What is happening in this video? Describe key moments with timestamps (in seconds), dominant colors (hex codes), visual composition, any text or objects, mood, and camera movements."
+      "question": "Key moments with timestamps (seconds), best text color for visibility (hex), mood, camera movement."
     }
   ]
 }
@@ -61,11 +61,11 @@ The video is 12 seconds long and shows a tropical beach at sunset. At 0-4s, calm
   "files": [
     {
       "fileName": "Video 1",
-      "question": "Describe what's happening in this video with key moments and timestamps."
+      "question": "Key moments with timestamps (seconds), best text color for visibility (hex)."
     },
     {
       "fileName": "Video 2",
-      "question": "Describe what's happening in this video with key moments and timestamps."
+      "question": "Key moments with timestamps (seconds), best text color for visibility (hex)."
     }
   ]
 }

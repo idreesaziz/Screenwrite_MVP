@@ -76,19 +76,19 @@ Successfully generated logo: brand-logo. The logo has been added to your media l
 ```json
 {
   "type": "probe",
-  "content": "Analyzing all files to identify the best cinematic segments and styling opportunities.",
+  "content": "Analyzing videos for best segments.",
   "files": [
     {
       "fileName": "Video 1",
-      "question": "Identify 2-3 distinct, cinematic segments. For each, provide exact start/end timestamps IN THE SOURCE VIDEO (clip-relative time in seconds), describe the action, list dominant colors with hex codes, assess lighting quality (bright/dark/medium), and identify clear areas in upper/middle/lower thirds suitable for text overlays."
+      "question": "2-3 best segments: timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
     },
     {
       "fileName": "Video 2",
-      "question": "Identify 2-3 distinct, cinematic segments with timestamps IN THE SOURCE VIDEO (clip-relative time), action descriptions, dominant colors (hex codes), lighting assessment (bright/dark/medium), and text overlay suitability."
+      "question": "2-3 best segments: timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
     },
     {
       "fileName": "Video 3",
-      "question": "Identify 2-3 distinct, cinematic segments with timestamps IN THE SOURCE VIDEO (clip-relative time), action descriptions, dominant colors (hex codes), lighting assessment (bright/dark/medium), and text overlay suitability."
+      "question": "2-3 best segments: timestamps (seconds), action (1 sentence), best text color for visibility (hex), text placement (top/center/bottom)."
     }
   ]
 }
@@ -96,9 +96,9 @@ Successfully generated logo: brand-logo. The logo has been added to your media l
 
 **SYSTEM - Probe Results**
 ```
-Video 1: Segment A (<START_TIME>-<END_TIME>): Close-up detail shot, warm tones (<HEX_COLOR>), medium lighting, top third clear. Segment B (<START_TIME>-<END_TIME>): Wide shot, soft focus, bottom third clear.
-Video 2: Segment A (<START_TIME>-<END_TIME>): Slow motion, bright lighting (<HEX_COLOR>), center clear. Segment B (<START_TIME>-<END_TIME>): Dynamic action, high contrast, upper third clear.
-Video 3: Segment A (<START_TIME>-<END_TIME>): Lifestyle shot, medium lighting, cool tones (<HEX_COLOR>), middle clear. Segment B (<START_TIME>-<END_TIME>): Close detail, clean aesthetic.
+Video 1: 0-4s close-up detail #FFFFFF top | 5-9s wide shot soft focus #FFFFFF bottom
+Video 2: 2-6s slow motion product #1A1A1A center | 7-11s dynamic action #FFFFFF top
+Video 3: 0-5s lifestyle scene #FFFFFF center | 6-10s close detail #1A1A1A bottom
 ```
 
 8. **AGENT - INFO**

@@ -61,11 +61,11 @@
 ```json
 {
   "type": "probe",
-  "content": "Analyzing all 3 videos to find the most dynamic moments.",
+  "content": "Analyzing videos for dynamic moments.",
   "files": [
-    {"fileName": "sunset", "question": "Identify the most dynamic segments with timestamps."},
-    {"fileName": "city", "question": "Identify the most dynamic segments with timestamps."},
-    {"fileName": "coffee", "question": "Identify the most dynamic segments with timestamps."}
+    {"fileName": "sunset", "question": "Most dynamic segments with timestamps (seconds)."},
+    {"fileName": "city", "question": "Most dynamic segments with timestamps (seconds)."},
+    {"fileName": "coffee", "question": "Most dynamic segments with timestamps (seconds)."}
   ]
 }
 ```

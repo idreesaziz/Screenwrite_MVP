@@ -26,6 +26,9 @@ from ..base.MediaAnalysisProvider import MediaAnalysisProvider, MediaAnalysisRes
 
 logger = logging.getLogger(__name__)
 
+# System instruction for laconic, direct responses
+ANALYSIS_SYSTEM_INSTRUCTION = """Answer directly and comprehensively with no extra language. Be laconic - minimal words, all requested details. Skip introductions, conclusions, and conversational phrases. Essential information only."""
+
 
 class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
     """
@@ -184,6 +187,9 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                             ),
                             types.Part(text=question)
                         ]
+                    ),
+                    config=types.GenerateContentConfig(
+                        system_instruction=ANALYSIS_SYSTEM_INSTRUCTION
                     )
                 )
             elif normalized_url.startswith("gs://") or normalized_url.startswith("http://") or normalized_url.startswith("https://"):
@@ -196,7 +202,9 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                 # Videos automatically include timestamps, so this is only for audio-only files
                 from google.genai import types
                 
-                config_params = {}
+                config_params = {
+                    'system_instruction': ANALYSIS_SYSTEM_INSTRUCTION
+                }
                 if self._is_audio_file(mime_type) or audio_timestamp:
                     config_params['audio_timestamp'] = True
                     logger.debug("Enabled audio_timestamp=True for accurate word-level timestamps")
@@ -213,9 +221,8 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                     ]
                 }
                 
-                # Only add config if we have audio-specific settings
-                if config_params:
-                    generate_kwargs["config"] = types.GenerateContentConfig(**config_params)
+                # Always add config (includes system_instruction for laconic responses)
+                generate_kwargs["config"] = types.GenerateContentConfig(**config_params)
                 
                 response = self.client.models.generate_content(**generate_kwargs)
             else:
