@@ -1,5 +1,7 @@
 # Short Promotional Video
 
+**Adaptation:** If the user specifies any requirements (style, colors, duration, content, mood, etc.), adapt this workflow accordingly while maintaining the overall structure and flow.
+
 **When to Use:**
 - User requests making a promotional/marketing/advertisement video
 - Currently in the midst of making a promotional video workflow
@@ -42,7 +44,7 @@ Found 3 cinematic videos and added them to your media bin.
 ```json
 {
   "type": "info",
-  "content": "I'll generate a transparent logo graphic for your brand."
+  "content": "I'll generate a logo graphic for your brand."
 }
 ```
 
@@ -167,7 +169,9 @@ Successfully generated audio: promo-voiceover (<DURATION> seconds). The audio ha
 Sentence timestamps: [
   {"word": "Sentence 1", "start": <TIME>, "end": <TIME>},
   {"word": "Sentence 2", "start": <TIME>, "end": <TIME>},
-  {"word": "Sentence 3", "start": <TIME>, "end": <TIME>}
+  {"word": "Sentence 3", "start": <TIME>, "end": <TIME>}, ... , 
+  {"word": "Sentence N", "start": <TIME>, "end": <TIME>}
+
 ]
 ```
 
@@ -183,7 +187,7 @@ Sentence timestamps: [
 ```json
 {
   "type": "sleep",
-  "content": "Here's my complete plan for the visual elements:\n\nI'll create a cinematic four-beat structure:\n\n**Beat 1: The Craft** (Video 1, <START>-<END>)\n- BlurText 'Discover Innovation' in white, <SIZE>px '<FONT>' bold, center, dark shadow (<OFFSET>px)\n- Text fades out before transition\n\n**Beat 2: The Artistry** (Video 2, <START>-<END>)\n- Fade transition (<DURATION>s)\n- SplitText 'Experience Excellence' in white, <SIZE>px '<FONT>' regular, center, outline (<WIDTH>px), word-by-word\n- Text slides out upward\n\n**Beat 3: The Impact** (Video 3, <START>-<END>)\n- Wipe Right transition (<DURATION>s)\n- TypewriterText 'Transform Your World' in white, <SIZE>px '<FONT>' bold, center, shadow+outline\n- Text fades out\n\n**Beat 4: The Finale** (promo-abstract-bg)\n- Fade transition (<DURATION>s)\n- Logo 'brand-logo' at top center, <SIZE>% width\n- BlurText '[BRAND NAME]' in white, <SIZE>px '<FONT>' bold, center\n- BlurText '[CALL TO ACTION]' in white, <SIZE>px '<FONT>' regular, bottom center\n\nDoes this sound good? Say 'yes' to proceed."
+  "content": "Here's my complete plan for the visual elements:\n\nI'll create a cinematic four-beat structure:\n\n**Beat 1: The Craft** (Video 1, <START>-<END>)\n- BlurText 'Discover Innovation' in white, 96px 'Inter' bold, center, dark shadow (3px)\n- Text fades out before transition\n\n**Beat 2: The Artistry** (Video 2, <START>-<END>)\n- Fade transition (0.5s)\n- SplitText 'Experience Excellence' in white, 96px 'Inter' bold, center, outline (2px), word-by-word\n- Text slides out upward\n\n**Beat 3: The Impact** (Video 3, <START>-<END>)\n- Wipe Right transition (0.5s)\n- TypewriterText 'Transform Your World' in white, 96px 'Inter' bold, center, shadow (3px) + outline (2px)\n- Text fades out\n\n**Beat 4: The Finale** (promo-abstract-bg)\n- Fade transition (0.5s)\n- Logo 'brand-logo' at top center, 200px width\n- BlurText '[BRAND NAME]' in white, 72px 'Inter' bold, center\n- BlurText '[CALL TO ACTION]' in white, 48px 'Inter' bold, bottom center\n\nDoes this sound good? Say 'yes' to proceed."
 }
 ```
 
@@ -203,7 +207,7 @@ Sentence timestamps: [
 ```json
 {
   "type": "edit",
-  "content": "Add video 'Video 1' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s in the source. At <TIMELINE_TIME>s on the timeline, add BlurText 'Discover Innovation' in white, <SIZE>px '<FONT>' bold, center, dark shadow (<OFFSET>px). At <TIMELINE_TIME>s on the timeline, fade out the text over <DURATION>s. Add video 'Video 2' immediately after 'Video 1', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'fade' transition (<DURATION>s) to next on 'Video 1'. At <TIMELINE_TIME>s on the timeline, add SplitText 'Experience Excellence' in white, <SIZE>px '<FONT>' regular, center, outline (<WIDTH>px), mode 'words', stagger <STAGGER>. At <TIMELINE_TIME>s on the timeline, slide out text upward over <DURATION>s. Add video 'Video 3' immediately after 'Video 2', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'Wipe Right' transition (<DURATION>s) to next on 'Video 2'. At <TIMELINE_TIME>s on the timeline, add TypewriterText 'Transform Your World' in white, <SIZE>px '<FONT>' bold, center, shadow (<OFFSET>px) and outline (<WIDTH>px), typingSpeed <SPEED>. At <TIMELINE_TIME>s on the timeline, fade out text over <DURATION>s. Add image 'promo-abstract-bg' immediately after 'Video 3'. Add 'fade' transition (<DURATION>s) to next on 'Video 3'. At <TIMELINE_TIME>s on the timeline, add image 'brand-logo' at top center, <SIZE>% width. At <TIMELINE_TIME>s, add BlurText '[BRAND NAME]' in white, <SIZE>px '<FONT>' bold, center. At <TIMELINE_TIME>s, add BlurText '[CALL TO ACTION]' in white, <SIZE>px '<FONT>' regular, bottom center. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>. Add audio 'promo-voiceover' at <TIMELINE_TIME>s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume <VOLUME>."
+  "content": "Add video 'Video 1' at 0s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s in the source. At 0.5s on the timeline, add BlurText 'Discover Innovation' in white, 96px 'Inter' bold, center, dark shadow (3px). At 2.5s on the timeline, fade out the text over 0.3s. Add video 'Video 2' immediately after 'Video 1', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'fade' transition (0.5s) to next on 'Video 1'. At 3.5s on the timeline, add SplitText 'Experience Excellence' in white, 96px 'Inter' bold, center, outline (2px), mode 'words', stagger 0.08. At 5.5s on the timeline, slide out text upward over 0.3s. Add video 'Video 3' immediately after 'Video 2', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'Wipe Right' transition (0.5s) to next on 'Video 2'. At 6.5s on the timeline, add TypewriterText 'Transform Your World' in white, 96px 'Inter' bold, center, shadow (3px) and outline (2px), typingSpeed 15. At 8.5s on the timeline, fade out text over 0.3s. Add image 'promo-abstract-bg' immediately after 'Video 3'. Add 'fade' transition (0.5s) to next on 'Video 3'. At 9.5s on the timeline, add image 'brand-logo' at top center, 200px width. At 10s, add BlurText '[BRAND NAME]' in white, 72px 'Inter' bold, center. At 10.5s, add BlurText '[CALL TO ACTION]' in white, 48px 'Inter' bold, bottom center. Add audio 'promo-voiceover' at 0s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume 1.0. Add audio 'promo-voiceover' at 3s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume 1.0. Add audio 'promo-voiceover' at 6s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume 1.0."
 }
 ```
 

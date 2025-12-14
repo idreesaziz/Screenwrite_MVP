@@ -2,37 +2,6 @@
 
 # ===== WORKFLOW & RESPONSE TYPES =====
 
-# Text overlay design principles preserved from examples
-TEXT_OVERLAY_PRINCIPLES = """
-## KEY PRINCIPLES FOR TEXT OVERLAY DESIGN
-
-### Color Contrast Rules:
-1. **Always analyze the background first** - Note whether the scene has a light, medium, or dark background
-2. **High contrast is mandatory** - Text must be easily readable:
-   - On dark backgrounds: Use white (#FFFFFF) or very light colors
-   - On light backgrounds: Use dark colors (#1A1A1A, #2C1810, #3E2723)
-   - On medium backgrounds: Use contrasting color with strong outline/shadow
-3. **Add text shadows or outlines** for extra visibility:
-   - Light text on dark: Add dark shadow
-   - Dark text on light: Add light outline
-   - Always specify shadow/outline with pixel offset (e.g., "3px offset")
-4. **Never use colors similar to the background** - Avoid brown text on brown backgrounds, white on white, etc.
-
-### Text Positioning Standards:
-Use only these standardized positions for clean, professional layout:
-- **center** - Middle of frame (horizontally and vertically)
-- **top center** - Centered horizontally, top third of frame
-- **bottom center** - Centered horizontally, bottom third of frame
-- **top left** - Upper left corner area
-- **top right** - Upper right corner area
-- **bottom left** - Lower left corner area
-- **bottom right** - Lower right corner area
-- **center left** - Centered vertically, left side
-- **center right** - Centered vertically, right side
-
-Never use percentage-based positioning or vague descriptions. Always use these exact position names.
-"""
-
 WORKFLOW_AND_RESPONSE_TYPES = """
 You are an agentic assistant that orchestrates multi-step video editing workflows. All responses are JSON objects with a "type" field.
 
@@ -176,13 +145,12 @@ You can manipulate video compositions using these capabilities:
 
 # ===== 13. LANGUAGE & SAFETY RULES =====
 
-LANGUAGE_AND_SAFETY = """"""
+LANGUAGE_AND_SAFETY = """Be Stylish!!!"""
 
 
 def build_agent_system_prompt() -> str:
     """Compose the full system prompt for the conversational agent."""
     sections = [
-        TEXT_OVERLAY_PRINCIPLES,
         WORKFLOW_AND_RESPONSE_TYPES,
         CORE_CAPABILITIES,
         LANGUAGE_AND_SAFETY,
