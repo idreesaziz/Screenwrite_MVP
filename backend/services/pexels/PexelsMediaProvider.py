@@ -1,5 +1,6 @@
 """Pexels implementation using their REST API with AI curation via Gemini."""
 
+import asyncio
 import json
 import logging
 import os
@@ -161,6 +162,69 @@ class PexelsMediaProvider(MediaProvider):
         sd_mp4 = [f for f in video_files if f.quality == "sd" and f.file_type == "video/mp4"]
         return sd_mp4[0] if sd_mp4 else video_files[0]
     
+    async def _expand_query_keywords(self, query: str) -> List[str]:
+        """
+        Expand a search query into multiple stock-footage-friendly keywords.
+        
+        Takes the original query and generates 5 keyword variations that:
+        - Include parts of the original query
+        - Add related common terms
+        - Maximize probability of finding relevant results
+        
+        Args:
+            query: Original search query from agent
+            
+        Returns:
+            List of 5 keyword strings for parallel searching
+        """
+        prompt = f"""Convert this stock footage search request into 5 keyword-friendly searches.
+
+Original request: "{query}"
+
+Rules:
+- Include parts of the original query (broken down if compound)
+- Add obvious related terms that would be tagged on stock sites
+- Keep each keyword 1-3 words maximum
+- Maximize variety to cast a wide net
+- Stay relevant to the original intent
+
+Example:
+"wild animals zoo safari" -> ["wild animals", "zoo", "zoo safari", "lions", "elephants"]
+"coffee shop cozy morning" -> ["coffee shop", "coffee", "cafe", "barista", "morning coffee"]
+
+Return exactly 5 keywords as a JSON array."""
+
+        try:
+            messages = [ChatMessage(role="user", content=prompt)]
+            
+            schema = {
+                "type": "object",
+                "properties": {
+                    "keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 5,
+                        "maxItems": 5
+                    }
+                },
+                "required": ["keywords"]
+            }
+            
+            response = await self.gemini.generate_chat_response_with_schema(
+                messages=messages,
+                response_schema=schema,
+                temperature=0.1,
+                thinking_budget=0
+            )
+            
+            keywords = response.get("keywords", [query])
+            logger.info(f"Expanded '{query}' into keywords: {keywords}")
+            return keywords[:5] if len(keywords) >= 5 else keywords + [query] * (5 - len(keywords))
+            
+        except Exception as e:
+            logger.error(f"Keyword expansion failed: {e}, using original query")
+            return [query]
+    
     async def search_media(
         self,
         request: MediaSearchRequest,
@@ -255,9 +319,10 @@ class PexelsMediaProvider(MediaProvider):
         Search Pexels and use AI to curate the most relevant results.
         
         This method:
-        1. Searches Pexels for a larger set of results (default 50)
-        2. Uses Gemini to select the most relevant items
-        3. Returns a curated list
+        1. Expands the query into 5 keyword-friendly variations
+        2. Searches Pexels for each keyword in parallel (50 results each)
+        3. Combines and deduplicates results
+        4. Uses Gemini to select the most relevant items from the mega pool
         
         Args:
             request: MediaSearchRequest with search parameters
@@ -267,24 +332,64 @@ class PexelsMediaProvider(MediaProvider):
         Returns:
             MediaSearchResponse with AI-curated media items
         """
-        # Search with larger per_page for better curation options
-        search_request = MediaSearchRequest(
+        # Step 1: Expand query into multiple keywords
+        keywords = await self._expand_query_keywords(request.query)
+        logger.info(f"Searching with {len(keywords)} expanded keywords: {keywords}")
+        
+        # Step 2: Search all keywords in parallel
+        async def search_keyword(keyword: str) -> List[MediaItem]:
+            search_request = MediaSearchRequest(
+                query=keyword,
+                media_type=request.media_type,
+                per_page=50,
+                page=1,
+                orientation=request.orientation,
+                size=request.size,
+                locale=request.locale,
+                metadata=request.metadata
+            )
+            try:
+                response = await self.search_media(search_request, **kwargs)
+                return response.media_items
+            except Exception as e:
+                logger.warning(f"Search failed for keyword '{keyword}': {e}")
+                return []
+        
+        # Run all searches in parallel
+        search_tasks = [search_keyword(kw) for kw in keywords]
+        results_lists = await asyncio.gather(*search_tasks)
+        
+        # Step 3: Combine and dedupe by video ID
+        seen_ids = set()
+        all_media_items = []
+        for items in results_lists:
+            for item in items:
+                if item.id not in seen_ids:
+                    seen_ids.add(item.id)
+                    all_media_items.append(item)
+        
+        logger.info(f"Combined {len(all_media_items)} unique items from {len(keywords)} keyword searches")
+        
+        if not all_media_items:
+            logger.warning(f"No media found for any expanded keywords of: '{request.query}'")
+            return MediaSearchResponse(
+                query=request.query,
+                media_items=[],
+                total_results=0,
+                page=1,
+                per_page=50,
+                provider="pexels"
+            )
+        
+        # Create a combined search response for curation
+        search_response = MediaSearchResponse(
             query=request.query,
-            media_type=request.media_type,
-            per_page=50,  # Get more results for AI to choose from
-            page=request.page,
-            orientation=request.orientation,
-            size=request.size,
-            locale=request.locale,
-            metadata=request.metadata
+            media_items=all_media_items,
+            total_results=len(all_media_items),
+            page=1,
+            per_page=len(all_media_items),
+            provider="pexels"
         )
-        
-        # Perform search
-        search_response = await self.search_media(search_request, **kwargs)
-        
-        if not search_response.media_items:
-            logger.warning(f"No media found for query: '{request.query}'")
-            return search_response
         
         logger.info(f"Curating {len(search_response.media_items)} items with AI (max: {max_curated})")
         
