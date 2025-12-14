@@ -1794,7 +1794,7 @@ export function ChatBox({
                   <div key={message.id} className="px-3 py-1 text-xs text-muted-foreground">
                     <div>{message.content}</div>
                     
-                    {/* Sentence timestamps collapsible UI */}}
+                    {/* Sentence timestamps collapsible UI */}
                     {message.word_timestamps && message.word_timestamps.length > 0 && (
                       <div className="mt-2 border border-border/50 rounded-md overflow-hidden max-w-md">
                         <button

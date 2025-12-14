@@ -1,6 +1,75 @@
 import type { FlatElement, AnimatedProperty } from "./BlueprintTypes";
 
 /**
+ * Split a string by a delimiter, but respect nesting within parentheses, brackets, and braces.
+ * This prevents splitting inside CSS functions like translate(-50%, -50%) or rgba(0,0,0,0.5).
+ * 
+ * @param str - The string to split
+ * @param delimiter - The delimiter character (default: ',')
+ * @returns Array of split parts, trimmed
+ */
+function splitRespectingNesting(str: string, delimiter: string = ','): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+  let inQuotes = false;
+  let quoteChar = '';
+  
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    const prevChar = i > 0 ? str[i - 1] : '';
+    
+    // Handle quotes (both single and double)
+    if ((char === '"' || char === "'") && prevChar !== '\\') {
+      if (!inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+      } else if (char === quoteChar) {
+        inQuotes = false;
+        quoteChar = '';
+      }
+      current += char;
+      continue;
+    }
+    
+    // If inside quotes, just add the character
+    if (inQuotes) {
+      current += char;
+      continue;
+    }
+    
+    // Track nesting depth for parentheses, brackets, and braces
+    if (char === '(' || char === '[' || char === '{') {
+      depth++;
+      current += char;
+      continue;
+    }
+    
+    if (char === ')' || char === ']' || char === '}') {
+      depth = Math.max(0, depth - 1); // Prevent going negative
+      current += char;
+      continue;
+    }
+    
+    // Split on delimiter only when not nested
+    if (char === delimiter && depth === 0) {
+      parts.push(current.trim());
+      current = '';
+      continue;
+    }
+    
+    current += char;
+  }
+  
+  // Don't forget the last part
+  if (current.length > 0 || parts.length > 0) {
+    parts.push(current.trim());
+  }
+  
+  return parts;
+}
+
+/**
  * Parse a single string element into a FlatElement object
  * 
  * Format: "ComponentName;id:value;parent:value;prop:value;..."
@@ -162,8 +231,8 @@ function parseAnimatedProperty(value: string, propName: string): AnimatedPropert
     return num;
   });
   
-  // Parse values (can be any type)
-  const values = valuesStr.split(',').map(v => parseSimpleValue(v.trim()));
+  // Parse values using nesting-aware split to handle CSS functions like translate(-50%, -50%)
+  const values = splitRespectingNesting(valuesStr, ',').map(v => parseSimpleValue(v.trim()));
   
   // Validate lengths match
   if (timestamps.length !== values.length) {
@@ -194,7 +263,8 @@ function parseArrayValue(value: string): any[] {
     return []; // Empty array
   }
   
-  return content.split(',').map(item => parseSimpleValue(item.trim()));
+  // Use nesting-aware split to handle nested arrays, objects, and CSS functions
+  return splitRespectingNesting(content, ',').map(item => parseSimpleValue(item.trim()));
 }
 
 /**
@@ -209,8 +279,8 @@ function parseObjectValue(value: string): Record<string, any> {
   
   const obj: Record<string, any> = {};
   
-  // Split by comma, but be careful with nested structures
-  const pairs = content.split(',');
+  // Use nesting-aware split to handle nested structures properly
+  const pairs = splitRespectingNesting(content, ',');
   
   for (const pair of pairs) {
     const colonIndex = pair.indexOf(':');
