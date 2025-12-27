@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Model to use (same as fetch sorting)
-SELECTOR_MODEL = "gemini-2.0-flash-exp"
+# Model to use (fast, cheap lite model for selection)
+SELECTOR_MODEL = "gemini-2.5-flash-lite"
 
 # System prompt for the selector
 SELECTOR_SYSTEM_PROMPT = """You are a workflow pattern matcher for a video editing AI assistant.

@@ -63,7 +63,7 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         self,
         project_id: Optional[str] = None,
         location: str = "us-central1",
-        default_model: str = "gemini-2.0-flash-exp"
+        default_model: str = "gemini-3-flash-preview"
     ):
         """
         Initialize Gemini media analysis provider using Vertex AI.
@@ -94,10 +94,17 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
                 "Set it to your GCP project ID."
             )
         
+        # Gemini 3 models require 'global' location
+        if "gemini-3" in self.default_model and self.location != "global":
+            logger.warning(f"Gemini 3 models require 'global' location. Switching from {self.location} to 'global'.")
+            self.location = "global"
+        
         # Initialize Vertex AI client with v1 API (per official docs)
         # Uses Application Default Credentials automatically
         self.client = genai.Client(
-            http_options=HttpOptions(api_version="v1")
+            http_options=HttpOptions(api_version="v1"),
+            location=self.location,
+            project=self.project_id
         )
         
         logger.info(
@@ -124,7 +131,7 @@ class GeminiMediaAnalysisProvider(MediaAnalysisProvider):
         Args:
             file_url: GCS URI (gs://bucket/path) or HTTP/HTTPS URL (signed URLs)
             question: Question about the media
-            model_name: Optional model override (default: gemini-2.0-flash-exp)
+            model_name: Optional model override (default: gemini-3-flash-preview)
             temperature: Generation temperature (0.0-1.0, default: 0.1)
             audio_timestamp: Enable accurate timestamps for audio-only files (default: False)
                             For videos, timestamps are included automatically.

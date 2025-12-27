@@ -62,9 +62,16 @@ class GeminiChatProvider(ChatProvider):
             # Ensure Vertex AI environment variable is set
             os.environ['GOOGLE_GENAI_USE_VERTEXAI'] = 'True'
             
+            # Gemini 3 models require 'global' location
+            if "gemini-3" in self.default_model_name and self.location != "global":
+                logger.warning(f"Gemini 3 models require 'global' location. Switching from {self.location} to 'global'.")
+                self.location = "global"
+            
             from google.genai.types import HttpOptions
             self.client = genai.Client(
-                http_options=HttpOptions(api_version="v1")
+                http_options=HttpOptions(api_version="v1"),
+                location=self.location,
+                project=self.project_id
             )
             logger.info(f"Initialized Vertex AI client with model: {default_model_name}, project: {self.project_id}, location: {self.location}")
         else:

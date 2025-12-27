@@ -51,8 +51,8 @@ def get_media_analysis_provider() -> MediaAnalysisProvider:
     if provider_type == "gemini":
         return GeminiMediaAnalysisProvider(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            default_model=os.getenv("MEDIA_ANALYSIS_MODEL", "gemini-2.5-flash")
+            location="global",
+            default_model=os.getenv("MEDIA_ANALYSIS_MODEL", "gemini-3-flash-preview")
         )
     else:
         raise ValueError(f"Unsupported media analysis provider: {provider_type}")
@@ -84,8 +84,8 @@ def _build_chat_provider(provider_key: Optional[str], thinking_budget: int = 800
     if key == "gemini":
         return GeminiChatProvider(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            default_model_name=os.getenv("CHAT_MODEL", "gemini-2.5-flash"),
+            location="global",
+            default_model_name=os.getenv("CHAT_MODEL", "gemini-3-flash-preview"),
             default_temperature=1.0,
             default_thinking_budget=thinking_budget
         )

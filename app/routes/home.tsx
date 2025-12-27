@@ -596,7 +596,7 @@ export default function TimelineEditor() {
     
     // Map frontend model names to backend model names
     const modelNameMap: Record<string, string> = {
-      "gemini": "gemini-2.5-flash",
+      "gemini": "gemini-3-flash-preview",
       "openai": "gpt-4o-mini"
     };
     

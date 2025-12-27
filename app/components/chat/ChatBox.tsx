@@ -1596,7 +1596,7 @@ export function ChatBox({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-6 text-xs">
                   {selectedEditProvider === "gemini" 
-                    ? "Gemini 2.5" 
+                    ? "Gemini 3 Flash" 
                     : selectedEditProvider === "gemini-3-low"
                     ? "Gemini 3 Low"
                     : selectedEditProvider === "gemini-3-high"
@@ -1610,7 +1610,7 @@ export function ChatBox({
                   onClick={() => setSelectedEditProvider("gemini")}
                   className="text-xs"
                 >
-                  Gemini 2.5
+                  Gemini 3 Flash
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setSelectedEditProvider("gemini-3-low")}
@@ -1641,7 +1641,7 @@ export function ChatBox({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-6 text-xs">
                   {selectedModel === "gemini" 
-                    ? "Gemini 2.5" 
+                    ? "Gemini 3 Flash" 
                     : selectedModel === "gemini-3-low"
                     ? "Gemini 3 Low"
                     : selectedModel === "gemini-3-high"
@@ -1657,7 +1657,7 @@ export function ChatBox({
                   onClick={() => setSelectedModel("gemini")}
                   className="text-xs"
                 >
-                  Gemini 2.5
+                  Gemini 3 Flash
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setSelectedModel("gemini-3-low")}
