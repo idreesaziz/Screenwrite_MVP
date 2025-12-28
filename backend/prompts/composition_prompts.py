@@ -174,6 +174,28 @@ Use `text:Your content` to set text content. All support CSS styling.
   Props: `text`, `typingSpeed` (characters per second, default 10), `initialDelay` (seconds), `pauseDuration` (seconds), `deletingSpeed` (chars/sec), `showCursor` (boolean), `cursorCharacter` (string), `cursorBlinkSpeed` (blinks per second)
   Example: typingSpeed:10 (types 10 characters per second)
 
+**CENTERING TEXT ANIMATION COMPONENTS:**
+When centering text animation components, ALWAYS include `textAlign:center` along with position centering:
+
+Centered BlurText:
+```
+"BlurText;id:centered-blur;text:Welcome;fontSize:72px;color:#FFFFFF;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);textAlign:center"
+```
+
+Centered SplitText:
+```
+"SplitText;id:centered-split;text:Hello World;fontSize:64px;color:#FFFFFF;animateBy:words;direction:up;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);textAlign:center"
+```
+
+Centered TypewriterText:
+```
+"TypewriterText;id:centered-type;text:Loading...;fontSize:48px;color:#00FF00;typingSpeed:8;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);textAlign:center"
+```
+
+**Why both are needed:**
+- `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)` centers the ELEMENT on screen
+- `textAlign:center` centers the TEXT within the element (essential for multi-line text)
+
 **USAGE NOTES:**
 - Component names are case-sensitive
 - Media/animation-specific props (src, volume, text, delay) are component props

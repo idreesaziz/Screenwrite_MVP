@@ -1,5 +1,6 @@
 """Google Gemini implementation using Vertex AI."""
 
+import asyncio
 import json
 import logging
 import os
@@ -152,16 +153,25 @@ class GeminiChatProvider(ChatProvider):
                 types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
                 types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
             ],
-            'thinking_config': types.ThinkingConfig(thinking_budget=think),
             **kwargs
         }
+        
+        # Gemini 3 models use thinking_level, older models use thinking_budget
+        if 'gemini-3' in model.lower():
+            # Gemini 3: use thinking_level (low for fast responses)
+            config_params['thinking_config'] = types.ThinkingConfig(thinking_level="LOW")
+        elif think > 0:
+            # Older thinking models: use thinking_budget
+            config_params['thinking_config'] = types.ThinkingConfig(thinking_budget=think)
         
         if max_tokens:
             config_params['max_output_tokens'] = max_tokens
         if system_inst:
             config_params['system_instruction'] = system_inst
         
-        response = self.client.models.generate_content(
+        # Run in thread pool for true async
+        response = await asyncio.to_thread(
+            self.client.models.generate_content,
             model=model,
             contents=contents,
             config=types.GenerateContentConfig(**config_params)
@@ -208,9 +218,14 @@ class GeminiChatProvider(ChatProvider):
                 types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
                 types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
             ],
-            'thinking_config': types.ThinkingConfig(thinking_budget=think),
             **kwargs
         }
+        
+        # Gemini 3 models use thinking_level, older models use thinking_budget
+        if 'gemini-3' in model.lower():
+            config_params['thinking_config'] = types.ThinkingConfig(thinking_level="LOW")
+        elif think > 0:
+            config_params['thinking_config'] = types.ThinkingConfig(thinking_budget=think)
         
         if max_tokens:
             config_params['max_output_tokens'] = max_tokens
@@ -256,15 +271,18 @@ class GeminiChatProvider(ChatProvider):
             **kwargs
         }
         
-        # Only add thinking_config if model supports it (thinking models)
-        # Standard models like gemini-2.0-flash-exp don't support thinking mode
-        if think > 0 and 'thinking' in model.lower():
+        # Gemini 3 models use thinking_level, older models use thinking_budget
+        if 'gemini-3' in model.lower():
+            config_params['thinking_config'] = types.ThinkingConfig(thinking_level="LOW")
+        elif think > 0:
             config_params['thinking_config'] = types.ThinkingConfig(thinking_budget=think)
         
         if system_inst:
             config_params['system_instruction'] = system_inst
         
-        response = self.client.models.generate_content(
+        # Run in thread pool for true async
+        response = await asyncio.to_thread(
+            self.client.models.generate_content,
             model=model,
             contents=contents,
             config=types.GenerateContentConfig(**config_params)
