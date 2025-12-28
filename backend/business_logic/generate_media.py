@@ -84,7 +84,8 @@ class MediaGenerationService:
         image_provider: ImageGenerationProvider,
         video_provider: VideoGenerationProvider,
         voice_provider: VoiceGenerationProvider,
-        storage_provider: StorageProvider
+        storage_provider: StorageProvider,
+        logo_provider: Optional[ImageGenerationProvider] = None
     ):
         """
         Initialize media generation service.
@@ -94,11 +95,13 @@ class MediaGenerationService:
             video_provider: Provider for video generation (Veo)
             voice_provider: Provider for voice/speech generation (Google TTS)
             storage_provider: Provider for cloud storage (GCS)
+            logo_provider: Provider for logo generation (Gemini 3 Pro Image), falls back to image_provider
         """
         self.image_provider = image_provider
         self.video_provider = video_provider
         self.voice_provider = voice_provider
         self.storage_provider = storage_provider
+        self.logo_provider = logo_provider or image_provider
         self.whisper_service = WhisperService()  # Initialize Whisper for word-level timestamps
         
         # Track active video generation operations
@@ -253,7 +256,7 @@ Generate logo: """
             enhanced_prompt = system_instructions + prompt
             logger.info(f"Enhanced logo prompt length: {len(enhanced_prompt)} characters")
             
-            # Step 2: Generate image with provider
+            # Step 2: Generate image with Gemini 3 Pro Image (logo_provider)
             from services.base.ImageGenerationProvider import ImageGenerationRequest
             
             request = ImageGenerationRequest(
@@ -264,7 +267,7 @@ Generate logo: """
                 output_mime_type="image/png"
             )
             
-            response = await self.image_provider.generate_images(request)
+            response = await self.logo_provider.generate_images(request)
             
             if not response.images:
                 logger.error("No logo image generated in response")

@@ -25,6 +25,7 @@ from services.anthropic.ClaudeChatProvider import ClaudeChatProvider
 from services.openai.OpenAIChatProvider import OpenAIChatProvider
 from services.pexels.PexelsMediaProvider import PexelsMediaProvider
 from services.google.ImagenGenerationProvider import ImagenGenerationProvider
+from services.google.GeminiImageGenerationProvider import GeminiImageGenerationProvider
 from services.google.VEOGenerationProvider import VEOGenerationProvider
 from services.google.GoogleTTSProvider import GoogleTTSProvider
 
@@ -270,6 +271,24 @@ def get_image_generation_provider() -> ImageGenerationProvider:
 
 
 @lru_cache()
+def get_logo_generation_provider() -> ImageGenerationProvider:
+    """
+    Factory function for logo generation using Gemini 3 Pro Image.
+    
+    Returns a singleton instance optimized for logo generation with
+    accurate text rendering.
+    
+    Returns:
+        ImageGenerationProvider instance (GeminiImageGenerationProvider)
+    """
+    return GeminiImageGenerationProvider(
+        project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+        location="global",  # Gemini 3 requires global
+        default_model_name="gemini-3-pro-image-preview"
+    )
+
+
+@lru_cache()
 def get_video_generation_provider() -> VideoGenerationProvider:
     """
     Factory function for VideoGenerationProvider.
@@ -321,6 +340,7 @@ def get_media_generation_service():
     
     return MediaGenerationService(
         image_provider=get_image_generation_provider(),
+        logo_provider=get_logo_generation_provider(),
         video_provider=get_video_generation_provider(),
         voice_provider=get_voice_generation_provider(),
         storage_provider=get_storage_provider()
