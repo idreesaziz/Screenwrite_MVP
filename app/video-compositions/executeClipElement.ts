@@ -235,10 +235,15 @@ export function renderElementObject(
     
     // Process each prop
     for (const [key, value] of Object.entries(propsWithDefaults)) {
-      // SPECIAL CASE: Video/Audio startFrom/endAt are in seconds - convert to frames
-      const isMediaTimingProp = 
-        (element.name === 'Video' || element.name === 'Audio' || element.name === 'OffthreadVideo') && 
-        (key === 'startFrom' || key === 'endAt');
+      // Skip endAt for Video/Audio - clip duration on timeline controls when video stops
+      // The Sequence's durationInFrames handles visibility, video freezes on last frame if needed
+      const isMediaComponent = element.name === 'Video' || element.name === 'Audio' || element.name === 'OffthreadVideo';
+      if (isMediaComponent && key === 'endAt') {
+        continue; // Skip endAt entirely
+      }
+      
+      // SPECIAL CASE: Video/Audio startFrom is in seconds - convert to frames
+      const isMediaTimingProp = isMediaComponent && key === 'startFrom';
       
       let resolvedValue: any;
       

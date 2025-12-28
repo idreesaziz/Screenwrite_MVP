@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, Freeze, Easing, interpolate } from "remotion";
+import { AbsoluteFill, Sequence, useVideoConfig, Easing } from "remotion";
 import { TransitionSeries, linearTiming, springTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
@@ -630,7 +630,7 @@ function ClipContent({
 
 /**
  * Renders clip content with proper freeze technique for TransitionSeries
- * For video elements, extends endAt to hold the last frame during transitions
+ * Video elements will naturally freeze on their last frame when the source ends
  */
 function ClipContentWithFreeze({ 
   clip, 
@@ -643,53 +643,8 @@ function ClipContentWithFreeze({
   freezeAfterFrames: number;
   totalSequenceDuration: number;
 }) {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  
-  // Check if we need to extend duration for transitions
-  const needsExtension = totalSequenceDuration > freezeAfterFrames;
-  
-  if (!needsExtension) {
-    return executeClipElement(clip.element, executionContext);
-  }
-  
-  // For Video elements, extend the endAt property to hold the last frame
-  if (clip.element.elements && Array.isArray(clip.element.elements)) {
-    const modifiedElements = clip.element.elements.map(elementStr => {
-      // Check if this is a Video or OffthreadVideo element
-      if (elementStr.startsWith('Video;') || elementStr.startsWith('OffthreadVideo;')) {
-        // Parse endAt value (in seconds)
-        const endAtMatch = elementStr.match(/endAt:(\d+(?:\.\d+)?)/);
-        
-        if (endAtMatch) {
-          const originalEndSeconds = parseFloat(endAtMatch[1]);
-          const originalEndFrames = Math.round(originalEndSeconds * fps);
-          
-          // Calculate extension needed in frames, then convert back to seconds
-          const extensionFrames = totalSequenceDuration - freezeAfterFrames;
-          const extendedEndFrames = originalEndFrames + extensionFrames;
-          const extendedEndSeconds = extendedEndFrames / fps;
-          
-          // Replace endAt with extended value
-          const modifiedElement = elementStr.replace(
-            /endAt:\d+(?:\.\d+)?/,
-            `endAt:${extendedEndSeconds.toFixed(2)}`
-          );
-          
-          console.log(`Extended video endAt from ${originalEndSeconds}s to ${extendedEndSeconds.toFixed(2)}s for freeze technique`);
-          return modifiedElement;
-        }
-      }
-      
-      return elementStr;
-    });
-    
-    // Create modified element container
-    const modifiedElement = { elements: modifiedElements };
-    return executeClipElement(modifiedElement, executionContext);
-  }
-  
-  // Fallback for non-video or unrecognized format
+  // Simply execute the clip element - Remotion handles freeze behavior automatically
+  // when the video source ends (last frame remains visible)
   return executeClipElement(clip.element, executionContext);
 }
 

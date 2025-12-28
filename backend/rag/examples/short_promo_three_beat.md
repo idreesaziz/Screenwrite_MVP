@@ -176,6 +176,8 @@ Sentence timestamps: [
 }
 ```
 
+**AUDIO PLACEMENT NOTE:** Spread voiceover sentences throughout the video for natural pacing. Don't start audio immediately at 0s - give the visuals a moment to breathe (0.5-1s delay). Time each sentence to align with its corresponding visual beat, ensuring the audio enhances rather than overwhelms the visual storytelling. Leave appropriate gaps between sentences for dramatic effect.
+
 18. **AGENT - EDIT**
 ```json
 {

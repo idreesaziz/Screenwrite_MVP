@@ -130,18 +130,18 @@ COMPONENTS_REFERENCE = """**AVAILABLE COMPONENTS:**
 
 **MEDIA COMPONENTS:**
 - `Video` - Video playback
-  Props: `src` (media name), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds), `endAt` (seconds)
+  Props: `src` (media name), `volume` (0-1), `playbackRate`, `muted` (true/false), `startFrom` (seconds)
   **CRITICAL**: For `src`, use the EXACT quoted name from AVAILABLE MEDIA ASSETS section
   Example: If media shows - "beach-sunset.mp4": Video (10s)
            Then use: src:"beach-sunset.mp4"
   The frontend resolves media names to actual URLs automatically.
-  Note: `startFrom` and `endAt` specify which portion of the source video to play, in seconds
+  Note: `startFrom` specifies where in the source video to start (in seconds). The clip's timeline duration determines how long it plays.
   
 - `Audio` - Audio playback (no visual)
-  Props: `src` (media name), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds), `endAt` (seconds)
+  Props: `src` (media name), `volume` (0-1), `playbackRate`, `muted`, `startFrom` (seconds)
   **CRITICAL**: For `src`, use the EXACT quoted name from AVAILABLE MEDIA ASSETS section
   The frontend resolves media names to actual URLs automatically.
-  Note: `startFrom` and `endAt` specify which portion of the source audio to play, in seconds
+  Note: `startFrom` specifies where in the source audio to start (in seconds). The clip's timeline duration determines how long it plays.
   
 - `Img` - Static image
   Props: `src` (media name), `alt`

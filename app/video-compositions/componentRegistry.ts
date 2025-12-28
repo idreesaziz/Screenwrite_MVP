@@ -41,12 +41,12 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   },
   'Video': { 
     type: 'component',
-    componentProps: ['src', 'startFrom', 'endAt', 'volume', 'playbackRate', 'muted', 'loop', 'crossOrigin'],
+    componentProps: ['src', 'startFrom', 'volume', 'playbackRate', 'muted', 'loop', 'crossOrigin'],
     styleProps: '*'
   },
   'Audio': {
     type: 'component',
-    componentProps: ['src', 'startFrom', 'endAt', 'volume', 'playbackRate', 'muted', 'loop'],
+    componentProps: ['src', 'startFrom', 'volume', 'playbackRate', 'muted', 'loop'],
     styleProps: []  // Audio has no visual styles
   },
   'Img': { 
@@ -66,7 +66,7 @@ export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   },
   'OffthreadVideo': {
     type: 'component',
-    componentProps: ['src', 'startFrom', 'endAt', 'volume', 'playbackRate', 'muted', 'loop', 'transparent'],
+    componentProps: ['src', 'startFrom', 'volume', 'playbackRate', 'muted', 'loop', 'transparent'],
     styleProps: '*'
   },
   'IFrame': {
