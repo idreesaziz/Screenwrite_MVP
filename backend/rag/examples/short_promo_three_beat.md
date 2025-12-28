@@ -96,9 +96,9 @@ Successfully generated logo: brand-logo. The logo has been added to your media l
 
 **SYSTEM - Probe Results**
 ```
-Video 1: 0-3s dramatic opening #FFFFFF top | 4-8s close-up detail #FFFFFF center | 10-14s wide reveal #FFFFFF bottom | 16-20s emotional peak #1A1A1A top
-Video 2: 1-4s slow motion intro #1A1A1A center | 6-10s product highlight #FFFFFF top | 12-15s dynamic action #FFFFFF center | 18-22s closing shot #FFFFFF bottom
-Video 3: 0-5s establishing shot #FFFFFF top | 7-11s key moment #FFFFFF center | 14-18s detail close-up #1A1A1A bottom | 20-24s finale #FFFFFF top
+Video 1: <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT>
+Video 2: <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT>
+Video 3: <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT>
 ```
 
 **SELECTION NOTE:** Select sparsely across all videos to maximize variety. Pick 1 best segment per video for each beat - don't reuse the same video multiple times unless necessary.
@@ -107,7 +107,7 @@ Video 3: 0-5s establishing shot #FFFFFF top | 7-11s key moment #FFFFFF center | 
 ```json
 {
   "type": "info",
-  "content": "Based on the analysis, I've selected: Video 1 4-8s for the opening (close-up detail), Video 2 12-15s for the middle (dynamic action), and Video 3 7-11s for the climax (key moment). Each from a different video for maximum variety."
+  "content": "Based on the analysis, I've selected: Video 1 <START>-<END>s for the opening (<DESCRIPTION>), Video 2 <START>-<END>s for the middle (<DESCRIPTION>), and Video 3 <START>-<END>s for the climax (<DESCRIPTION>). Each from a different video for maximum variety."
 }
 ```
 

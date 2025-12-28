@@ -1,7 +1,7 @@
 """
 Google Cloud Text-to-Speech provider implementation.
 
-Implements VoiceGenerationProvider using Google Cloud TTS API with Neural2 and Studio voices.
+Implements VoiceGenerationProvider using Google Cloud TTS API with Gemini 2.5 Pro TTS.
 """
 
 import logging
@@ -20,6 +20,13 @@ from services.base.VoiceGenerationProvider import (
 logger = logging.getLogger(__name__)
 
 
+# Default style prompt with pause instructions for natural pacing
+DEFAULT_STYLE_PROMPT = (
+    "Read aloud in a natural, conversational tone with appropriate expression and emotion. "
+    "Pause briefly between each sentence for clear pacing."
+)
+
+
 class GoogleTTSProvider(VoiceGenerationProvider):
     """
     Google Cloud Text-to-Speech implementation with Gemini 2.5 Pro TTS.
@@ -29,6 +36,7 @@ class GoogleTTSProvider(VoiceGenerationProvider):
     - Gemini 2.5 Flash TTS (low latency, cost-efficient)
     - 30+ voice options (Aoede, Charon, Kore, etc.)
     - 100+ languages
+    - Prompt-based pause control (natural language instructions)
     """
     
     def __init__(self):
@@ -39,6 +47,8 @@ class GoogleTTSProvider(VoiceGenerationProvider):
     async def generate_voice(self, request: VoiceGenerationRequest) -> GeneratedVoiceResult:
         """
         Generate speech using Gemini 2.5 Pro TTS with prompt-based style control.
+        
+        Uses natural language style prompts to control pacing, pauses, and delivery.
         
         Args:
             request: Voice generation request with text and settings
@@ -53,10 +63,11 @@ class GoogleTTSProvider(VoiceGenerationProvider):
             logger.info(f"Generating voice with Gemini 2.5 Pro TTS: {len(request.text)} chars, voice={request.voice_id}")
             
             # Gemini TTS uses BOTH text AND prompt for style control
-            # Use custom style_prompt if provided, otherwise default to natural tone
-            style_prompt = request.style_prompt or "Read aloud in a natural, conversational tone with appropriate expression and emotion."
+            # Use custom style_prompt if provided, otherwise default with pause instructions
+            style_prompt = request.style_prompt or DEFAULT_STYLE_PROMPT
             logger.info(f"Style prompt: {style_prompt}")
             
+            # Use plain text input (Gemini voices don't support SSML)
             synthesis_input = texttospeech.SynthesisInput(
                 text=request.text,
                 prompt=style_prompt
