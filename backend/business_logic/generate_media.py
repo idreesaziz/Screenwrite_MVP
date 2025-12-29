@@ -36,6 +36,13 @@ from services.openai.WhisperService import WhisperService
 
 logger = logging.getLogger(__name__)
 
+# Initialize ISNet session at module level (loads once on server start)
+# ISNet is designed for Dichotomous Image Segmentation with crisp edge accuracy
+# (BiRefNet is better but causes OOM on systems with limited memory)
+logger.info("Loading ISNet model for background removal...")
+_segmentation_session = new_session("isnet-general-use")
+logger.info("ISNet model loaded successfully")
+
 
 class GeneratedAssetResult:
     """Result of a completed generation."""
@@ -239,24 +246,33 @@ class MediaGenerationService:
         try:
             logger.info(f"Generating logo for prompt: '{prompt}'")
             
-            # Step 1: Build enhanced prompt with system instructions
-            # Note: Request solid background to help ML model separate logo from background
-            system_instructions = """Professional logo design requirements:
+            # Step 1: Build enhanced prompt with strict system instructions
+            # Designed for easy background removal and consistent, professional output
+            system_instructions = """LOGO DESIGN REQUIREMENTS:
 
-BACKGROUND: Solid, uniform, consistent color background (any color) - no gradients, textures, or patterns
+NO TEXT: Do NOT include any text, letters, words, or numbers. Purely graphical icon only.
 
-DESIGN: Crisp clean edges, clear boundaries, professional appearance, scalable design, high contrast with background
+BACKGROUND: Solid pure white background (#FFFFFF). No gradients, textures, or shadows.
 
-POSITIONING: Logo centered, well-defined separation from background
+STYLE: Vector-style flat design
+- Sharp, crisp edges with hard boundaries (no soft edges, no blur, no feathering)
+- Solid flat colors only (no gradients, no shading, no shadows)
+- Bold, clean geometric shapes
+- High contrast between colors
+- 2-3 solid colors maximum
+- No anti-aliasing blur on edges
 
-COMPOSITION: Logo only, professional quality, appropriate for branding and overlays
+COMPOSITION:
+- Centered with generous padding
+- Single cohesive symbol with clear outline
+- Perfect for background removal
 
-Generate logo: """
+Generate a vector-style flat logo icon (no text) for: """
             
             enhanced_prompt = system_instructions + prompt
             logger.info(f"Enhanced logo prompt length: {len(enhanced_prompt)} characters")
             
-            # Step 2: Generate image with Gemini 3 Pro Image (logo_provider)
+            # Step 2: Generate image with Imagen 4.0 Fast (logo_provider)
             from services.base.ImageGenerationProvider import ImageGenerationRequest
             
             request = ImageGenerationRequest(
@@ -286,10 +302,22 @@ Generate logo: """
             img = Image.open(BytesIO(image_bytes))
             logger.info(f"Opened image: {img.size}, mode: {img.mode}")
             
-            # Remove background using rembg ML model
-            logger.info("Removing background with rembg...")
-            result_img = remove(img)
+            # Remove background using cached ISNet session
+            logger.info("Removing background with rembg (isnet-general-use model)...")
+            result_img = remove(img, session=_segmentation_session)
             logger.info(f"Background removed successfully. Output mode: {result_img.mode}")
+            
+            # Binarize alpha channel to remove anti-aliasing artifacts
+            # This ensures crisp edges with no semi-transparent pixels
+            logger.info("Binarizing alpha channel for crisp edges...")
+            import numpy as np
+            r, g, b, a = result_img.split()
+            alpha_arr = np.array(a)
+            # Threshold at 128: anything >= 128 becomes fully opaque, else fully transparent
+            binary_alpha = np.where(alpha_arr >= 128, 255, 0).astype(np.uint8)
+            new_alpha = Image.fromarray(binary_alpha)
+            result_img = Image.merge('RGBA', (r, g, b, new_alpha))
+            logger.info("Alpha channel binarized")
             
             # Auto-crop to remove excess transparent space while maintaining square aspect ratio
             logger.info("Auto-cropping logo to remove excess padding...")
@@ -311,26 +339,21 @@ Generate logo: """
                 padding = int(square_size * padding_percent)
                 final_size = square_size + (padding * 2)
                 
-                # Calculate center point of logo
-                center_x = (bbox[0] + bbox[2]) / 2
-                center_y = (bbox[1] + bbox[3]) / 2
+                # Crop just the logo content (tight bounding box)
+                logo_content = result_img.crop(bbox)
                 
-                # Calculate crop coordinates (centered square)
-                left = int(center_x - (final_size / 2))
-                top = int(center_y - (final_size / 2))
-                right = int(left + final_size)
-                bottom = int(top + final_size)
+                # Create new square canvas with transparency
+                final_canvas = Image.new('RGBA', (final_size, final_size), (0, 0, 0, 0))
                 
-                # Ensure crop is within image bounds
-                img_width, img_height = result_img.size
-                left = max(0, left)
-                top = max(0, top)
-                right = min(img_width, right)
-                bottom = min(img_height, bottom)
+                # Calculate position to center logo on canvas
+                paste_x = (final_size - logo_width) // 2
+                paste_y = (final_size - logo_height) // 2
                 
-                # Crop the image
-                result_img = result_img.crop((left, top, right, bottom))
-                logger.info(f"Logo cropped from {img.size} to {result_img.size} (removed excess padding)")
+                # Paste logo content centered on canvas
+                final_canvas.paste(logo_content, (paste_x, paste_y))
+                result_img = final_canvas
+                
+                logger.info(f"Logo cropped and centered: {logo_width}x{logo_height} -> {final_size}x{final_size}")
             else:
                 logger.warning("No visible logo content found, skipping auto-crop")
             

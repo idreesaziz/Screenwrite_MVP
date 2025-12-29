@@ -273,18 +273,18 @@ def get_image_generation_provider() -> ImageGenerationProvider:
 @lru_cache()
 def get_logo_generation_provider() -> ImageGenerationProvider:
     """
-    Factory function for logo generation using Gemini 3 Pro Image.
+    Factory function for logo generation using Imagen 4.0 Fast.
     
-    Returns a singleton instance optimized for logo generation with
-    accurate text rendering.
+    Returns a singleton instance optimized for fast logo generation.
     
     Returns:
-        ImageGenerationProvider instance (GeminiImageGenerationProvider)
+        ImageGenerationProvider instance (ImagenGenerationProvider)
     """
-    return GeminiImageGenerationProvider(
+    from services.google.ImagenGenerationProvider import ImagenGenerationProvider
+    return ImagenGenerationProvider(
         project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
-        location="global",  # Gemini 3 requires global
-        default_model_name="gemini-3-pro-image-preview"
+        location="us-central1",
+        default_model_name="imagen-4.0-fast-generate-001"
     )
 
 

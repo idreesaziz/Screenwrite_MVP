@@ -27,4 +27,6 @@ dependencies = [
     "rembg[cpu]>=2.0.67",
     "supabase>=2.22.0",
     "uvicorn>=0.34.3",
+    "vtracer>=0.6.11",
+    "pypotrace>=0.3",
 ]
