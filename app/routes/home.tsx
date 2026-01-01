@@ -891,29 +891,29 @@ export default function TimelineEditor() {
       }
       setSelectedItem(null);
     }}>
-      {/* Ultra-minimal Top Bar */}
-      <header className="h-9 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-3 shrink-0">
+      {/* Top Bar */}
+      <header className="h-12 border-b border-border bg-background flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
-          <h1 className="text-sm font-medium tracking-tight">Screenwrite</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Screenwrite</h1>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
           {/* User Info */}
           {user && (
-            <span className="text-xs text-muted-foreground px-2">
+            <span className="text-sm text-muted-foreground">
               {user.email}
             </span>
           )}
           
           {/* Sign Out */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => signOut()}
-            className="h-7 w-7 p-0 hover:bg-muted"
-            title="Sign Out"
+            className="h-8 px-3 text-xs font-medium"
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="h-3.5 w-3.5 mr-1.5" />
+            Sign Out
           </Button>
         </div>
       </header>
