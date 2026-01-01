@@ -8,6 +8,7 @@ import {
   Undo2,
   Redo2,
   LogOut,
+  History,
 } from "lucide-react";
 
 // Components
@@ -47,8 +48,11 @@ import { useNavigate } from "react-router";
 // Custom Timeline
 import TimelineView from "../components/custom-timeline/TimelineView"; // direct relative path to bust alias cache
 import { ChatBox } from "~/components/chat/ChatBox";
+import { SessionHistory } from "~/components/chat/SessionHistory";
 import { ProviderPairingModal } from "~/components/chat/ProviderPairingModal";
 import type { AgentProvider, EditProvider } from "~/components/chat/providerTypes";
+import { useSession } from "~/hooks/useSession";
+import type { ChatMessage } from "~/utils/sessionApi";
 
 interface Message {
   id: string;
@@ -70,6 +74,7 @@ export default function TimelineEditor() {
   const [height, setHeight] = useState<number>(1080);
   const [isAutoSize, setIsAutoSize] = useState<boolean>(false);
   const [isChatMinimized, setIsChatMinimized] = useState<boolean>(true);
+  const [isHistoryVisible, setIsHistoryVisible] = useState<boolean>(false);
   
   // Provider pairing state
   const [showProviderModal, setShowProviderModal] = useState<boolean>(true);
@@ -132,9 +137,22 @@ export default function TimelineEditor() {
   
   // Add keyboard event listener
   useEffect(() => {
-    document.addEventListener('keydown', handleUndoRedoKeyDown);
-    return () => document.removeEventListener('keydown', handleUndoRedoKeyDown);
-  }, [handleUndoRedoKeyDown]);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Shift+C to copy composition JSON to clipboard
+      if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        const json = JSON.stringify(currentComposition, null, 2);
+        navigator.clipboard.writeText(json).then(() => {
+          console.log('Composition copied to clipboard!');
+          console.log('Composition JSON:', json);
+        });
+        return;
+      }
+      handleUndoRedoKeyDown(e);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndoRedoKeyDown, currentComposition]);
   
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   
@@ -409,27 +427,190 @@ export default function TimelineEditor() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [mounted, setMounted] = useState(false)
 
-  // video player media selection state
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  
-  // Video playback state for scrubber
-  const [currentFrame, setCurrentFrame] = useState<number>(0);
-  const [timelineFrame, setTimelineFrame] = useState<number>(0); // Separate frame for timeline scrubber position
+  // Session management
+  const {
+    currentSessionId,
+    sessions,
+    isLoading: isSessionLoading,
+    startNewSession,
+    loadSession,
+    saveCurrentSession,
+    removeSession,
+    ensureSession,
+  } = useSession({ getToken });
 
-
-
+  // Media bin management
   const {
     mediaBinItems,
     handleAddMediaToBin,
     handleAddTextToBin,
     handleAddDirectMediaBinItem,
     handleUpdateMediaItem,
+    handleSetMediaBin,
     contextMenu,
     handleContextMenu,
     handleDeleteFromContext,
     handleSplitAudioFromContext,
     handleCloseContextMenu
   } = useMediaBin(() => {}, getToken); // Pass getToken for authenticated GCS uploads
+
+  // Handle loading a session
+  const handleLoadSession = useCallback(async (sessionId: string) => {
+    const data = await loadSession(sessionId);
+    console.log("Loaded session data:", data);
+    if (data) {
+      // Convert session messages to component Message format
+      const convertedMessages: Message[] = data.messages.map((msg: ChatMessage) => ({
+        id: msg.id,
+        content: msg.content,
+        isUser: msg.isUser,
+        timestamp: new Date(msg.timestamp),
+        sender: msg.sender,
+        isExplanationMode: msg.isExplanationMode,
+        isAnalysisResult: msg.isAnalysisResult,
+        isSystemMessage: msg.isSystemMessage,
+      }));
+      setChatMessages(convertedMessages);
+      
+      // Restore composition if available
+      if (data.composition) {
+        console.log("Restoring composition:", data.composition);
+        console.log("Composition tracks detail:", JSON.stringify(data.composition, null, 2));
+        undoRedoActions.set(data.composition, "Loaded session composition");
+      }
+      
+      // Restore media bin if available
+      if (data.mediaBin && data.mediaBin.length > 0) {
+        handleSetMediaBin(data.mediaBin);
+      }
+      
+      // Show notification for missing files
+      if (data.missingFiles && data.missingFiles.length > 0) {
+        const missingNames = data.missingFiles.map(f => f.name).join(", ");
+        console.warn(`Missing files from session: ${missingNames}`);
+        // Add a system message to inform the user
+        const missingFilesMessage: Message = {
+          id: `missing-files-${Date.now()}`,
+          content: `Some media files from this session are no longer available: ${missingNames}`,
+          isUser: false,
+          timestamp: new Date(),
+          isSystemMessage: true,
+        };
+        setChatMessages(prev => [...prev, missingFilesMessage]);
+      }
+    }
+  }, [loadSession, undoRedoActions, handleSetMediaBin]);
+
+  // Handle starting a new session
+  const handleNewSession = useCallback(() => {
+    startNewSession();
+    setChatMessages([]);
+    undoRedoActions.set(emptyCompositionBlueprint, "New session");
+    handleSetMediaBin([]); // Clear media bin for new session
+  }, [startNewSession, undoRedoActions, handleSetMediaBin]);
+
+  // Track if we're currently creating a session to prevent duplicate calls
+  const isCreatingSessionRef = useRef(false);
+  const lastSavedMessagesCountRef = useRef(0);
+
+  // Create session on first user message, then auto-save on changes
+  useEffect(() => {
+    if (chatMessages.length === 0) return;
+    
+    // Find first user message for session creation
+    const firstUserMessage = chatMessages.find(msg => msg.isUser);
+    if (!firstUserMessage) return;
+    
+    // Skip if no new messages since last save
+    if (currentSessionId && chatMessages.length === lastSavedMessagesCountRef.current) {
+      return;
+    }
+    
+    const handleSessionSave = async () => {
+      let sessionId = currentSessionId;
+      
+      // If no session exists, create one (but only once)
+      if (!sessionId && !isCreatingSessionRef.current) {
+        isCreatingSessionRef.current = true;
+        try {
+          sessionId = await ensureSession(firstUserMessage.content);
+        } catch (err) {
+          console.error("Failed to create session:", err);
+          isCreatingSessionRef.current = false;
+          return;
+        }
+        isCreatingSessionRef.current = false;
+      }
+      
+      // Only save if we have a session
+      if (!sessionId) return;
+      
+      // Convert to ChatMessage format for storage
+      const sessionMessages: ChatMessage[] = chatMessages.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        isUser: msg.isUser,
+        timestamp: msg.timestamp.toISOString(),
+        sender: msg.sender,
+        isExplanationMode: msg.isExplanationMode,
+        isAnalysisResult: msg.isAnalysisResult,
+        isSystemMessage: msg.isSystemMessage,
+      }));
+      
+      lastSavedMessagesCountRef.current = chatMessages.length;
+      console.log("Saving composition:", currentComposition);
+      console.log("Saving composition clips:", currentComposition.map(t => t.clips.length));
+      saveCurrentSession(sessionMessages, currentComposition, mediaBinItems);
+    };
+    
+    handleSessionSave();
+    // Only re-run when messages change, not on every dependency change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatMessages.length]);
+
+  // Auto-save when composition or media bin changes (debounced via useSession)
+  const lastSavedCompositionRef = useRef<string>("");
+  const lastSavedMediaBinRef = useRef<string>("");
+  
+  useEffect(() => {
+    if (!currentSessionId) return;
+    
+    // Serialize for comparison
+    const compositionJson = JSON.stringify(currentComposition);
+    const mediaBinJson = JSON.stringify(mediaBinItems.map(i => i.id));
+    
+    // Skip if nothing changed
+    if (compositionJson === lastSavedCompositionRef.current && 
+        mediaBinJson === lastSavedMediaBinRef.current) {
+      return;
+    }
+    
+    lastSavedCompositionRef.current = compositionJson;
+    lastSavedMediaBinRef.current = mediaBinJson;
+    
+    // Convert messages for save
+    const sessionMessages: ChatMessage[] = chatMessages.map(msg => ({
+      id: msg.id,
+      content: msg.content,
+      isUser: msg.isUser,
+      timestamp: msg.timestamp.toISOString(),
+      sender: msg.sender,
+      isExplanationMode: msg.isExplanationMode,
+      isAnalysisResult: msg.isAnalysisResult,
+      isSystemMessage: msg.isSystemMessage,
+    }));
+    
+    console.log("Auto-saving composition/media changes...");
+    saveCurrentSession(sessionMessages, currentComposition, mediaBinItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSessionId, currentComposition, mediaBinItems]);
+
+  // video player media selection state
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  
+  // Video playback state for scrubber
+  const [currentFrame, setCurrentFrame] = useState<number>(0);
+  const [timelineFrame, setTimelineFrame] = useState<number>(0); // Separate frame for timeline scrubber position
 
   const { isRendering, renderStatus, handleRenderVideo } = useRenderer();
 
@@ -704,6 +885,15 @@ export default function TimelineEditor() {
       {/* Ultra-minimal Top Bar */}
       <header className="h-9 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsHistoryVisible(!isHistoryVisible)}
+            className="h-7 w-7 p-0 hover:bg-muted"
+            title={isHistoryVisible ? "Hide History" : "Show History"}
+          >
+            <History className="h-3.5 w-3.5" />
+          </Button>
           <h1 className="text-sm font-medium tracking-tight">Screenwrite</h1>
         </div>
 
@@ -729,30 +919,44 @@ export default function TimelineEditor() {
       </header>
 
       {/* Main content area with chat extending to bottom */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Left section with media bin, video preview, and timeline */}
-        <ResizablePanel defaultSize={isChatMinimized ? 100 : 80}>
-          <ResizablePanelGroup direction="vertical">
-            {/* Top section with media bin and video preview */}
-            <ResizablePanel defaultSize={65} minSize={40}>
-              <ResizablePanelGroup direction="horizontal">
-                {/* Left Panel - Media Bin & Tools */}
-                <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-                  <div className="h-full border-r border-border">
-                    <LeftPanel
-                      mediaBinItems={mediaBinItems}
-                      onAddMedia={handleAddMediaToBin}
-                      onAddText={handleAddTextToBin}
-                      onAddMediaClick={handleAddMediaClick}
-                      contextMenu={contextMenu}
-                      handleContextMenu={handleContextMenu}
-                      handleDeleteFromContext={handleDeleteFromContext}
-                      handleSplitAudioFromContext={handleSplitAudioFromContext}
-                      handleCloseContextMenu={handleCloseContextMenu}
-                      selectedClipId={selectedClipId}
-                      currentComposition={currentComposition}
-                      onUpdateClipElements={handleUpdateClipElements}
-                    />
+      <div className="flex-1 flex overflow-hidden">
+        {/* Session History Sidebar */}
+        {isHistoryVisible && (
+          <SessionHistory
+            sessions={sessions}
+            currentSessionId={currentSessionId}
+            isLoading={isSessionLoading}
+            onNewSession={handleNewSession}
+            onLoadSession={handleLoadSession}
+            onDeleteSession={removeSession}
+          />
+        )}
+        
+        {/* Main content */}
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          {/* Left section with media bin, video preview, and timeline */}
+          <ResizablePanel defaultSize={isChatMinimized ? 100 : 80}>
+            <ResizablePanelGroup direction="vertical">
+              {/* Top section with media bin and video preview */}
+              <ResizablePanel defaultSize={65} minSize={40}>
+                <ResizablePanelGroup direction="horizontal">
+                  {/* Left Panel - Media Bin & Tools */}
+                  <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+                    <div className="h-full border-r border-border">
+                      <LeftPanel
+                        mediaBinItems={mediaBinItems}
+                        onAddMedia={handleAddMediaToBin}
+                        onAddText={handleAddTextToBin}
+                        onAddMediaClick={handleAddMediaClick}
+                        contextMenu={contextMenu}
+                        handleContextMenu={handleContextMenu}
+                        handleDeleteFromContext={handleDeleteFromContext}
+                        handleSplitAudioFromContext={handleSplitAudioFromContext}
+                        handleCloseContextMenu={handleCloseContextMenu}
+                        selectedClipId={selectedClipId}
+                        currentComposition={currentComposition}
+                        onUpdateClipElements={handleUpdateClipElements}
+                      />
                   </div>
                 </ResizablePanel>
 
@@ -895,7 +1099,8 @@ export default function TimelineEditor() {
             </ResizablePanel>
           </>
         )}
-      </ResizablePanelGroup>
+        </ResizablePanelGroup>
+      </div>
 
       {/* Provider Pairing Modal */}
       <ProviderPairingModal 

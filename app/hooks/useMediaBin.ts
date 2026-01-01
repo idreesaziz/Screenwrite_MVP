@@ -453,6 +453,11 @@ export const useMediaBin = (
     setContextMenu(null);
   }, []);
 
+  // Allow setting the entire media bin (for session restore)
+  const handleSetMediaBin = useCallback((items: MediaBinItem[]) => {
+    setMediaBinItems(items);
+  }, []);
+
   return {
     mediaBinItems,
     handleAddMediaToBin,
@@ -461,6 +466,7 @@ export const useMediaBin = (
     handleUpdateMediaItem,
     handleDeleteMedia,
     handleSplitAudio,
+    handleSetMediaBin,
     contextMenu,
     handleContextMenu,
     handleDeleteFromContext,

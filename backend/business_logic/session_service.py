@@ -3,6 +3,7 @@ Chat Session Service.
 
 Business logic for managing chat sessions with Supabase.
 Uses Gemini Flash Lite for title generation.
+Handles media bin persistence with GCS URL refresh.
 """
 
 import logging
@@ -14,6 +15,7 @@ from supabase import create_client, Client
 from google import genai
 
 from core.config import get_config
+from services.google.GCStorageProvider import GCStorageProvider
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +25,31 @@ class SessionService:
     Service for managing chat sessions.
     
     Handles CRUD operations on chat_sessions table and title generation.
+    Also manages media bin persistence with GCS URL refresh.
     """
     
-    def __init__(self, supabase_client: Client):
+    def __init__(self, supabase_client: Client, storage_provider: Optional[GCStorageProvider] = None):
         """
         Initialize session service.
         
         Args:
             supabase_client: Supabase client instance
+            storage_provider: GCS storage provider for URL refresh (optional, lazy-loaded)
         """
         self.supabase = supabase_client
+        self._storage_provider = storage_provider
         self._genai_client = None
+    
+    @property
+    def storage_provider(self) -> GCStorageProvider:
+        """Lazy-load storage provider."""
+        if self._storage_provider is None:
+            import os
+            self._storage_provider = GCStorageProvider(
+                bucket_name=os.getenv("GCS_BUCKET_NAME", "screenwrite-media"),
+                project_id=os.getenv("GOOGLE_CLOUD_PROJECT")
+            )
+        return self._storage_provider
     
     @property
     def genai_client(self):
@@ -117,7 +133,8 @@ Message: {first_message[:500]}"""
             "user_id": str(user_id),
             "title": title,
             "messages": [],
-            "composition": []
+            "composition": [],
+            "media_bin": []
         }
         
         result = self.supabase.table("chat_sessions").insert(data).execute()
@@ -149,6 +166,92 @@ Message: {first_message[:500]}"""
             return result.data[0]
         return None
     
+    async def refresh_media_bin(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        media_bin: List[Dict[str, Any]]
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """
+        Refresh media bin items with fresh signed URLs from GCS.
+        
+        For each item:
+        - If it's a text element (no gcs_path), keep as-is
+        - If file exists in GCS, generate fresh signed URL
+        - If file doesn't exist, add to missing_files list
+        
+        Args:
+            user_id: The user's ID
+            session_id: The session ID
+            media_bin: Stored media bin items
+            
+        Returns:
+            Tuple of (refreshed_items, missing_files)
+        """
+        refreshed_items = []
+        missing_files = []
+        
+        for item in media_bin:
+            # Text elements don't have GCS files
+            if item.get("mediaType") == "text" or not item.get("gcs_path"):
+                refreshed_items.append({
+                    **item,
+                    "mediaUrlRemote": None,
+                    "gcsUri": None,
+                    "upload_status": "uploaded"
+                })
+                continue
+            
+            gcs_path = item.get("gcs_path")
+            
+            try:
+                # Check if file exists
+                exists = await self.storage_provider.file_exists(gcs_path)
+                
+                if exists:
+                    # Generate fresh signed URL
+                    signed_url = await self.storage_provider.generate_signed_url(
+                        gcs_path,
+                        expiration_seconds=7 * 24 * 60 * 60  # 7 days
+                    )
+                    
+                    # Build GCS URI
+                    bucket_name = self.storage_provider.bucket_name
+                    gcs_uri = f"gs://{bucket_name}/{gcs_path}"
+                    
+                    refreshed_items.append({
+                        "id": item.get("id"),
+                        "name": item.get("name"),
+                        "mediaType": item.get("mediaType"),
+                        "mediaUrlRemote": signed_url,
+                        "gcsUri": gcs_uri,
+                        "media_width": item.get("media_width", 0),
+                        "media_height": item.get("media_height", 0),
+                        "durationInSeconds": item.get("durationInSeconds", 0),
+                        "text": item.get("text"),
+                        "upload_status": "uploaded"
+                    })
+                    logger.debug(f"Refreshed URL for {item.get('name')}: {gcs_path}")
+                else:
+                    # File not found in GCS
+                    missing_files.append({
+                        "id": item.get("id"),
+                        "name": item.get("name"),
+                        "reason": "File not found in storage"
+                    })
+                    logger.warning(f"Media file missing from GCS: {gcs_path}")
+                    
+            except Exception as e:
+                # Error checking file - treat as missing
+                missing_files.append({
+                    "id": item.get("id"),
+                    "name": item.get("name"),
+                    "reason": f"Error accessing file: {str(e)}"
+                })
+                logger.error(f"Error refreshing media {item.get('name')}: {e}")
+        
+        return refreshed_items, missing_files
+
     async def list_sessions(
         self,
         user_id: UUID,
@@ -236,27 +339,44 @@ Message: {first_message[:500]}"""
         user_id: UUID,
         session_id: UUID,
         messages: List[Dict[str, Any]],
-        composition: Optional[Any] = None
+        composition: Optional[Any] = None,
+        media_bin: Optional[List[Dict[str, Any]]] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Save session state (messages and composition).
-        Convenience wrapper around update_session.
+        Save session state (messages, composition, and media bin).
         
         Args:
             user_id: The user's ID
             session_id: The session ID  
             messages: Messages array
             composition: Composition blueprint
+            media_bin: Media bin items snapshot (without signed URLs)
             
         Returns:
             Updated session data or None if not found
         """
-        return await self.update_session(
-            user_id=user_id,
-            session_id=session_id,
-            messages=messages,
-            composition=composition
-        )
+        update_data = {
+            "messages": messages
+        }
+        
+        if composition is not None:
+            update_data["composition"] = composition
+        
+        if media_bin is not None:
+            update_data["media_bin"] = media_bin
+        
+        result = self.supabase.table("chat_sessions").update(
+            update_data
+        ).eq(
+            "id", str(session_id)
+        ).eq(
+            "user_id", str(user_id)
+        ).execute()
+        
+        if result.data:
+            logger.info(f"Saved state for session {session_id}")
+            return result.data[0]
+        return None
     
     async def delete_session(self, user_id: UUID, session_id: UUID) -> bool:
         """

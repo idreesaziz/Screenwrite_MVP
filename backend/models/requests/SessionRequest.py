@@ -41,10 +41,36 @@ class UpdateSessionRequest(BaseModel):
     )
 
 
+class TextProperties(BaseModel):
+    """Text element properties."""
+    textContent: str = Field(description="Text content")
+    fontSize: int = Field(default=48, description="Font size")
+    fontFamily: str = Field(default="Arial", description="Font family")
+    color: str = Field(default="#ffffff", description="Text color")
+    textAlign: str = Field(default="center", description="Text alignment")
+    fontWeight: str = Field(default="normal", description="Font weight")
+
+
+class MediaBinItemSnapshot(BaseModel):
+    """Media bin item for storage (without signed URLs)."""
+    id: str = Field(description="Unique item ID")
+    name: str = Field(description="Display name")
+    mediaType: str = Field(description="Type: video, image, audio, text, element")
+    gcs_path: Optional[str] = Field(default=None, description="GCS blob path for file lookup")
+    media_width: int = Field(default=0, description="Width in pixels")
+    media_height: int = Field(default=0, description="Height in pixels")
+    durationInSeconds: float = Field(default=0, description="Duration for video/audio")
+    text: Optional[TextProperties] = Field(default=None, description="Text properties if mediaType is text")
+
+
 class SaveStateRequest(BaseModel):
-    """Request to save session state (messages and composition)."""
+    """Request to save session state (messages, composition, and media bin)."""
     messages: List[ChatMessage] = Field(description="Chat messages array")
     composition: Optional[Any] = Field(
         default=None, 
         description="Composition blueprint"
+    )
+    media_bin: Optional[List[MediaBinItemSnapshot]] = Field(
+        default=None,
+        description="Media bin items snapshot"
     )

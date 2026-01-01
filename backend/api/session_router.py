@@ -15,7 +15,9 @@ from models.responses.SessionResponse import (
     SessionListResponse,
     SessionListItem,
     SessionCreatedResponse,
-    ChatMessage
+    ChatMessage,
+    MediaBinItemResponse,
+    MissingFile
 )
 from business_logic.session_service import SessionService
 from core.dependencies import get_session_service
@@ -104,7 +106,8 @@ async def get_session(
     service: SessionService = Depends(get_session_service)
 ) -> SessionResponse:
     """
-    Get a single session with full data (messages, composition).
+    Get a single session with full data (messages, composition, media bin).
+    Media bin URLs are refreshed from GCS on each load.
     """
     user_id = user.get("user_id")
     if not user_id:
@@ -119,6 +122,18 @@ async def get_session(
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
+        # Refresh media bin URLs from GCS
+        stored_media_bin = session.get("media_bin") or []
+        refreshed_items = []
+        missing_files = []
+        
+        if stored_media_bin:
+            refreshed_items, missing_files = await service.refresh_media_bin(
+                user_id=UUID(user_id),
+                session_id=session_id,
+                media_bin=stored_media_bin
+            )
+        
         return SessionResponse(
             id=UUID(session["id"]),
             user_id=UUID(session["user_id"]),
@@ -127,6 +142,12 @@ async def get_session(
                 ChatMessage(**m) for m in (session.get("messages") or [])
             ],
             composition=session.get("composition") or [],
+            media_bin=[
+                MediaBinItemResponse(**item) for item in refreshed_items
+            ],
+            missing_files=[
+                MissingFile(**mf) for mf in missing_files
+            ],
             created_at=session["created_at"],
             updated_at=session["updated_at"]
         )
@@ -176,6 +197,8 @@ async def update_session(
                 ChatMessage(**m) for m in (session.get("messages") or [])
             ],
             composition=session.get("composition") or [],
+            media_bin=[],
+            missing_files=[],
             created_at=session["created_at"],
             updated_at=session["updated_at"]
         )
@@ -194,7 +217,7 @@ async def save_session_state(
     service: SessionService = Depends(get_session_service)
 ) -> SessionResponse:
     """
-    Save session state (messages and composition).
+    Save session state (messages, composition, and media bin).
     This is the primary endpoint for auto-saving chat progress.
     """
     user_id = user.get("user_id")
@@ -202,11 +225,17 @@ async def save_session_state(
         raise HTTPException(status_code=400, detail="Invalid user")
     
     try:
+        # Convert media_bin items to dicts if provided
+        media_bin_data = None
+        if request.media_bin is not None:
+            media_bin_data = [item.model_dump() for item in request.media_bin]
+        
         session = await service.save_state(
             user_id=UUID(user_id),
             session_id=session_id,
             messages=[m.model_dump() for m in request.messages],
-            composition=request.composition
+            composition=request.composition,
+            media_bin=media_bin_data
         )
         
         if not session:
@@ -220,6 +249,8 @@ async def save_session_state(
                 ChatMessage(**m) for m in (session.get("messages") or [])
             ],
             composition=session.get("composition") or [],
+            media_bin=[],  # Don't return media_bin on save (client already has it)
+            missing_files=[],
             created_at=session["created_at"],
             updated_at=session["updated_at"]
         )
