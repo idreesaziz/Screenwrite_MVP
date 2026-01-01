@@ -361,3 +361,41 @@ def get_agent_service():
     return AgentService(
         chat_provider=get_chat_provider()
     )
+
+
+@lru_cache()
+def get_supabase_client():
+    """
+    Factory function for Supabase client.
+    
+    Returns a singleton instance of the Supabase client.
+    Uses service key for backend operations (bypasses RLS).
+    
+    Returns:
+        Supabase Client instance
+    """
+    from supabase import create_client
+    from core.config import get_config
+    
+    config = get_config()
+    
+    return create_client(
+        config.auth.supabase_url,
+        config.auth.supabase_service_key
+    )
+
+
+def get_session_service():
+    """
+    Factory function for SessionService.
+    
+    Creates a new SessionService instance with Supabase client.
+    
+    Returns:
+        SessionService instance
+    """
+    from business_logic.session_service import SessionService
+    
+    return SessionService(
+        supabase_client=get_supabase_client()
+    )

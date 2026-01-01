@@ -86,6 +86,7 @@ class AuthConfig(BaseSettings):
     """Authentication configuration"""
     supabase_url: str = Field(default="https://placeholder.supabase.co", alias="SUPABASE_URL")
     supabase_jwt_secret: str = Field(..., alias="SUPABASE_JWT_SECRET")
+    supabase_service_key: str = Field(default="", alias="SUPABASE_SERVICE_KEY")
     
     class Config:
         env_file = ".env"
