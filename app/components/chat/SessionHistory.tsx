@@ -13,6 +13,7 @@ import type { SessionListItem } from "../../utils/sessionApi";
 interface SessionHistoryProps {
   sessions: SessionListItem[];
   currentSessionId: string | null;
+  loadingSessionId: string | null;
   isLoading: boolean;
   onNewSession: () => void;
   onLoadSession: (sessionId: string) => void;
@@ -24,6 +25,7 @@ interface SessionHistoryProps {
 export function SessionHistory({
   sessions,
   currentSessionId,
+  loadingSessionId,
   isLoading,
   onNewSession,
   onLoadSession,
@@ -183,15 +185,20 @@ export function SessionHistory({
                 {dateSessions.map((session) => (
                   <div
                     key={session.id}
-                    onClick={() => onLoadSession(session.id)}
+                    onClick={() => !loadingSessionId && onLoadSession(session.id)}
                     className={cn(
                       "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors",
                       session.id === currentSessionId
                         ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                      loadingSessionId && "pointer-events-none opacity-50"
                     )}
                   >
-                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                    {loadingSessionId === session.id ? (
+                      <Loader2 className="h-3.5 w-3.5 flex-shrink-0 animate-spin" />
+                    ) : (
+                      <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                    )}
                     <span className="flex-1 truncate text-xs">{session.title}</span>
                     <Button
                       variant="ghost"

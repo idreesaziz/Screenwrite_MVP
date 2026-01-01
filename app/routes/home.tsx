@@ -440,6 +440,9 @@ export default function TimelineEditor() {
     ensureSession,
   } = useSession({ getToken });
 
+  // Track which session is currently loading
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
+
   // Media bin management
   const {
     mediaBinItems,
@@ -457,8 +460,10 @@ export default function TimelineEditor() {
 
   // Handle loading a session
   const handleLoadSession = useCallback(async (sessionId: string) => {
-    const data = await loadSession(sessionId);
-    console.log("Loaded session data:", data);
+    setLoadingSessionId(sessionId);
+    try {
+      const data = await loadSession(sessionId);
+      console.log("Loaded session data:", data);
     if (data) {
       // Convert session messages to component Message format
       const convertedMessages: Message[] = data.messages.map((msg: ChatMessage) => ({
@@ -500,6 +505,9 @@ export default function TimelineEditor() {
         setChatMessages(prev => [...prev, missingFilesMessage]);
       }
     }
+  } finally {
+    setLoadingSessionId(null);
+  }
   }, [loadSession, undoRedoActions, handleSetMediaBin]);
 
   // Handle starting a new session
@@ -916,6 +924,7 @@ export default function TimelineEditor() {
         <SessionHistory
           sessions={sessions}
           currentSessionId={currentSessionId}
+          loadingSessionId={loadingSessionId}
           isLoading={isSessionLoading}
           onNewSession={handleNewSession}
           onLoadSession={handleLoadSession}
