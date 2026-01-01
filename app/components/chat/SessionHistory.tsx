@@ -17,6 +17,7 @@ interface SessionHistoryProps {
   onNewSession: () => void;
   onLoadSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
+  onOpenSettings: () => void;
   className?: string;
 }
 
@@ -27,6 +28,7 @@ export function SessionHistory({
   onNewSession,
   onLoadSession,
   onDeleteSession,
+  onOpenSettings,
   className,
 }: SessionHistoryProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -112,7 +114,7 @@ export function SessionHistory({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => { /* TODO: Open settings modal */ }}
+          onClick={onOpenSettings}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/50"
           title="Settings"
         >
@@ -223,7 +225,7 @@ export function SessionHistory({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => { /* TODO: Open settings modal */ }}
+          onClick={onOpenSettings}
           className="w-full h-7 text-xs justify-start gap-2 text-muted-foreground hover:text-foreground"
         >
           <Settings className="h-3.5 w-3.5" />

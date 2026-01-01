@@ -50,6 +50,7 @@ import TimelineView from "../components/custom-timeline/TimelineView"; // direct
 import { ChatBox } from "~/components/chat/ChatBox";
 import { SessionHistory } from "~/components/chat/SessionHistory";
 import { ProviderPairingModal } from "~/components/chat/ProviderPairingModal";
+import { SettingsModal } from "~/components/chat/SettingsModal";
 import type { AgentProvider, EditProvider } from "~/components/chat/providerTypes";
 import { useSession } from "~/hooks/useSession";
 import type { ChatMessage } from "~/utils/sessionApi";
@@ -77,6 +78,7 @@ export default function TimelineEditor() {
   
   // Provider pairing state
   const [showProviderModal, setShowProviderModal] = useState<boolean>(true);
+  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [selectedEditProvider, setSelectedEditProvider] = useState<EditProvider>("gemini");
   const [selectedAgentProvider, setSelectedAgentProvider] = useState<AgentProvider>("gemini");
   
@@ -918,6 +920,7 @@ export default function TimelineEditor() {
           onNewSession={handleNewSession}
           onLoadSession={handleLoadSession}
           onDeleteSession={removeSession}
+          onOpenSettings={() => setShowSettingsModal(true)}
         />
         
         {/* Main content */}
@@ -1094,6 +1097,16 @@ export default function TimelineEditor() {
       <ProviderPairingModal 
         isOpen={showProviderModal}
         onSelect={handleProviderPairingSelect}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        selectedModel={selectedAgentProvider}
+        onModelChange={setSelectedAgentProvider}
+        selectedEditProvider={selectedEditProvider}
+        onEditProviderChange={setSelectedEditProvider}
       />
 
       {/* Hidden file input */}

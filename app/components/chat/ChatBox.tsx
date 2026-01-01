@@ -181,6 +181,17 @@ export function ChatBox({
 
   const [selectedModel, setSelectedModel] = useState<AgentProvider>(initialAgentProvider); // AI model selection (for agent)
   const [selectedEditProvider, setSelectedEditProvider] = useState<EditProvider>(initialEditProvider); // Edit engine provider
+
+  // Sync selectedModel with initialAgentProvider when it changes (controlled from Settings modal)
+  useEffect(() => {
+    setSelectedModel(initialAgentProvider);
+  }, [initialAgentProvider]);
+
+  // Sync selectedEditProvider with initialEditProvider when it changes (controlled from Settings modal)
+  useEffect(() => {
+    setSelectedEditProvider(initialEditProvider);
+  }, [initialEditProvider]);
+
   const [sendWithMedia, setSendWithMedia] = useState(false); // Track send mode
   const [mentionedItems, setMentionedItems] = useState<MediaBinItem[]>([]); // Store actual mentioned items
   const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set()); // Track collapsed analysis results
@@ -1584,109 +1595,6 @@ export function ChatBox({
             )}
           </Button>
         )}
-      </div>
-
-      {/* Provider Selectors */}
-      <div className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2">
-        <div className="flex items-center gap-4">
-          {/* Edit Engine Provider */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Edit Engine:</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-6 text-xs">
-                  {selectedEditProvider === "gemini" 
-                    ? "Gemini 3 Flash" 
-                    : selectedEditProvider === "gemini-3-low"
-                    ? "Gemini 3 Low"
-                    : selectedEditProvider === "gemini-3-high"
-                    ? "Gemini 3 High"
-                    : "Claude"}
-                  <ChevronDown className="w-3 h-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="bottom" className="w-40">
-                <DropdownMenuItem 
-                  onClick={() => setSelectedEditProvider("gemini")}
-                  className="text-xs"
-                >
-                  Gemini 3 Flash
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedEditProvider("gemini-3-low")}
-                  className="text-xs"
-                >
-                  Gemini 3 Low
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedEditProvider("gemini-3-high")}
-                  className="text-xs"
-                >
-                  Gemini 3 High
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedEditProvider("claude")}
-                  className="text-xs"
-                >
-                  Claude
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          
-          {/* Agent Provider */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Agent:</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-6 text-xs">
-                  {selectedModel === "gemini" 
-                    ? "Gemini 3 Flash" 
-                    : selectedModel === "gemini-3-low"
-                    ? "Gemini 3 Low"
-                    : selectedModel === "gemini-3-high"
-                    ? "Gemini 3 High"
-                    : selectedModel === "claude" 
-                    ? "Claude" 
-                    : "GPT-4.1"}
-                  <ChevronDown className="w-3 h-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="bottom" className="w-32">
-                <DropdownMenuItem 
-                  onClick={() => setSelectedModel("gemini")}
-                  className="text-xs"
-                >
-                  Gemini 3 Flash
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedModel("gemini-3-low")}
-                  className="text-xs"
-                >
-                  Gemini 3 Low
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedModel("gemini-3-high")}
-                  className="text-xs"
-                >
-                  Gemini 3 High
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedModel("claude")}
-                  className="text-xs"
-                >
-                  Claude
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedModel("openai")}
-                  className="text-xs"
-                >
-                  GPT-4.1
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
       </div>
 
       {/* Content Area */}
