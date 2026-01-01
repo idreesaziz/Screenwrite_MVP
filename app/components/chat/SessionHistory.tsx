@@ -4,9 +4,9 @@
  */
 
 import React, { useState } from "react";
-import { Plus, MessageSquare, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, MessageSquare, Trash2, ChevronLeft, ChevronRight, Loader2, History, Settings } from "lucide-react";
 import { Button } from "../ui/button";
-import { ScrollArea } from "../ui/scroll-area";
+import { Badge } from "../ui/badge";
 import { cn } from "../../lib/utils";
 import type { SessionListItem } from "../../utils/sessionApi";
 
@@ -84,94 +84,125 @@ export function SessionHistory({
 
   if (isCollapsed) {
     return (
-      <div className={cn("w-12 flex flex-col items-center py-4 border-r border-gray-800 bg-gray-950", className)}>
+      <div className={cn(
+        "w-10 flex flex-col items-center py-2 border-r border-border/50 bg-background",
+        className
+      )}>
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={() => setIsCollapsed(false)}
-          className="mb-4 text-gray-400 hover:text-white hover:bg-gray-800"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/50"
+          title="Expand history"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
+        <div className="my-2 w-6 h-px bg-border/50" />
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={onNewSession}
-          className="text-gray-400 hover:text-white hover:bg-gray-800"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/50"
+          title="New session"
         >
           <Plus className="h-4 w-4" />
+        </Button>
+        <div className="flex-1" />
+        <div className="my-2 w-6 h-px bg-border/50" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { /* TODO: Open settings modal */ }}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/50"
+          title="Settings"
+        >
+          <Settings className="h-4 w-4" />
         </Button>
       </div>
     );
   }
 
   return (
-    <div className={cn("w-64 flex flex-col border-r border-gray-800 bg-gray-950", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-800">
-        <h2 className="text-sm font-medium text-gray-200">History</h2>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onNewSession}
-            className="h-7 w-7 text-gray-400 hover:text-white hover:bg-gray-800"
-            title="New session"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCollapsed(true)}
-            className="h-7 w-7 text-gray-400 hover:text-white hover:bg-gray-800"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+    <div className={cn(
+      "w-56 flex flex-col border-r border-border/50 bg-background",
+      className
+    )}>
+      {/* Compact Header */}
+      <div className="p-2 border-b border-border/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <History className="h-3.5 w-3.5 text-muted-foreground" />
+            <h3 className="text-xs font-medium text-foreground">History</h3>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onNewSession}
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              title="New session"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              New
+            </Button>
+            <Badge variant="secondary" className="text-xs h-4 px-1.5 font-mono">
+              {sessions.length}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(true)}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              title="Collapse"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Session List */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 panel-scrollbar">
         {isLoading && sessions.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="p-4 text-center text-sm text-gray-500">
+          <div className="p-3 text-center text-xs text-muted-foreground">
             No sessions yet
           </div>
         ) : (
-          <div className="py-2">
-            {Object.entries(groupedSessions).map(([dateKey, dateSession]) => (
+          <>
+            {Object.entries(groupedSessions).map(([dateKey, dateSessions]) => (
               <div key={dateKey}>
-                <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                   {dateKey}
                 </div>
-                {dateSession.map((session) => (
+                {dateSessions.map((session) => (
                   <div
                     key={session.id}
                     onClick={() => onLoadSession(session.id)}
                     className={cn(
-                      "group flex items-center gap-2 px-3 py-2 mx-2 rounded-md cursor-pointer transition-colors",
+                      "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors",
                       session.id === currentSessionId
-                        ? "bg-gray-800 text-white"
-                        : "text-gray-300 hover:bg-gray-800/50"
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     )}
                   >
-                    <MessageSquare className="h-4 w-4 flex-shrink-0 text-gray-500" />
-                    <span className="flex-1 truncate text-sm">{session.title}</span>
+                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="flex-1 truncate text-xs">{session.title}</span>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       onClick={(e) => handleDelete(session.id, e)}
                       disabled={deletingId === session.id}
                       className={cn(
-                        "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
+                        "h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity",
                         confirmDeleteId === session.id
-                          ? "text-red-500 hover:text-red-400 opacity-100"
-                          : "text-gray-500 hover:text-gray-300"
+                          ? "text-destructive hover:text-destructive opacity-100"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
+                      title={confirmDeleteId === session.id ? "Click again to confirm" : "Delete"}
                     >
                       {deletingId === session.id ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -183,9 +214,22 @@ export function SessionHistory({
                 ))}
               </div>
             ))}
-          </div>
+          </>
         )}
-      </ScrollArea>
+      </div>
+
+      {/* Settings Footer */}
+      <div className="p-2 border-t border-border/50">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { /* TODO: Open settings modal */ }}
+          className="w-full h-7 text-xs justify-start gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <Settings className="h-3.5 w-3.5" />
+          Settings
+        </Button>
+      </div>
     </div>
   );
 }

@@ -74,7 +74,6 @@ export default function TimelineEditor() {
   const [height, setHeight] = useState<number>(1080);
   const [isAutoSize, setIsAutoSize] = useState<boolean>(false);
   const [isChatMinimized, setIsChatMinimized] = useState<boolean>(true);
-  const [isHistoryVisible, setIsHistoryVisible] = useState<boolean>(false);
   
   // Provider pairing state
   const [showProviderModal, setShowProviderModal] = useState<boolean>(true);
@@ -885,15 +884,6 @@ export default function TimelineEditor() {
       {/* Ultra-minimal Top Bar */}
       <header className="h-9 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsHistoryVisible(!isHistoryVisible)}
-            className="h-7 w-7 p-0 hover:bg-muted"
-            title={isHistoryVisible ? "Hide History" : "Show History"}
-          >
-            <History className="h-3.5 w-3.5" />
-          </Button>
           <h1 className="text-sm font-medium tracking-tight">Screenwrite</h1>
         </div>
 
@@ -921,16 +911,14 @@ export default function TimelineEditor() {
       {/* Main content area with chat extending to bottom */}
       <div className="flex-1 flex overflow-hidden">
         {/* Session History Sidebar */}
-        {isHistoryVisible && (
-          <SessionHistory
-            sessions={sessions}
-            currentSessionId={currentSessionId}
-            isLoading={isSessionLoading}
-            onNewSession={handleNewSession}
-            onLoadSession={handleLoadSession}
-            onDeleteSession={removeSession}
-          />
-        )}
+        <SessionHistory
+          sessions={sessions}
+          currentSessionId={currentSessionId}
+          isLoading={isSessionLoading}
+          onNewSession={handleNewSession}
+          onLoadSession={handleLoadSession}
+          onDeleteSession={removeSession}
+        />
         
         {/* Main content */}
         <ResizablePanelGroup direction="horizontal" className="flex-1">
