@@ -9,6 +9,7 @@ import {
   Redo2,
   LogOut,
   History,
+  User,
 } from "lucide-react";
 
 // Components
@@ -74,7 +75,7 @@ export default function TimelineEditor() {
   const [width, setWidth] = useState<number>(1920);
   const [height, setHeight] = useState<number>(1080);
   const [isAutoSize, setIsAutoSize] = useState<boolean>(false);
-  const [isChatMinimized, setIsChatMinimized] = useState<boolean>(true);
+  const [isChatMinimized, setIsChatMinimized] = useState<boolean>(false);
   
   // Provider pairing state
   const [showProviderModal, setShowProviderModal] = useState<boolean>(true);
@@ -893,16 +894,21 @@ export default function TimelineEditor() {
     }}>
       {/* Top Bar */}
       <header className="h-12 border-b border-border bg-background flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-10">
           <h1 className="text-lg font-semibold tracking-tight">Screenwrite</h1>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* User Info */}
+        <div className="flex items-center gap-2">
+          {/* User Profile */}
           {user && (
-            <span className="text-sm text-muted-foreground">
-              {user.email}
-            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              title={user.email}
+            >
+              <User className="h-4 w-4" />
+            </Button>
           )}
           
           {/* Sign Out */}
