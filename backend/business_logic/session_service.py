@@ -63,21 +63,50 @@ class SessionService:
             )
         return self._genai_client
     
-    async def generate_title(self, first_message: str) -> str:
+    async def generate_title(
+        self, 
+        first_message: str,
+        composition: Optional[Any] = None,
+        media_bin: Optional[List[Dict[str, Any]]] = None
+    ) -> str:
         """
         Generate a short title for a chat session using Gemini Flash Lite.
         
         Args:
             first_message: The first user message in the chat
+            composition: The current timeline composition (optional)
+            media_bin: The current media bin items (optional)
             
         Returns:
             A 3-5 word title string
         """
         try:
-            prompt = f"""Generate a very short title (3-5 words max) for a chat that starts with this message. 
+            # Build context summary
+            context_parts = [f"User message: {first_message[:500]}"]
+            
+            # Add composition context if available
+            if composition and isinstance(composition, dict):
+                tracks = composition.get("tracks", [])
+                if tracks:
+                    clip_count = sum(len(t.get("clips", [])) for t in tracks)
+                    context_parts.append(f"Timeline: {len(tracks)} tracks, {clip_count} clips")
+            
+            # Add media bin context if available  
+            if media_bin and len(media_bin) > 0:
+                media_types = {}
+                for item in media_bin:
+                    mt = item.get("mediaType", "unknown")
+                    media_types[mt] = media_types.get(mt, 0) + 1
+                media_summary = ", ".join([f"{v} {k}" for k, v in media_types.items()])
+                context_parts.append(f"Media bin: {media_summary}")
+            
+            context = "\n".join(context_parts)
+            
+            prompt = f"""Generate a very short title (3-5 words max) for a video editing chat session. 
 Return ONLY the title, no quotes, no explanation.
 
-Message: {first_message[:500]}"""
+Context:
+{context}"""
 
             response = self.genai_client.models.generate_content(
                 model="gemini-2.0-flash-lite",
@@ -105,7 +134,9 @@ Message: {first_message[:500]}"""
         self,
         user_id: UUID,
         session_id: Optional[UUID] = None,
-        first_message: Optional[str] = None
+        first_message: Optional[str] = None,
+        composition: Optional[Any] = None,
+        media_bin: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Create a new chat session.
@@ -114,6 +145,8 @@ Message: {first_message[:500]}"""
             user_id: The user's ID
             session_id: Optional session ID (matches GCS prefix). Auto-generated if not provided.
             first_message: Optional first message for title generation
+            composition: Optional composition blueprint for title context
+            media_bin: Optional media bin items for title context
             
         Returns:
             Created session data
@@ -124,7 +157,7 @@ Message: {first_message[:500]}"""
         
         # Generate title if first message provided
         if first_message:
-            title = await self.generate_title(first_message)
+            title = await self.generate_title(first_message, composition, media_bin)
         else:
             title = "New Chat"
         
@@ -404,7 +437,9 @@ Message: {first_message[:500]}"""
         self,
         user_id: UUID,
         session_id: UUID,
-        first_message: Optional[str] = None
+        first_message: Optional[str] = None,
+        composition: Optional[Any] = None,
+        media_bin: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Get existing session or create new one.
@@ -413,6 +448,8 @@ Message: {first_message[:500]}"""
             user_id: The user's ID
             session_id: The session ID
             first_message: First message for title generation (if creating)
+            composition: Composition blueprint for title context (if creating)
+            media_bin: Media bin items for title context (if creating)
             
         Returns:
             Session data
@@ -422,4 +459,4 @@ Message: {first_message[:500]}"""
         if session:
             return session
         
-        return await self.create_session(user_id, session_id, first_message)
+        return await self.create_session(user_id, session_id, first_message, composition, media_bin)

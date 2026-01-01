@@ -26,6 +26,14 @@ class CreateSessionRequest(BaseModel):
         default=None, 
         description="First user message for title generation"
     )
+    composition: Optional[Any] = Field(
+        default=None,
+        description="Current composition blueprint for title context"
+    )
+    media_bin: Optional[List[Any]] = Field(
+        default=None,
+        description="Current media bin items for title context"
+    )
 
 
 class UpdateSessionRequest(BaseModel):

@@ -542,7 +542,7 @@ export default function TimelineEditor() {
       if (!sessionId && !isCreatingSessionRef.current) {
         isCreatingSessionRef.current = true;
         try {
-          sessionId = await ensureSession(firstUserMessage.content);
+          sessionId = await ensureSession(firstUserMessage.content, currentComposition, mediaBinItems);
         } catch (err) {
           console.error("Failed to create session:", err);
           isCreatingSessionRef.current = false;

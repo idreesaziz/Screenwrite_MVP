@@ -38,7 +38,8 @@ async def create_session(
     Create a new chat session.
     
     The session_id should match the GCS prefix for media storage.
-    If first_message is provided, a title will be auto-generated.
+    If first_message is provided, a title will be auto-generated using
+    the message, composition, and media bin context.
     """
     user_id = user.get("user_id")
     if not user_id:
@@ -48,7 +49,9 @@ async def create_session(
         session = await service.create_session(
             user_id=UUID(user_id),
             session_id=request.session_id,
-            first_message=request.first_message
+            first_message=request.first_message,
+            composition=request.composition,
+            media_bin=request.media_bin
         )
         
         return SessionCreatedResponse(

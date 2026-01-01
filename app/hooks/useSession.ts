@@ -51,7 +51,11 @@ interface UseSessionReturn {
   refreshSessions: () => Promise<void>;
   
   // Session creation (called on first message)
-  ensureSession: (firstMessage: string) => Promise<string>;
+  ensureSession: (
+    firstMessage: string,
+    composition?: CompositionBlueprint | null,
+    mediaBin?: MediaBinItem[]
+  ) => Promise<string>;
 }
 
 export function useSession({
@@ -109,7 +113,11 @@ export function useSession({
    * Ensure a session exists, creating one if needed.
    * Called when sending the first message.
    */
-  const ensureSession = useCallback(async (firstMessage: string): Promise<string> => {
+  const ensureSession = useCallback(async (
+    firstMessage: string,
+    composition?: CompositionBlueprint | null,
+    mediaBin?: MediaBinItem[]
+  ): Promise<string> => {
     if (currentSessionId) {
       return currentSessionId;
     }
@@ -118,7 +126,7 @@ export function useSession({
       setIsLoading(true);
       setError(null);
       
-      const session = await createSession(firstMessage, getToken);
+      const session = await createSession(firstMessage, getToken, composition, mediaBin);
       setCurrentSessionId(session.id);
       
       // Refresh the session list to include the new session

@@ -93,6 +93,8 @@ export interface SessionListItem {
 
 interface CreateSessionRequest {
   first_message: string;
+  composition?: CompositionBlueprint | null;
+  media_bin?: MediaBinItemSnapshot[] | null;
 }
 
 interface UpdateSessionRequest {
@@ -130,9 +132,23 @@ export function toFrontendMessage(msg: BackendChatMessage, index: number): ChatM
  */
 export async function createSession(
   firstMessage: string,
-  getToken: () => Promise<string | null>
+  getToken: () => Promise<string | null>,
+  composition?: CompositionBlueprint | null,
+  mediaBin?: MediaBinItem[]
 ): Promise<Session> {
   const token = await getToken();
+  
+  // Convert media bin to snapshot format if provided
+  const mediaBinSnapshot = mediaBin?.map(item => ({
+    id: item.id,
+    name: item.name,
+    mediaType: item.mediaType,
+    gcs_path: extractGcsPath(item),
+    media_width: item.media_width || 0,
+    media_height: item.media_height || 0,
+    durationInSeconds: item.durationInSeconds || 0,
+    text: item.text,
+  }));
   
   const response = await fetch(apiUrl("/api/v1/sessions", true), {
     method: "POST",
@@ -140,7 +156,11 @@ export async function createSession(
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ first_message: firstMessage } as CreateSessionRequest),
+    body: JSON.stringify({ 
+      first_message: firstMessage,
+      composition: composition || null,
+      media_bin: mediaBinSnapshot || null,
+    } as CreateSessionRequest),
   });
 
   if (!response.ok) {
