@@ -103,11 +103,13 @@ Video 3: <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <
 
 **SELECTION NOTE:** Select sparsely across all videos to maximize variety. Pick 1 best segment per video for each beat - don't reuse the same video multiple times unless necessary.
 
+**VISUAL STRUCTURE NOTE:** First decide the visual structure (number of beats, clip durations, pacing), then generate voiceover with ONE sentence per beat to match. This ensures clean separation.
+
 8. **AGENT - INFO**
 ```json
 {
   "type": "info",
-  "content": "Based on the analysis, I've selected: Video 1 <START>-<END>s for the opening (<DESCRIPTION>), Video 2 <START>-<END>s for the middle (<DESCRIPTION>), and Video 3 <START>-<END>s for the climax (<DESCRIPTION>). Each from a different video for maximum variety."
+  "content": "Based on the analysis, I've selected 3 video segments for a three-beat structure: Video 1 <START>-<END>s for the opening (<DESCRIPTION>), Video 2 <START>-<END>s for the middle (<DESCRIPTION>), and Video 3 <START>-<END>s for the climax (<DESCRIPTION>). Each segment is approximately 2-3 seconds. I'll also add a 3-second finale beat with your logo."
 }
 ```
 
@@ -115,17 +117,21 @@ Video 3: <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <
 ```json
 {
   "type": "info",
-  "content": "Now I'll generate a voiceover to narrate the promotional video."
+  "content": "Now I'll generate a voiceover with exactly 3 sentences - one for each visual beat."
 }
 ```
+
+**VOICEOVER WRITING RULES (for reliable sentence detection):**
+- Each sentence must have complete grammatical structure: subject + verb + object (NO fragments like "Experience excellence.")
+- Each sentence must have exactly ONE period at the end (NO internal periods like "This is more than coffee. This is your moment.")
 
 10. **AGENT - GENERATE**
 ```json
 {
   "type": "generate",
-  "content": "Generating voiceover narration for the promotional video.",
+  "content": "Generating voiceover narration with 3 sentences for the 3 visual beats.",
   "content_type": "audio",
-  "prompt": "Discover innovation. Experience excellence. Transform your world.",
+  "prompt": "Every great story begins with a single vision. We bring that vision to life with precision and passion. This is where your journey starts.",
   "suggestedName": "promo-voiceover",
   "voice_settings": {
     "voice_id": "Charon",
@@ -137,30 +143,28 @@ Video 3: <START>-<END>s <DESCRIPTION> <HEX_COLOR> <PLACEMENT> | <START>-<END>s <
 
 **SYSTEM - Generation Result**
 ```
-Successfully generated audio: promo-voiceover (<DURATION> seconds). The audio has been added to your media library.
+Successfully generated audio: promo-voiceover (<TOTAL_DURATION> seconds). The audio has been added to your media library.
 
 Sentence timestamps: [
-  {"word": "Sentence 1", "start": <TIME>, "end": <TIME>},
-  {"word": "Sentence 2", "start": <TIME>, "end": <TIME>},
-  {"word": "Sentence 3", "start": <TIME>, "end": <TIME>}, ... , 
-  {"word": "Sentence N", "start": <TIME>, "end": <TIME>}
-
+  {"sentence": "<SENTENCE_1_TEXT>", "start": <S1_START>, "end": <S1_END>},
+  {"sentence": "<SENTENCE_2_TEXT>", "start": <S2_START>, "end": <S2_END>},
+  {"sentence": "<SENTENCE_3_TEXT>", "start": <S3_START>, "end": <S3_END>}
 ]
 ```
 
-13. **AGENT - INFO**
+11. **AGENT - INFO**
 ```json
 {
   "type": "info",
-  "content": "I've designed the complete visual composition with text overlays synchronized to the voiceover timestamps, creating emotional progression and visual rhythm."
+  "content": "I've designed the visual composition. Each video beat will have its corresponding sentence placed within it."
 }
 ```
 
-16. **AGENT - SLEEP**
+12. **AGENT - SLEEP**
 ```json
 {
   "type": "sleep",
-  "content": "Here's my complete plan for the visual elements:\n\nI'll create a cinematic four-beat structure:\n\n**Beat 1: The Craft** (Video 1, <START>-<END>)\n- BlurText 'Discover Innovation' in white, 96px 'Inter' bold, center, dark shadow (3px)\n- Text fades out before transition\n\n**Beat 2: The Artistry** (Video 2, <START>-<END>)\n- Fade transition (0.5s)\n- SplitText 'Experience Excellence' in white, 96px 'Inter' bold, center, outline (2px), word-by-word\n- Text slides out upward\n\n**Beat 3: The Impact** (Video 3, <START>-<END>)\n- Wipe Right transition (0.5s)\n- TypewriterText 'Transform Your World' in white, 96px 'Inter' bold, center, shadow (3px) + outline (2px)\n- Text fades out\n\n**Beat 4: The Finale** (3 seconds)\n- Add one of the videos (whichever has the best colors/mood) with blur effect and color tint overlay\n- Fade transition (0.5s) from previous clip\n- All finale elements appear together:\n  - Logo 'brand-logo' at center, 200px width\n  - BlurText '[BRAND NAME]' in white, 72px 'Inter' bold, slightly below logo\n  - BlurText '[CALL TO ACTION]' in white, 48px 'Inter' bold, bottom center\n- Video and all elements fade out together over 0.5s at the end\n\nDoes this sound good? Say 'yes' to proceed."
+  "content": "Here's my plan for your promotional video:\n\n**Beat 1 - Opening:** '<SENTENCE_1_TEXT>' with animated text\n\n**Beat 2 - Middle:** '<SENTENCE_2_TEXT>' with word-by-word reveal\n\n**Beat 3 - Climax:** '<SENTENCE_3_TEXT>' with typewriter effect\n\n**Beat 4 - Finale:** Your brand logo and call-to-action\n\nDoes this sound good? Say 'yes' to proceed."
 }
 ```
 
@@ -168,21 +172,26 @@ Sentence timestamps: [
 
 --- After user says "yes" ---
 
-17. **AGENT - INFO**
+13. **AGENT - INFO**
 ```json
 {
   "type": "info",
-  "content": "I will now place all visual and audio elements on the timeline with synchronized voiceover."
+  "content": "I will now build the composition - first placing the video clips, then adding text and audio elements."
 }
 ```
 
-**AUDIO PLACEMENT NOTE:** Spread voiceover sentences throughout the video for natural pacing. Don't start audio immediately at 0s - give the visuals a moment to breathe (0.5-1s delay). Time each sentence to align with its corresponding visual beat, ensuring the audio enhances rather than overwhelms the visual storytelling. Leave appropriate gaps between sentences for dramatic effect.
+**COMPOSITION STRATEGY:** 
+1. Place video clips first to establish the visual structure (based on probe analysis)
+2. Use voiceover sentence timestamps to place each audio segment at the appropriate position on the timeline
+3. Add a small delay (0.3-0.5s) before each audio segment starts within its beat for natural pacing
+4. Place text overlays to match audio timing within each beat
+5. Text appears slightly before audio starts, fades out as audio ends
 
-18. **AGENT - EDIT**
+14. **AGENT - EDIT**
 ```json
 {
   "type": "edit",
-  "content": "Add video 'Video 1' at 0s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s in the source. At 0.5s on the timeline, add BlurText 'Discover Innovation' in white, 96px 'Inter' bold, center, dark shadow (3px). At 2.5s on the timeline, fade out the text over 0.3s. Add video 'Video 2' immediately after 'Video 1', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'fade' transition (0.5s) to next on 'Video 1'. At 3.5s on the timeline, add SplitText 'Experience Excellence' in white, 96px 'Inter' bold, center, outline (2px), mode 'words', stagger 0.08. At 5.5s on the timeline, slide out text upward over 0.3s. Add video 'Video 3' immediately after 'Video 2', trimmed from <SOURCE_START>s to <SOURCE_END>s in source. Add 'Wipe Right' transition (0.5s) to next on 'Video 2'. At 6.5s on the timeline, add TypewriterText 'Transform Your World' in white, 96px 'Inter' bold, center, shadow (3px) and outline (2px), typingSpeed 15. At 8.5s on the timeline, fade out text over 0.3s. Add [best fitting video] (trimmed segment, 3 seconds) immediately after 'Video 3', with blur effect and color tint overlay. Add 'fade' transition (0.5s) to next on 'Video 3'. At the start of the finale, add logo 'brand-logo' at center, 200px width. Add BlurText '[BRAND NAME]' in white, 72px 'Inter' bold, slightly below logo. Add BlurText '[CALL TO ACTION]' in white, 48px 'Inter' bold, bottom center. Fade out the finale video and all finale elements over 0.5s at the end. Add audio 'promo-voiceover' at 0s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume 1.0. Add audio 'promo-voiceover' at 3s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume 1.0. Add audio 'promo-voiceover' at 6s on the timeline, trimmed from <SOURCE_START>s to <SOURCE_END>s (words '<WORD_RANGE>'), volume 1.0."
+  "content": "Add video 'Video 1' at 0s on the timeline, trimmed from <V1_SOURCE_START>s to <V1_SOURCE_END>s in the source (duration <V1_DURATION>s). Add 'fade' transition (0.3s) to next on 'Video 1'. Add video 'Video 2' immediately after 'Video 1', trimmed from <V2_SOURCE_START>s to <V2_SOURCE_END>s in source (duration <V2_DURATION>s). Add 'wipe-right' transition (0.3s) to next on 'Video 2'. Add video 'Video 3' immediately after 'Video 2', trimmed from <V3_SOURCE_START>s to <V3_SOURCE_END>s in source (duration <V3_DURATION>s). Add 'fade' transition (0.5s) to next on 'Video 3'. Add [best fitting video] immediately after 'Video 3', duration 3.0s, with blur effect (8px) and color tint overlay. Add audio 'promo-voiceover' at 0.3s on the timeline, trimmed from <S1_START>s to <S1_END>s (sentence 1), volume 1.0. Add audio 'promo-voiceover' at <V1_DURATION + 0.3>s on the timeline, trimmed from <S2_START>s to <S2_END>s (sentence 2), volume 1.0. Add audio 'promo-voiceover' at <V1_DURATION + V2_DURATION + 0.3>s on the timeline, trimmed from <S3_START>s to <S3_END>s (sentence 3), volume 1.0. At 0.2s on the timeline, add BlurText '<SENTENCE_1_TEXT>' in white, 96px 'Inter' bold, <PLACEMENT>, dark shadow (3px). Fade out text at <V1_DURATION - 0.3>s over 0.3s. At <V1_DURATION + 0.2>s on the timeline, add SplitText '<SENTENCE_2_TEXT>' in white, 96px 'Inter' bold, <PLACEMENT>, outline (2px), mode 'words', stagger 0.08. Slide out text upward at <V1_DURATION + V2_DURATION - 0.3>s over 0.3s. At <V1_DURATION + V2_DURATION + 0.2>s on the timeline, add TypewriterText '<SENTENCE_3_TEXT>' in white, 96px 'Inter' bold, <PLACEMENT>, shadow (3px) and outline (2px), typingSpeed 15. Fade out text at <V1_DURATION + V2_DURATION + V3_DURATION - 0.3>s over 0.3s. At <FINALE_START + 0.2>s on the timeline, add logo 'brand-logo' at center, 400px width. Add BlurText '[BRAND NAME]' in white, 72px 'Inter' bold, slightly below logo. Add BlurText '[CALL TO ACTION]' in white, 48px 'Inter' bold, bottom center. Fade out the finale video and all finale elements over 0.5s at the end."
 }
 ```
 
