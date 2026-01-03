@@ -45,9 +45,6 @@ import {
   logWorkflowComplete 
 } from "~/utils/fileLogger";
 
-// llm tools
-import { llmAddScrubberToTimeline } from "~/utils/llm-handler";
-
 // Conversational Synth
 import { ConversationalSynth, type SynthContext, type ConversationMessage, type SynthResponse, type ConversationSender } from "./ConversationalSynth";
 
@@ -1363,14 +1360,8 @@ export function ChatBox({
             if (!mediaItem) {
               aiResponseContent = `❌ Error: Media item with ID "${function_call.scrubber_id}" not found in the media bin.`;
             } else {
-              // Execute the function
-              llmAddScrubberToTimeline(
-                function_call.scrubber_id,
-                mediaBinItems,
-                function_call.track_id,
-                function_call.drop_left_px,
-                handleDropOnTrack
-              );
+              // Add media item to timeline
+              handleDropOnTrack(mediaItem, function_call.track_id, function_call.drop_left_px);
 
               aiResponseContent = `✅ Successfully added "${mediaItem.name}" to ${function_call.track_id} at position ${function_call.drop_left_px}px.`;
             }
