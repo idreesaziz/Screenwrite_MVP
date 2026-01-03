@@ -3,9 +3,17 @@ const isProduction = typeof window !== "undefined"
   ? !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
   : process.env.NODE_ENV === 'production';
 
+// Backend URL from environment variable (set at build time)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
+
 export const getApiBaseUrl = (fastapi: boolean = false): string => {
   if (!isProduction) {
     return fastapi ? "http://127.0.0.1:8001" : "http://localhost:8000";
+  }
+
+  // Use VITE_BACKEND_URL if available (for direct backend access without reverse proxy)
+  if (BACKEND_URL && fastapi) {
+    return BACKEND_URL;
   }
 
   if (typeof window !== "undefined" && !fastapi) {
