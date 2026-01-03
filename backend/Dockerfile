@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # For pypotrace (image tracing)
     libpotrace-dev \
     potrace \
+    libagg-dev \
     # For Pillow
     libjpeg-dev \
     zlib1g-dev \
