@@ -1,0 +1,380 @@
+import React from "react";
+import type { 
+  BlueprintExecutionContext, 
+  ElementObject, 
+  AnimatedProperty, 
+  ElementContainer 
+} from "./BlueprintTypes";
+import { 
+  getComponentSchema, 
+  getComponent, 
+  shouldBeComponentProp, 
+  shouldBeStyleProp 
+} from "./componentRegistry";
+import { convertFlatToNested } from "./flatElementConverter";
+import { 
+  convertStringElementsToFlat, 
+  hasStringElements
+} from "./stringElementParser";
+
+/**
+ * Parse a hex color to RGB components
+ */
+function parseHexColor(hex: string): [number, number, number] {
+  const cleaned = hex.replace('#', '');
+  const r = parseInt(cleaned.substring(0, 2), 16);
+  const g = parseInt(cleaned.substring(2, 4), 16);
+  const b = parseInt(cleaned.substring(4, 6), 16);
+  return [r, g, b];
+}
+
+/**
+ * Convert RGB components to hex color
+ */
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (n: number) => {
+    const clamped = Math.round(Math.max(0, Math.min(255, n)));
+    return clamped.toString(16).padStart(2, '0');
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
+ * Extract all numbers with their units from a CSS string
+ * Returns array of {value, unit, startIndex, endIndex}
+ */
+function extractNumbersWithUnits(str: string): Array<{value: number, unit: string, startIndex: number, endIndex: number}> {
+  // Match numbers (including decimals and negatives) followed by optional units
+  const regex = /(-?\d+\.?\d*)(px|%|em|rem|vw|vh|vmin|vmax|deg|rad|turn|s|ms)?/g;
+  const matches: Array<{value: number, unit: string, startIndex: number, endIndex: number}> = [];
+  
+  let match;
+  while ((match = regex.exec(str)) !== null) {
+    // Skip empty matches or matches that are just the unit
+    if (match[1] && match[1].length > 0) {
+      matches.push({
+        value: parseFloat(match[1]),
+        unit: match[2] || '',
+        startIndex: match.index,
+        endIndex: match.index + match[0].length
+      });
+    }
+  }
+  
+  return matches;
+}
+
+/**
+ * Reconstruct a string by replacing numbers at specific positions
+ */
+function reconstructString(original: string, interpolatedMatches: Array<{value: number, unit: string, startIndex: number, endIndex: number}>): string {
+  let result = '';
+  let lastIndex = 0;
+  
+  for (const match of interpolatedMatches) {
+    // Add the part before this number
+    result += original.substring(lastIndex, match.startIndex);
+    // Add the interpolated number with its unit
+    result += match.value.toString() + match.unit;
+    lastIndex = match.endIndex;
+  }
+  
+  // Add any remaining part of the string
+  result += original.substring(lastIndex);
+  
+  return result;
+}
+
+/**
+ * Resolve an animated property at render time using context.interp
+ * Supports:
+ * - Numbers (unitless)
+ * - Strings with number+unit (e.g., "100px", "50%")
+ * - Hex colors (e.g., "#ff0000")
+ * - Complex CSS strings (e.g., "translateX(100px) scale(1.5)", "blur(5px) brightness(150%)")
+ * All animations use 'inOut' easing (hardcoded)
+ */
+function resolveAnimatedProperty<T>(
+  prop: AnimatedProperty<T>,
+  context: BlueprintExecutionContext
+): T {
+  // Check if it's an animated property object
+  if (
+    typeof prop === 'object' && 
+    prop !== null && 
+    'timestamps' in prop && 
+    'values' in prop &&
+    Array.isArray((prop as any).timestamps) &&
+    Array.isArray((prop as any).values)
+  ) {
+    const animatedProp = prop as { timestamps: number[]; values: T[] };
+    const { timestamps, values } = animatedProp;
+    
+    // If all values are numbers, interpolate directly
+    if (values.every(v => typeof v === 'number')) {
+      return context.interp(timestamps, values as any, 'inOut') as T;
+    }
+    
+    // If all values are strings, handle different string formats
+    if (values.every(v => typeof v === 'string')) {
+      const stringValues = values as unknown as string[];
+      
+      // Check if all values are hex colors
+      if (stringValues.every(v => /^#[0-9a-fA-F]{6}$/.test(v))) {
+        // Interpolate RGB components separately
+        const rgbValues = stringValues.map(parseHexColor);
+        const r = context.interp(timestamps, rgbValues.map(rgb => rgb[0]), 'inOut');
+        const g = context.interp(timestamps, rgbValues.map(rgb => rgb[1]), 'inOut');
+        const b = context.interp(timestamps, rgbValues.map(rgb => rgb[2]), 'inOut');
+        return rgbToHex(r, g, b) as T;
+      }
+      
+      // For other strings, extract all numbers with units and interpolate each
+      const firstValue = stringValues[0];
+      const parsedValues = stringValues.map(extractNumbersWithUnits);
+      
+      // Verify all values have the same structure (same number of numeric values)
+      const numCount = parsedValues[0].length;
+      if (!parsedValues.every(p => p.length === numCount)) {
+        console.warn('Animated property values have inconsistent structure:', stringValues);
+        return firstValue as T;
+      }
+      
+      // Interpolate each numeric component
+      const interpolatedMatches = parsedValues[0].map((match, index) => {
+        const numericValues = parsedValues.map(p => p[index].value);
+        const interpolatedValue = context.interp(timestamps, numericValues, 'inOut');
+        
+        return {
+          value: interpolatedValue,
+          unit: match.unit,
+          startIndex: match.startIndex,
+          endIndex: match.endIndex
+        };
+      });
+      
+      // Reconstruct the string with interpolated values
+      return reconstructString(firstValue, interpolatedMatches) as T;
+    }
+    
+    // Fallback: return first value if types are mixed or unsupported
+    console.warn('Unsupported animated property type:', values);
+    return values[0];
+  }
+  
+  // Return constant value as-is
+  return prop as T;
+}
+
+/**
+ * Render an ElementObject into a React element tree
+ * Recursively handles children and separates props into component props and style props
+ */
+export function renderElementObject(
+  element: ElementObject,
+  context: BlueprintExecutionContext
+): React.ReactElement {
+  try {
+    const schema = getComponentSchema(element.name);
+    const Component = getComponent(element.name);
+    
+    const componentProps: Record<string, any> = {};
+    const styleProps: Record<string, any> = {};
+    
+    // Apply sensible defaults for Video and Img to make them behave like block elements
+    const propsWithDefaults = { ...element.props };
+    
+    // Resolve src names to actual URLs for Video/Img/Audio elements
+    if ((element.name === 'Video' || element.name === 'Img' || element.name === 'Audio' || element.name === 'OffthreadVideo') && propsWithDefaults.src) {
+      const srcValue = propsWithDefaults.src;
+      
+      console.log(`🔍 [URL Resolver] Processing ${element.name} with src:`, srcValue, `(type: ${typeof srcValue})`);
+      console.log(`🔍 [URL Resolver] Media library available:`, context.mediaLibrary ? `yes (${context.mediaLibrary.length} items)` : 'no');
+      
+      // If src is a string (name reference), look up by name
+      if (typeof srcValue === 'string' && context.mediaLibrary) {
+        console.log(`🔍 [URL Resolver] Looking for name "${srcValue}" in media library...`);
+        console.log(`🔍 [URL Resolver] Media library contents:`, context.mediaLibrary);
+        
+        // Look up media item by exact name match
+        const mediaItem = context.mediaLibrary.find(item => item.name === srcValue);
+        
+        if (mediaItem) {
+          console.log(`🔍 [URL Resolver] Found media item:`, mediaItem);
+          // Resolve to actual URL (prefer remote, fallback to local)
+          const resolvedUrl = mediaItem.mediaUrlRemote || mediaItem.mediaUrlLocal;
+          if (resolvedUrl) {
+            propsWithDefaults.src = resolvedUrl;
+            console.log(`✅ [URL Resolver] Resolved src:"${srcValue}" → ${resolvedUrl}`);
+          } else {
+            console.warn(`⚠️ [URL Resolver] Media item with name "${srcValue}" has no URL`, mediaItem);
+          }
+        } else {
+          console.warn(`⚠️ [URL Resolver] No media item found with name "${srcValue}"`);
+          console.warn(`⚠️ [URL Resolver] Available names:`, context.mediaLibrary.map(item => item.name));
+        }
+      } else if (!context.mediaLibrary && typeof srcValue === 'string' && !srcValue.startsWith('http') && !srcValue.startsWith('blob:')) {
+        console.error(`❌ [URL Resolver] src appears to be a name reference ("${srcValue}") but no media library provided!`);
+      }
+    }
+    
+    if (element.name === 'Video') {
+      // Default Video to fill parent and be muted for autoplay
+      if (!propsWithDefaults.width) propsWithDefaults.width = '100%';
+      if (!propsWithDefaults.height) propsWithDefaults.height = '100%';
+      if (!propsWithDefaults.objectFit) propsWithDefaults.objectFit = 'cover';
+      if (!propsWithDefaults.muted) propsWithDefaults.muted = true;
+    }
+    
+    if (element.name === 'Img') {
+      // Default Img to fill parent
+      if (!propsWithDefaults.width) propsWithDefaults.width = '100%';
+      if (!propsWithDefaults.height) propsWithDefaults.height = '100%';
+      if (!propsWithDefaults.objectFit) propsWithDefaults.objectFit = 'cover';
+    }
+    
+    // Process each prop
+    for (const [key, value] of Object.entries(propsWithDefaults)) {
+      // Skip endAt for Video/Audio - clip duration on timeline controls when video stops
+      // The Sequence's durationInFrames handles visibility, video freezes on last frame if needed
+      const isMediaComponent = element.name === 'Video' || element.name === 'Audio' || element.name === 'OffthreadVideo';
+      if (isMediaComponent && key === 'endAt') {
+        continue; // Skip endAt entirely
+      }
+      
+      // SPECIAL CASE: Video/Audio startFrom is in seconds - convert to frames
+      const isMediaTimingProp = isMediaComponent && key === 'startFrom';
+      
+      let resolvedValue: any;
+      
+      if (isMediaTimingProp) {
+        // Convert seconds to frames for Video/Audio timing
+        const fps = (context as any).fps || 30; // Default to 30 FPS if not in context
+        const seconds = typeof value === 'number' ? value : parseFloat(value as string);
+        resolvedValue = Math.round(seconds * fps);
+      } else {
+        resolvedValue = resolveAnimatedProperty(value, context);
+      }
+      
+      // Determine if this prop goes to component or style
+      if (shouldBeComponentProp(key, schema)) {
+        componentProps[key] = resolvedValue;
+      } else if (shouldBeStyleProp(key, schema)) {
+        styleProps[key] = resolvedValue;
+      }
+    }
+    
+    // Add style object if there are style props
+    if (Object.keys(styleProps).length > 0) {
+      componentProps.style = styleProps;
+    }
+    
+    // Recursively render children
+    const children = element.children?.map((child, index) => {
+      // Handle string children (text content)
+      if (typeof child === 'string') {
+        return child;
+      }
+      // Handle ElementObject children (nested elements)
+      return renderElementObject(child, context);
+    }) || [];
+    
+    return React.createElement(Component, componentProps, ...children);
+  } catch (error) {
+    console.error("Error rendering element:", element.name, error);
+    
+    // Return error display component
+    return React.createElement(
+      'div',
+      {
+        style: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#1a1a1a',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#ff6b6b',
+          fontSize: '16px',
+          fontFamily: 'Arial, sans-serif',
+          textAlign: 'center' as const,
+          padding: '20px',
+          zIndex: 1000,
+        }
+      },
+      React.createElement(
+        'div',
+        {},
+        React.createElement('p', {}, '⚠️ Error rendering element: ' + element.name),
+        React.createElement(
+          'p', 
+          { style: { fontSize: '12px', opacity: 0.8, marginTop: '10px' } },
+          error instanceof Error ? error.message : 'Unknown error'
+        )
+      )
+    );
+  }
+}
+
+/**
+ * Main entry point for executing/rendering a clip element
+ * Converts string element structure to nested tree and renders it
+ * Automatically wraps non-AbsoluteFill root elements in AbsoluteFill
+ */
+export function executeClipElement(
+  element: ElementContainer,
+  context: BlueprintExecutionContext
+): React.ReactElement {
+  // Only accept string format - convert to flat elements first
+  if (!hasStringElements(element)) {
+    throw new Error('Invalid element container: must have string[] elements in format "ComponentName;id:value;parent:value;prop:value"');
+  }
+  
+  // Parse string elements to flat element objects
+  // Note: convertStringElementsToFlat automatically adds implicit AbsoluteFill root
+  const flatElements = convertStringElementsToFlat(element.elements);
+  const flatElementContainer = { elements: flatElements };
+  
+  // Convert flat element structure to nested tree
+  const nestedElement = convertFlatToNested(flatElementContainer);
+  
+  // Root is always AbsoluteFill now (implicit root), no wrapping needed
+  return renderElementObject(nestedElement, context);
+}
+
+/**
+ * Calculate total composition duration from blueprint
+ * Works with intelligent track system that respects actual timing and transitions
+ */
+export function calculateBlueprintDuration(blueprint: import('./BlueprintTypes').CompositionBlueprint): number {
+  let maxDuration = 0;
+
+  // Find the latest end time across all tracks and clips, accounting for transitions
+  for (const track of blueprint) {
+    if (!track.clips || track.clips.length === 0) continue;
+    
+    for (const clip of track.clips) {
+      let clipEndTime = clip.endTimeInSeconds;
+      
+      // Account for orphaned transitions that extend the clip
+      if (clip.transitionToNext && clip.transitionToNext.durationInSeconds) {
+        // Only extend if this is an orphaned transition (no adjacent clip)
+        const isOrphanedTransition = true; // Assume orphaned for duration calculation safety
+        if (isOrphanedTransition) {
+          clipEndTime += clip.transitionToNext.durationInSeconds * 0.5; // Partial extension for safety
+        }
+      }
+      
+      if (clipEndTime > maxDuration) {
+        maxDuration = clipEndTime;
+      }
+    }
+  }
+
+  // Convert seconds to frames (30 FPS) with minimum duration
+  const durationInFrames = Math.ceil(maxDuration * 30);
+  return Math.max(durationInFrames, 30); // Minimum 1 second
+}
