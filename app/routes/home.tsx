@@ -803,7 +803,7 @@ export default function TimelineEditor() {
       }
       
       // Call the Python backend API with current composition
-      const response = await axios.post(apiUrl("/api/v1/compositions/generate", true), {
+      const response = await axios.post(apiUrl("/api/v1/compositions/generate"), {
         user_request: userRequest,
         preview_settings: previewSettings,
         media_library: mediaBinItems.map(item => ({

@@ -393,7 +393,7 @@ export function ChatBox({
     
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(apiUrl('/api/v1/analysis/media/batch', true), {
+      const response = await fetch(apiUrl('/api/v1/analysis/media/batch'), {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -508,7 +508,7 @@ export function ChatBox({
       // Backend uses gs:// URI with Vertex AI for direct GCS access
       console.log("🔗 Sending file URL to backend:", fileUrl);
       const headers = await getAuthHeaders();
-      const response = await fetch(apiUrl('/api/v1/analysis/media', true), {
+      const response = await fetch(apiUrl('/api/v1/analysis/media'), {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -593,7 +593,7 @@ export function ChatBox({
       }
 
       const headers = await getAuthHeaders();
-      const response = await fetch(apiUrl('/api/v1/media/generate', true), {
+      const response = await fetch(apiUrl('/api/v1/media/generate'), {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody),
@@ -780,7 +780,7 @@ export function ChatBox({
       });
       
       // Debug: Log the full URL being called
-      const fetchUrl = apiUrl("/api/v1/stock/search", true);
+      const fetchUrl = apiUrl("/api/v1/stock/search");
       console.log("🔍 Full fetch URL:", fetchUrl);
       
       // Call the actual backend API to fetch stock videos
@@ -1314,7 +1314,7 @@ export function ChatBox({
       // Make API call to the backend
       const token = await getToken();
       // TODO: Update this to use the new agent endpoint properly
-      const response = await axios.post(apiUrl("/api/v1/agent/chat", true), {
+      const response = await axios.post(apiUrl("/api/v1/agent/chat"), {
         message: messageContent,
         mentioned_scrubber_ids: mentionedScrubberIds,
         timeline_state: timelineState,

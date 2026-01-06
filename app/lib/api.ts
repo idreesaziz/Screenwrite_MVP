@@ -1,36 +1,46 @@
-// Automatically detect production vs development
-const isProduction = typeof window !== "undefined" 
-  ? !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
-  : process.env.NODE_ENV === 'production';
+/**
+ * API Configuration
+ * Handles environment-aware URL routing for backend services
+ */
 
-// Backend URL from environment variable (set at build time)
+// Environment detection
+const isDevelopment = import.meta.env.DEV;
+const isProduction = import.meta.env.PROD;
+
+// Backend URLs from environment variables (set at build time)
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
 
-export const getApiBaseUrl = (fastapi: boolean = false): string => {
-  if (!isProduction) {
-    return fastapi ? "http://127.0.0.1:8001" : "http://localhost:8000";
+/**
+ * Get the base URL for the FastAPI backend
+ * Development: http://127.0.0.1:8001
+ * Production: Uses VITE_BACKEND_URL environment variable
+ */
+export const getBackendUrl = (): string => {
+  if (isDevelopment) {
+    return "http://127.0.0.1:8001";
   }
 
-  // Use VITE_BACKEND_URL if available (for direct backend access without reverse proxy)
-  if (BACKEND_URL && fastapi) {
+  if (isProduction && BACKEND_URL) {
     return BACKEND_URL;
   }
 
-  if (typeof window !== "undefined" && !fastapi) {
-    return `${window.location.origin}/api`;
-  } else if (typeof window !== "undefined" && fastapi) {
-    return `${window.location.origin}/ai/api`;
-  }
-
-  // Fallback for SSR or other environments (idk)
-  return "/api";
+  // Fallback: assume reverse proxy at /api
+  return typeof window !== "undefined" ? `${window.location.origin}/api` : "/api";
 };
 
-export const apiUrl = (endpoint: string, fastapi: boolean = false): string => {
-  const baseUrl = getApiBaseUrl(fastapi);
+/**
+ * Construct a full API URL for a given endpoint
+ * @param endpoint - API endpoint path (e.g., "/api/v1/sessions")
+ * @returns Full URL including base
+ */
+export const apiUrl = (endpoint: string): string => {
+  const baseUrl = getBackendUrl();
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   return `${baseUrl}${cleanEndpoint}`;
 };
+
+// Legacy compatibility: getApiBaseUrl alias
+export const getApiBaseUrl = getBackendUrl;
 
 // New interface for AI composition generation
 export interface ConversationMessage {
@@ -62,7 +72,7 @@ export interface CompositionResponse {
 // Function to generate composition via AI
 export async function generateComposition(request: CompositionRequest): Promise<CompositionResponse> {
   try {
-    const response = await fetch(apiUrl("/api/v1/compositions/generate", true), {
+    const response = await fetch(apiUrl("/api/v1/compositions/generate"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

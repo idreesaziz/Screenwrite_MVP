@@ -125,7 +125,7 @@ Your job is to generate the next appropriate response based on the conversation 
       
       console.log(`🔍 DEBUG: Sending provider=${context.provider || "gemini"} to backend agent`);
       
-      const response = await fetch(apiUrl('/api/v1/agent/chat', true), {
+      const response = await fetch(apiUrl('/api/v1/agent/chat'), {
         method: 'POST',
         headers,
         body: JSON.stringify({

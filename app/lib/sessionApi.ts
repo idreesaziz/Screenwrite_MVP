@@ -150,7 +150,7 @@ export async function createSession(
     text: item.text,
   }));
   
-  const response = await fetch(apiUrl("/api/v1/sessions", true), {
+  const response = await fetch(apiUrl("/api/v1/sessions"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -181,7 +181,7 @@ export async function listSessions(
   const token = await getToken();
   
   const response = await fetch(
-    apiUrl(`/api/v1/sessions?limit=${limit}&offset=${offset}`, true),
+    apiUrl(`/api/v1/sessions?limit=${limit}&offset=${offset}`),
     {
       method: "GET",
       headers: {
@@ -207,7 +207,7 @@ export async function getSession(
 ): Promise<Session> {
   const token = await getToken();
   
-  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}`, true), {
+  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}`), {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -232,7 +232,7 @@ export async function updateSession(
 ): Promise<Session> {
   const token = await getToken();
   
-  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}`, true), {
+  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}`), {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -276,7 +276,7 @@ export async function saveSessionState(
     text: item.text,
   }));
   
-  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}/state`, true), {
+  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}/state`), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -364,7 +364,7 @@ export async function deleteSession(
 ): Promise<void> {
   const token = await getToken();
   
-  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}`, true), {
+  const response = await fetch(apiUrl(`/api/v1/sessions/${sessionId}`), {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",

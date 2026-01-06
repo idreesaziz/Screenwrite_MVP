@@ -37,7 +37,7 @@ export async function authenticatedRequest<T = any>(
 
   return axios({
     ...config,
-    url: apiUrl(endpoint, true), // Use backend URL
+    url: apiUrl(endpoint), // Use backend URL
     headers,
   });
 }
