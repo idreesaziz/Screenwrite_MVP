@@ -32,18 +32,6 @@ import { apiUrl, getApiBaseUrl } from "~/lib/api";
 import type { AgentProvider, EditProvider } from "./providerTypes";
 import { generateUUID } from "~/lib/uuid";
 import type { GetTokenFn } from "~/lib/authApi";
-import { 
-  logUserMessage, 
-  logSynthCall, 
-  logSynthResponse, 
-  logProbeStart, 
-  logProbeAnalysis, 
-  logProbeError,
-  logEditExecution,
-  logEditResult,
-  logChatResponse,
-  logWorkflowComplete 
-} from "~/lib/fileLogger";
 
 // Conversational Synth
 import { ConversationalSynth, type SynthContext, type ConversationMessage, type SynthResponse, type ConversationSender } from "./ConversationalSynth";
@@ -366,11 +354,6 @@ export function ChatBox({
   ): Promise<Message[]> => {
     console.log(`🔍 Executing batch probe request for ${videos.length} video(s)`);
     
-    // Log all probes
-    for (const video of videos) {
-      await logProbeStart(video.fileName, video.question);
-    }
-    
     // Resolve all fileNames to URLs
     const resolvedVideos = await Promise.all(
       videos.map(async (video) => {
@@ -434,12 +417,12 @@ export function ChatBox({
 
       const aggregatedAnalysis = result.aggregated_analysis;
       
-      // Log each video's analysis
+      // Log each video's analysis to console
       for (const videoResult of result.results) {
         if (videoResult.success && videoResult.analysis) {
-          await logProbeAnalysis(videoResult.title || videoResult.file_url, videoResult.analysis);
+          console.log('Probe analysis:', videoResult.title || videoResult.file_url, videoResult.analysis);
         } else if (!videoResult.success) {
-          await logProbeError(videoResult.title || videoResult.file_url, videoResult.error_message || 'Analysis failed');
+          console.error('Probe error:', videoResult.title || videoResult.file_url, videoResult.error_message || 'Analysis failed');
         }
       }
       
@@ -464,10 +447,8 @@ export function ChatBox({
     } catch (error) {
       console.error("❌ Batch probe analysis failed:", error);
       
-      // Log errors for all videos
-      for (const video of videos) {
-        await logProbeError(video.fileName, error instanceof Error ? error.message : 'Unknown error');
-      }
+      // Log errors to console
+      console.error('Probe request failed for videos:', videos.map(v => v.fileName), error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -948,7 +929,7 @@ export function ChatBox({
       .find(m => (m.sender ?? (m.isUser ? 'user' : 'assistant')) === 'user');
     const messageContent = lastUserMessage?.content || '';
     
-    await logUserMessage(messageContent, mentionedItems.map(item => item.name));
+    console.log("User message:", messageContent, "Mentioned items:", mentionedItems.map(item => item.name));
     console.log("🧠 Processing conversational message with unified workflow:", messageContent);
 
     // Initialize unified workflow state
@@ -1007,11 +988,11 @@ export function ChatBox({
             };
 
             console.log(`📚 Media library has ${currentMediaBin.length} items for iteration ${iterationCount}`);
-            await logSynthCall("conversation_analysis", synthContext);
+            console.log("Synth call: conversation_analysis");
             
             // Get the next action from the agent
             const synthResponse = await synth.processMessage(synthContext, abortController.signal);
-            await logSynthResponse(synthResponse);
+            console.log("Synth response:", synthResponse);
             
             console.log(`🎯 Synth response type: ${synthResponse.type}`);
 
@@ -1028,7 +1009,7 @@ export function ChatBox({
 
         } catch (error) {
             console.error(`❌ Unified workflow iteration ${iterationCount} failed:`, error);
-            await logSynthResponse({ error: error instanceof Error ? error.message : String(error) });
+            console.log("Synth error:", error instanceof Error ? error.message : String(error));
             
             const errorMessage: Message = {
                 id: (Date.now() + iterationCount).toString(),
@@ -1056,7 +1037,7 @@ export function ChatBox({
           addMessageToHistory(maxIterationMessage);
       }
 
-      await logWorkflowComplete();
+      console.log("Workflow complete");
 
     } catch (error) {
       console.error("❌ Unified workflow failed:", error);
@@ -1216,7 +1197,6 @@ export function ChatBox({
 
         // 2. Execute action
         console.log("🎬 Executing edit:", synthResponse.content);
-        await logEditExecution(synthResponse.content);
         const previousCompositionSnapshot = currentCompositionRef.current;
         
         let success = false;
@@ -1229,7 +1209,7 @@ export function ChatBox({
                 signal
             );
         }
-        await logEditResult(success);
+        console.log("Edit result:", success ? "success" : "failed");
         
         // 3. Show composition diff (if successful)
         if (success) {
