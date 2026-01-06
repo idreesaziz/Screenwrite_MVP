@@ -34,7 +34,6 @@ import { toast } from "sonner";
 
 // Hooks
 import { useMediaBin } from "~/hooks/useMediaBin";
-import { useRenderer } from "~/hooks/useRenderer";
 import { useUndoRedo, useUndoRedoShortcuts } from "~/hooks/useUndoRedo";
 
 // Transform utilities
@@ -622,8 +621,6 @@ export default function TimelineEditor() {
   const [currentFrame, setCurrentFrame] = useState<number>(0);
   const [timelineFrame, setTimelineFrame] = useState<number>(0); // Separate frame for timeline scrubber position
 
-  const { isRendering, renderStatus, handleRenderVideo } = useRenderer();
-
   // Blueprint-only state (no more TSX execution)
   const [previewSettings] = useState({
     width: 1920,
@@ -1133,13 +1130,6 @@ export default function TimelineEditor() {
         className="hidden"
         onChange={handleFileInputChange}
       />
-
-      {/* Render Status as Toast */}
-      {renderStatus && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <RenderStatus renderStatus={renderStatus} />
-        </div>
-      )}
     </div>
   );
 }

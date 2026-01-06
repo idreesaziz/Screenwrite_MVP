@@ -5,58 +5,6 @@ import { generateUUID } from "~/lib/uuid"
 import { apiUrl } from "~/lib/api"
 import { uploadFileToGCS, type GetTokenFn } from "~/lib/authApi"
 
-// Delete media file from server (Node.js render server, port 8000)
-export const deleteMediaFile = async (filename: string): Promise<{ success: boolean; message?: string; error?: string }> => {
-  try {
-    const response = await fetch(apiUrl(`/media/${encodeURIComponent(filename)}`, false), {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete file');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Delete API error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-};
-
-// Clone/copy media file on server (Node.js render server, port 8000)
-export const cloneMediaFile = async (filename: string, originalName: string, suffix: string): Promise<{ success: boolean; filename?: string; originalName?: string; url?: string; fullUrl?: string; size?: number; error?: string }> => {
-  try {
-    const response = await fetch(apiUrl('/clone-media', false), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        filename,
-        originalName,
-        suffix
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to clone file');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Clone API error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-};
-
 
 // Helper function to get media metadata
 const getMediaMetadata = (file: File, mediaType: "video" | "image" | "audio"): Promise<{
@@ -159,14 +107,10 @@ export const useMediaBin = (
       return;
     }
 
-    console.log("Adding to bin:", { filename: file.name, mediaType });
-
     try {
       const mediaUrlLocal = URL.createObjectURL(file);
 
-      console.log(`Parsing ${mediaType} file for metadata...`);
       const metadata = await getMediaMetadata(file, mediaType);
-      console.log("Media metadata:", metadata);
 
       // Add item to media bin immediately with upload progress tracking
       // Name will be provided by backend after upload
@@ -189,15 +133,11 @@ export const useMediaBin = (
       };
       setMediaBinItems(prev => [...prev, newItem]);
 
-      console.log("Uploading file to GCS...");
-      
       // Upload to GCS with JWT authentication
       const uploadResult = await uploadFileToGCS(
         file,
         getToken,
-        (percentCompleted) => {
-          console.log(`Upload progress: ${percentCompleted}%`);
-          
+        (percentCompleted: number) => {
           // Update upload progress in the media bin
           setMediaBinItems(prev =>
             prev.map(item =>
@@ -208,12 +148,6 @@ export const useMediaBin = (
           );
         }
       );
-
-      console.log("✅ GCS upload successful!");
-      console.log("📦 Upload result:", uploadResult);
-      console.log("🔗 Signed URL:", uploadResult.signed_url);
-      console.log("🔗 GCS URI:", uploadResult.gcs_uri);
-      console.log("🏷️  Name from backend:", uploadResult.name);
 
       // Update item with successful GCS upload result and backend-provided name
       setMediaBinItems(prev =>
@@ -230,8 +164,6 @@ export const useMediaBin = (
             : item
         )
       );
-
-      console.log("✅ Media item updated with name:", uploadResult.name);
 
     } catch (error) {
       console.error("Error adding media to bin:", error);
@@ -310,113 +242,18 @@ export const useMediaBin = (
 
   // Function to directly add a pre-created MediaBinItem (for generated content)
   const handleAddDirectMediaBinItem = useCallback((item: MediaBinItem) => {
-    console.log("📦 Adding direct MediaBinItem to bin:", item);
     setMediaBinItems(prev => [...prev, item]);
   }, []);
 
   const handleDeleteMedia = useCallback(async (item: MediaBinItem) => {
-    try {
-      if (item.mediaType === "text") {
-        setMediaBinItems(prev => prev.filter(binItem => binItem.id !== item.id));
-
-        // Also remove any scrubbers from the timeline that use this media
-        if (handleDeleteScrubbersByMediaBinId) {
-          handleDeleteScrubbersByMediaBinId(item.id);
-        }
-        return;
-      }
-
-      // Extract filename from mediaUrlRemote URL
-      if (!item.mediaUrlRemote) {
-        console.error('No remote URL found for media item');
-        return;
-      }
-
-      // Parse the URL and extract filename from the path
-      const url = new URL(item.mediaUrlRemote);
-      const pathSegments = url.pathname.split('/');
-      const encodedFilename = pathSegments[pathSegments.length - 1]; // Get the last segment after /media/
-
-      if (!encodedFilename) {
-        console.error('Could not extract filename from URL:', item.mediaUrlRemote);
-        return;
-      }
-
-      // Decode the filename
-      const filename = decodeURIComponent(encodedFilename);
-      console.log('Extracted filename:', filename);
-
-      const result = await deleteMediaFile(filename);
-      if (result.success) {
-        console.log(`Media deleted: ${item.name}`);
-        // Remove from media bin state
-        setMediaBinItems(prev => prev.filter(binItem => binItem.id !== item.id));
-        // Also remove any scrubbers from the timeline that use this media
-        if (handleDeleteScrubbersByMediaBinId) {
-          handleDeleteScrubbersByMediaBinId(item.id);
-        }
-      } else {
-        console.error('Failed to delete media:', result.error);
-      }
-    } catch (error) {
-      console.error('Error deleting media:', error);
+    // Remove from media bin state
+    setMediaBinItems(prev => prev.filter(binItem => binItem.id !== item.id));
+    
+    // Also remove any scrubbers from the timeline that use this media
+    if (handleDeleteScrubbersByMediaBinId) {
+      handleDeleteScrubbersByMediaBinId(item.id);
     }
   }, [handleDeleteScrubbersByMediaBinId]);
-
-  const handleSplitAudio = useCallback(async (videoItem: MediaBinItem) => {
-    if (videoItem.mediaType !== 'video') {
-      throw new Error('Can only split audio from video files');
-    }
-
-    try {
-      // Extract filename from mediaUrlRemote URL
-      if (!videoItem.mediaUrlRemote) {
-        throw new Error('No remote URL found for video item');
-      }
-
-      // Parse the URL and extract filename from the path
-      const url = new URL(videoItem.mediaUrlRemote);
-      const pathSegments = url.pathname.split('/');
-      const encodedFilename = pathSegments[pathSegments.length - 1];
-
-      if (!encodedFilename) {
-        throw new Error('Could not extract filename from URL');
-      }
-
-      // Clone the file on the server
-      const cloneResult = await cloneMediaFile(encodedFilename, videoItem.name, '(Audio)');
-
-      if (!cloneResult.success) {
-        throw new Error(cloneResult.error || 'Failed to clone media file');
-      }
-
-      // Create a new audio media item with the cloned file info
-      const audioItem: MediaBinItem = {
-        id: generateUUID(),
-        name: `${videoItem.name} (Audio)`,
-        mediaType: "audio",
-        mediaUrlLocal: videoItem.mediaUrlLocal, // Reuse the original video's blob URL
-        mediaUrlRemote: cloneResult.fullUrl!, // Use the new cloned file URL
-        durationInSeconds: videoItem.durationInSeconds,
-        media_width: 0, // Audio doesn't have visual dimensions
-        media_height: 0,
-        text: null,
-        isUploading: false,
-        uploadProgress: null,
-        left_transition_id: null,
-        right_transition_id: null,
-      };
-
-      // Add the audio item to the media bin
-      setMediaBinItems(prev => [...prev, audioItem]);
-      setContextMenu(null); // Close context menu after action
-
-      console.log(`Audio split successful: ${videoItem.name} -> ${audioItem.name}`);
-    } catch (error) {
-      console.error('Error splitting audio:', error);
-      throw error;
-    }
-  }, []);
 
   // Handle right-click to show context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, item: MediaBinItem) => {
@@ -434,11 +271,6 @@ export const useMediaBin = (
     await handleDeleteMedia(contextMenu.item);
     setContextMenu(null);
   }, [contextMenu, handleDeleteMedia]);
-
-  const handleSplitAudioFromContext = useCallback(async () => {
-    if (!contextMenu) return;
-    await handleSplitAudio(contextMenu.item);
-  }, [contextMenu, handleSplitAudio]);
 
   // Close context menu when clicking outside
   const handleUpdateMediaItem = useCallback((updatedItem: MediaBinItem) => {
@@ -465,12 +297,10 @@ export const useMediaBin = (
     handleAddDirectMediaBinItem,
     handleUpdateMediaItem,
     handleDeleteMedia,
-    handleSplitAudio,
     handleSetMediaBin,
     contextMenu,
     handleContextMenu,
     handleDeleteFromContext,
-    handleSplitAudioFromContext,
     handleCloseContextMenu,
   }
 } 
