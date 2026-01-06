@@ -11,9 +11,9 @@ export const getApiBaseUrl = (fastapi: boolean = false): string => {
     return fastapi ? "http://127.0.0.1:8001" : "http://localhost:8000";
   }
 
-  // Use VITE_BACKEND_URL if available (for direct backend access without reverse proxy)
-  if (BACKEND_URL && fastapi) {
-    return BACKEND_URL;
+  // Production: always use direct backend URL for fastapi
+  if (fastapi) {
+    return BACKEND_URL || "http://136.115.236.22:8001";
   }
 
   if (typeof window !== "undefined" && !fastapi) {
