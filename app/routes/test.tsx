@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
 import type { PlayerRef } from "@remotion/player";
-import { DynamicVideoPlayer } from "~/video-compositions/DynamicComposition";
-import { calculateBlueprintDuration } from "~/video-compositions/executeClipElement";
-import type { CompositionBlueprint } from "~/video-compositions/BlueprintTypes";
+import { DynamicVideoPlayer } from "~/composition/DynamicComposition";
+import { calculateBlueprintDuration } from "~/composition/executeClipElement";
+import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";

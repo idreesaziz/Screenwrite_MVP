@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react"
 import axios from "axios"
-import { type MediaBinItem } from "~/components/timeline/types"
-import { generateUUID } from "~/utils/uuid"
-import { apiUrl } from "~/utils/api"
-import { uploadFileToGCS, type GetTokenFn } from "~/utils/authApi"
+import { type MediaBinItem } from "~/components/editor/timeline/types"
+import { generateUUID } from "~/lib/uuid"
+import { apiUrl } from "~/lib/api"
+import { uploadFileToGCS, type GetTokenFn } from "~/lib/authApi"
 
 // Delete media file from server (Node.js render server, port 8000)
 export const deleteMediaFile = async (filename: string): Promise<{ success: boolean; message?: string; error?: string }> => {

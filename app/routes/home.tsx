@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import type { PlayerRef } from "@remotion/player";
 import axios from "axios";
-import { apiUrl } from "~/utils/api";
+import { apiUrl } from "~/lib/api";
 import {
   Upload,
   ChevronLeft,
@@ -14,11 +14,11 @@ import {
 
 // Components
 import LeftPanel from "~/components/editor/LeftPanel";
-import { DynamicVideoPlayer } from "~/video-compositions/DynamicComposition";
-import { calculateBlueprintDuration } from "~/video-compositions/executeClipElement";
-import { emptyCompositionBlueprint, ensureMinimumTracks } from "~/video-compositions/EmptyComposition";
-import type { CompositionBlueprint } from "~/video-compositions/BlueprintTypes";
-import { RenderStatus } from "~/components/timeline/RenderStatus";
+import { DynamicVideoPlayer } from "~/composition/DynamicComposition";
+import { calculateBlueprintDuration } from "~/composition/executeClipElement";
+import { emptyCompositionBlueprint, ensureMinimumTracks } from "~/composition/EmptyComposition";
+import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import { RenderStatus } from "~/components/editor/timeline/RenderStatus";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
@@ -38,23 +38,23 @@ import { useRenderer } from "~/hooks/useRenderer";
 import { useUndoRedo, useUndoRedoShortcuts } from "~/hooks/useUndoRedo";
 
 // Transform utilities
-import { updateClipTransform, type TransformValues } from "../utils/transformUtils";
+import { updateClipTransform, type TransformValues } from "~/lib/transformUtils";
 import { useAuth } from "~/hooks/useAuth";
 
 
 // Types and constants
-import { type Transition, type MediaBinItem } from "~/components/timeline/types";
+import { type Transition, type MediaBinItem } from "~/components/editor/timeline/types";
 import { useNavigate } from "react-router";
 
 // Custom Timeline
-import TimelineView from "../components/custom-timeline/TimelineView"; // direct relative path to bust alias cache
-import { ChatBox } from "~/components/chat/ChatBox";
-import { SessionHistory } from "~/components/chat/SessionHistory";
-import { ProviderPairingModal } from "~/components/chat/ProviderPairingModal";
-import { SettingsModal } from "~/components/chat/SettingsModal";
-import type { AgentProvider, EditProvider } from "~/components/chat/providerTypes";
+import TimelineView from "~/components/editor/timeline/TimelineView"; // direct relative path to bust alias cache
+import { ChatBox } from "~/components/editor/chat/ChatBox";
+import { SessionHistory } from "~/components/editor/chat/SessionHistory";
+import { ProviderPairingModal } from "~/components/editor/chat/ProviderPairingModal";
+import { SettingsModal } from "~/components/editor/chat/SettingsModal";
+import type { AgentProvider, EditProvider } from "~/components/editor/chat/providerTypes";
 import { useSession } from "~/hooks/useSession";
-import type { ChatMessage } from "~/utils/sessionApi";
+import type { ChatMessage } from "~/lib/sessionApi";
 
 interface Message {
   id: string;

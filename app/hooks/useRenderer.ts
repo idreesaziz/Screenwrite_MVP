@@ -4,8 +4,8 @@ import {
   type TimelineDataItem,
   type TimelineState,
   FPS,
-} from "~/components/timeline/types";
-import { apiUrl } from "~/utils/api";
+} from "~/components/editor/timeline/types";
+import { apiUrl } from "~/lib/api";
 
 export const useRenderer = () => {
   const [isRendering, setIsRendering] = useState(false);

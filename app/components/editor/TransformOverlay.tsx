@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import type { CompositionBlueprint, Clip } from "../../video-compositions/BlueprintTypes";
+import type { CompositionBlueprint, Clip } from "~/composition/BlueprintTypes";
 import {
   getVisibleClips,
   calculateClipBounds,
   type BoundingBox,
   type TransformValues,
-} from "../../utils/transformUtils";
+} from "~/lib/transformUtils";
 
 interface TransformOverlayProps {
   composition: CompositionBlueprint;

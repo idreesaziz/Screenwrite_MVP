@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
-import { Card, CardContent } from "../ui/card";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Textarea } from "../ui/textarea";
+import { Card, CardContent } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
+import { Textarea } from "~/components/ui/textarea";
 import {
   ChevronRight,
   ChevronDown,
@@ -20,8 +20,8 @@ import {
   AlignRight,
   AlignJustify,
 } from "lucide-react";
-import { parseElementString } from "../../utils/transformUtils";
-import type { CompositionBlueprint, Clip } from "../../video-compositions/BlueprintTypes";
+import { parseElementString } from "~/lib/transformUtils";
+import type { CompositionBlueprint, Clip } from "~/composition/BlueprintTypes";
 
 interface PropertiesPanelContext {
   selectedClipId: string | null;

@@ -16,9 +16,9 @@ import {
   type SessionListItem,
   type ChatMessage,
   type MissingFile,
-} from "../utils/sessionApi";
-import type { CompositionBlueprint } from "../video-compositions/BlueprintTypes";
-import type { MediaBinItem } from "../types/media";
+} from "~/lib/sessionApi";
+import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { MediaBinItem } from "~/lib/media";
 
 interface UseSessionOptions {
   getToken: () => Promise<string | null>;
