@@ -1,6 +1,6 @@
 # Frontend Structure Documentation
 
-This document tracks the refactored frontend codebase structure, documenting directories and files as they are cleaned and organized during the Stage 3 deep refactor.
+This document provides a comprehensive reference of the frontend codebase structure for future development and maintenance. It documents the purpose, organization, and key exports of each directory and file.
 
 **Last Updated:** January 6, 2026  
 **Branch:** `frontend-refactor`
@@ -44,7 +44,7 @@ app/
 
 ---
 
-## Refactored Directories
+## Documented Directories
 
 ### `app/lib/` - Core Utilities & API
 
@@ -66,16 +66,6 @@ app/
 - Production: Uses `VITE_BACKEND_URL` environment variable or falls back to reverse proxy at `/api`
 - Single backend URL (removed dual render/fastapi system)
 - Environment detection via `import.meta.env.DEV/PROD`
-
-**Deleted Files:**
-- ❌ `fileLogger.ts` (161 lines) - Backend endpoint `/api/v1/logs` doesn't exist, all calls were commented out
-- ❌ `media.ts` - Duplicate `MediaBinItem` type definition (moved to `components/editor/timeline/types.ts`)
-
-**Changes:**
-- Removed `fixCode()` function from `api.ts` - unused legacy code
-- Removed confusing `fastapi` boolean parameter from `apiUrl()` - simplified to single backend
-- Updated 16 `apiUrl()` call sites across 6 files to remove boolean parameter
-- Fixed imports in `sessionApi.ts` to use `timeline/types` instead of deleted `lib/media`
 
 ---
 
@@ -115,41 +105,6 @@ app/
 - Maximum history depth configurable
 - API: `set(newState)`, `undo()`, `redo()`, `canUndo`, `canRedo`
 
-**Deleted Files:**
-- ❌ `useRenderer.ts` (168 lines) - Referenced non-existent render server on `localhost:8000`, entire codebase uses Remotion for rendering
-
-**Deleted Functions:**
-- ❌ `deleteMediaFile()` from `useMediaBin.ts` - Called non-existent render server endpoint
-- ❌ `cloneMediaFile()` from `useMediaBin.ts` - Called non-existent render server endpoint  
-- ❌ `handleSplitAudio()` from `useMediaBin.ts` - Called non-existent render server endpoint
-
-**Changes:**
-- Removed 11 debug `console.log` statements from `useMediaBin.ts`
-- Fixed TypeScript error: added type annotation to `percentCompleted` parameter
-- Removed `HistoryEntry` interface from `useUndoRedo.ts` - unused type
-- Removed `description` parameter from `useUndoRedo.set()` - unused feature
-- Updated 9 call sites in `home.tsx` to remove description parameter
-- Fixed imports to use correct type locations
-
----
-
-## Stats
-
-**Files Deleted:** 4  
-**Lines Removed:** ~500+  
-**Commits:** 4
-- `58b7ddd` - Clean up lib/ directory
-- `02cfee7` - Remove useRenderer and render server code  
-- `130c620` - Clean up hooks directory
-- `110363a` - Professional API configuration refactor
-
-**Dead Code Eliminated:**
-- Non-existent render server on port 8000 (replaced by Remotion)
-- Unused file logging to non-existent backend endpoint
-- Duplicate type definitions
-- Unused undo/redo description tracking
-- 11 debug console.log statements
-
 ---
 
 ## Environment Variables
@@ -162,7 +117,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGci...
 
 ---
 
-## Next Directories to Refactor
+## Directories Pending Documentation
 
 - [ ] `components/editor/` - Editor UI components
 - [ ] `components/chat/` - Chat interface
@@ -172,4 +127,4 @@ VITE_SUPABASE_ANON_KEY=eyJhbGci...
 
 ---
 
-*This document is updated incrementally as refactoring progresses.*
+*This document is updated incrementally as new directories are documented.*
