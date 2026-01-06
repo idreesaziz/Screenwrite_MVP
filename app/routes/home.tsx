@@ -117,7 +117,7 @@ export default function TimelineEditor() {
     }));
     
     console.log('Setting new composition');
-    undoRedoActions.set(newComposition, "Transform clip");
+    undoRedoActions.set(newComposition);
   };
 
   // Handler to update clip elements (from properties panel)
@@ -130,7 +130,7 @@ export default function TimelineEditor() {
           : clip
       )
     }));
-    undoRedoActions.set(newComposition, "Update clip properties");
+    undoRedoActions.set(newComposition);
   };
   
   // Setup keyboard shortcuts for undo/redo
@@ -232,7 +232,7 @@ export default function TimelineEditor() {
     };
     
     // Update the composition with undo support
-    undoRedoActions.set(updatedComposition, `Add ${mediaItem.name} to track ${trackIndex + 1}`);
+    undoRedoActions.set(updatedComposition);
     
     toast.success(`Added ${mediaItem.name} to track ${trackIndex + 1}`);
   };
@@ -306,7 +306,7 @@ export default function TimelineEditor() {
     };
     
     // Update the composition with undo support
-    undoRedoActions.set(updatedComposition, `Move clip to track ${newTrackIndex + 1}`);
+    undoRedoActions.set(updatedComposition);
     
     toast.success(`Moved clip to track ${newTrackIndex + 1}`);
   };
@@ -364,7 +364,7 @@ export default function TimelineEditor() {
     };
     
     // Update the composition with undo support
-    undoRedoActions.set(updatedComposition, `Split clip into two parts`);
+    undoRedoActions.set(updatedComposition);
     
     toast.success(`Split clip into two parts`);
   };
@@ -399,7 +399,7 @@ export default function TimelineEditor() {
     };
     
     // Update the composition with undo support
-    undoRedoActions.set(updatedComposition, `Delete clip`);
+    undoRedoActions.set(updatedComposition);
     
     toast.success(`Deleted clip`);
   };
@@ -482,7 +482,7 @@ export default function TimelineEditor() {
       if (data.composition) {
         console.log("Restoring composition:", data.composition);
         console.log("Composition tracks detail:", JSON.stringify(data.composition, null, 2));
-        undoRedoActions.set(data.composition, "Loaded session composition");
+        undoRedoActions.set(data.composition);
       }
       
       // Restore media bin if available
@@ -514,7 +514,7 @@ export default function TimelineEditor() {
   const handleNewSession = useCallback(() => {
     startNewSession();
     setChatMessages([]);
-    undoRedoActions.set(emptyCompositionBlueprint, "New session");
+    undoRedoActions.set(emptyCompositionBlueprint);
     handleSetMediaBin([]); // Clear media bin for new session
   }, [startNewSession, undoRedoActions, handleSetMediaBin]);
 
@@ -841,7 +841,7 @@ export default function TimelineEditor() {
           const validBlueprint = ensureMinimumTracks(Array.isArray(blueprintJson) ? blueprintJson : [], 4);
 
           // Set the updated composition as active with undo support
-          undoRedoActions.set(validBlueprint, `AI generated composition: "${userRequest}"`);
+          undoRedoActions.set(validBlueprint);
           
           // Calculate and set duration with minimum safety
           const calculatedDuration = calculateBlueprintDuration(validBlueprint);

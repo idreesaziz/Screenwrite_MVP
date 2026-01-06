@@ -11,15 +11,9 @@ export interface UndoRedoActions<T> {
   canRedo: boolean;
   undo: () => void;
   redo: () => void;
-  set: (newState: T, description?: string) => void;
+  set: (newState: T) => void;
   reset: (initialState: T) => void;
   clear: () => void;
-}
-
-export interface HistoryEntry<T> {
-  state: T;
-  description?: string;
-  timestamp: Date;
 }
 
 const MAX_HISTORY_SIZE = 50; // Limit history to prevent memory issues
@@ -70,7 +64,7 @@ export function useUndoRedo<T>(initialState: T): [T, UndoRedoActions<T>] {
     lastActionRef.current = 'redo';
   }, [canRedo]);
 
-  const set = useCallback((newState: T, description?: string) => {
+  const set = useCallback((newState: T) => {
     // Skip if the state is the same (deep comparison for objects)
     if (JSON.stringify(state.present) === JSON.stringify(newState)) {
       return;
