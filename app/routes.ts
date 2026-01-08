@@ -13,5 +13,5 @@ export default [
         ]),
     ]),
     
-    route("*", "./NotFound.tsx")
+    route("*", "routes/NotFound.tsx")
 ] satisfies RouteConfig;
