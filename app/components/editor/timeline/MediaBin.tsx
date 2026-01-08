@@ -120,16 +120,13 @@ export default function MediaBin() {
       
       case "image":
         if (mediaUrl) {
-          console.log("🖼️ MediaBin rendering image:", item.name, "URL:", mediaUrl);
           return (
             <div className="w-12 h-8 rounded border border-border/50 overflow-hidden bg-card">
               <img 
                 src={mediaUrl} 
                 alt={item.name}
                 className="w-full h-full object-cover"
-                onLoad={() => console.log("✅ Image loaded successfully:", mediaUrl)}
                 onError={(e) => {
-                  console.error("❌ Image failed to load:", mediaUrl);
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.nextElementSibling?.classList.remove('hidden');
                 }}
@@ -222,8 +219,6 @@ export default function MediaBin() {
                 setTimeout(() => {
                   document.body.removeChild(dragImage);
                 }, 0);
-                
-                console.log("Dragging item:", item.name);
               }
             }}
             onContextMenu={(e) => handleContextMenu(e, item)}

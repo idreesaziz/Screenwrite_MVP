@@ -284,21 +284,12 @@ export default function TimelineView({
                       const draggedClip = (window as any).__draggedClip;
                       const draggedMediaItem = (window as any).__draggedMediaItem;
                       
-                      console.log('DragOver - draggedClip:', draggedClip, 'draggedMediaItem:', draggedMediaItem);
-                      
                       if (draggedClip) {
                         // Handle clip movement preview (blue) with click offset
                         const duration = draggedClip.endTimeInSeconds - draggedClip.startTimeInSeconds;
                         const offsetTimeInSeconds = (draggedClip.clickOffset || 0) / pixelsPerSecond;
                         const adjustedStartTime = Math.max(0, timeInSeconds - offsetTimeInSeconds);
                         
-                        console.log('Setting blue preview for clip move:', {
-                          trackIndex,
-                          startTime: adjustedStartTime,
-                          duration,
-                          name: draggedClip.name,
-                          isClipMove: true
-                        });
                         setDragPreview({
                           trackIndex,
                           startTime: adjustedStartTime,
@@ -309,13 +300,6 @@ export default function TimelineView({
                       } else if (draggedMediaItem) {
                         // Handle media item drop preview (gray)
                         const duration = draggedMediaItem.mediaType === 'image' ? 3 : (draggedMediaItem.durationInSeconds || 3);
-                        console.log('Setting gray preview for media drop:', {
-                          trackIndex,
-                          startTime: timeInSeconds,
-                          duration,
-                          name: draggedMediaItem.name || 'Media Item',
-                          isClipMove: false
-                        });
                         
                         setDragPreview({
                           trackIndex,
@@ -347,7 +331,6 @@ export default function TimelineView({
                         const offsetTimeInSeconds = draggedClip?.clickOffset ? draggedClip.clickOffset / pixelsPerSecond : 0;
                         const adjustedTimeInSeconds = Math.max(0, timeInSeconds - offsetTimeInSeconds);
                         
-                        console.log(`Moving clip ${clipId} to track ${trackIndex + 1} at ${adjustedTimeInSeconds.toFixed(2)}s`);
                         onMoveClip(clipId, trackIndex, adjustedTimeInSeconds);
                         setDraggingClip(null);
                         // Clean up the global clip data
@@ -359,10 +342,9 @@ export default function TimelineView({
                       if (onDropMedia) {
                         try {
                           const mediaItem = JSON.parse(e.dataTransfer.getData("application/json"));
-                          console.log(`Dropped ${mediaItem.name} on track ${trackIndex + 1} at ${timeInSeconds.toFixed(2)}s`);
                           onDropMedia(mediaItem, trackIndex, timeInSeconds);
-                        } catch (error) {
-                          console.error("Failed to parse dropped data:", error);
+                        } catch {
+                          // Failed to parse dropped data
                         }
                       }
                     }}
@@ -417,8 +399,7 @@ export default function TimelineView({
                           onDragStart={(e) => {
                             e.dataTransfer.effectAllowed = 'move';
                             e.dataTransfer.setData('text/plain', id);
-                            e.dataTransfer.setData('application/x-clip-id', id); // Alternative data type
-                            console.log('Clip drag started:', id);
+                            e.dataTransfer.setData('application/x-clip-id', id);
                             
                             // Calculate offset from where user clicked on the clip
                             const rect = e.currentTarget.getBoundingClientRect();

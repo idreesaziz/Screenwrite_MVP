@@ -94,9 +94,6 @@ export function TransformOverlay({
         offsetX: playerOffsetX,
         offsetY: playerOffsetY
       });
-      
-      console.log('Player size:', playerWidth, 'x', playerHeight, 'offset:', playerOffsetX, playerOffsetY);
-      console.log('Container size:', containerRect.width, 'x', containerRect.height);
     };
     
     // Initial size
@@ -119,8 +116,6 @@ export function TransformOverlay({
   const scaleX = displaySize.width / compositionWidth;
   const scaleY = displaySize.height / compositionHeight;
   
-  console.log('Scale factors:', scaleX, scaleY);
-  
   // Get all clips visible at current frame
   const visibleClips = getVisibleClips(composition, currentFrame, fps);
   
@@ -129,13 +124,9 @@ export function TransformOverlay({
   const clipBounds = visibleClips
     .map(({ clip, trackIndex }) => {
       const bounds = calculateClipBounds(clip, compositionWidth, compositionHeight);
-      console.log(`Clip "${clip.id}" bounds:`, bounds);
       return bounds ? { clip, trackIndex, bounds } : null;
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
-  
-  console.log('TransformOverlay - visible clips:', visibleClips.length, 'with bounds:', clipBounds.length);
-  console.log('TransformOverlay - isPlaying:', isPlaying, 'currentFrame:', currentFrame);
   
   // Hide overlay when playing
   if (isPlaying) {
@@ -144,7 +135,6 @@ export function TransformOverlay({
   
   // Handle click on clip to select it
   const handleClipClick = (clipId: string, event: React.MouseEvent) => {
-    console.log('handleClipClick:', clipId);
     event.stopPropagation();
     onSelectClip(clipId);
   };
@@ -193,8 +183,6 @@ export function TransformOverlay({
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
     
-    console.log('Overlay clicked at:', clickX, clickY, 'total clips:', clipBounds.length);
-    
     // Find all clips at this position (iterate in reverse to get topmost first)
     let foundClip: string | null = null;
     const matchingClips: string[] = [];
@@ -212,11 +200,6 @@ export function TransformOverlay({
       
       const rotation = bounds.rotation || 0;
       
-      console.log(`Checking clip ${clip.id} (track ${trackIndex}):`, 
-        'click:', clickX, clickY,
-        'bounds:', scaledBounds,
-        'rotation:', rotation);
-      
       // Check if click is within bounds (accounting for rotation)
       const isInside = isPointInRotatedRect(
         clickX,
@@ -232,15 +215,8 @@ export function TransformOverlay({
         matchingClips.push(clip.id);
         if (!foundClip) {
           foundClip = clip.id;
-          console.log('✓ Found topmost clip at position:', clip.id, 'track:', trackIndex);
         }
       }
-    }
-    
-    if (matchingClips.length > 0) {
-      console.log('All matching clips at position:', matchingClips);
-    } else {
-      console.log('No clips found at click position - deselecting');
     }
     
     onSelectClip(foundClip);
@@ -355,7 +331,6 @@ export function TransformOverlay({
           translateY: initialTransform.translateY + compositionDeltaY,
         };
         
-        console.log('Translating clip:', selectedClipId, 'delta:', compositionDeltaX, compositionDeltaY, 'new:', newTransform);
         onUpdateTransform(selectedClipId, newTransform);
       } else if (dragHandle === 'rotate') {
         // Rotating the clip
@@ -450,8 +425,6 @@ export function TransformOverlay({
     };
   }, [isDragging, dragStart, selectedClipId, dragHandle, clipBounds, onUpdateTransform, scaleX, scaleY, displaySize]);
   
-  console.log('TransformOverlay rendering with clipBounds:', clipBounds.length);
-  
   return (
     <div
       ref={overlayRef}
@@ -475,8 +448,6 @@ export function TransformOverlay({
           height: bounds.height * scaleY,
         };
         
-        console.log('Rendering clip box:', clip.id, 'composition bounds:', bounds, 'scaled bounds:', scaledBounds, 'offsets:', displaySize.offsetX, displaySize.offsetY);
-        
         return (
           <div key={clip.id}>
             {/* Selection box - only shown for selected clip */}
@@ -498,7 +469,6 @@ export function TransformOverlay({
                   transformOrigin: 'center',
                 }}
                 onMouseDown={(e) => {
-                  console.log('MouseDown on selection box:', clip.id);
                   e.stopPropagation();
                   handleMouseDown(clip.id, null, e);
                 }}

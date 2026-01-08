@@ -6,16 +6,10 @@ import type { TimelineRow, TimelineAction, TimelineEffect } from "@xzdarcy/react
  * Maps Blueprint clips to timeline scrubbers and transitions
  */
 export function blueprintToTimelineState(blueprint: CompositionBlueprint): TimelineState {
-  console.log("🎬 Converting blueprint to timeline state:", blueprint);
-  
   // Process each track in the blueprint
   blueprint.forEach((track, trackIndex) => {
-    console.log(`🎵 Processing track ${trackIndex} with ${track.clips.length} clips:`, track.clips);
     const scrubbers: ScrubberState[] = [];
     const transitions: Transition[] = [];
-
-    track.clips.forEach((clip, clipIndex) => {
-      console.log(`  🎥 Processing clip ${clipIndex}:`, clip);
       
       // Create scrubber for this clip
       const scrubber: ScrubberState = {
@@ -80,10 +74,7 @@ export function blueprintToTimelineState(blueprint: CompositionBlueprint): Timel
       }
 
       scrubbers.push(scrubber);
-      console.log(`  ✅ Created scrubber:`, scrubber);
     });
-
-    console.log(`🎵 Track ${trackIndex} final: ${scrubbers.length} scrubbers, ${transitions.length} transitions`);
 
     // Connect transition right scrubber IDs
     transitions.forEach((transition) => {
@@ -102,7 +93,6 @@ export function blueprintToTimelineState(blueprint: CompositionBlueprint): Timel
     };
   });
 
-  console.log("🎬 Final timeline state:", { tracks });
   return { tracks };
 }
 

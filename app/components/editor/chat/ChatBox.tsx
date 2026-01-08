@@ -33,8 +33,36 @@ import type { AgentProvider, EditProvider } from "./providerTypes";
 import { generateUUID } from "~/lib/uuid";
 import type { GetTokenFn } from "~/lib/authApi";
 
-// Conversational Synth
-import { ConversationalSynth, type SynthContext, type ConversationMessage, type SynthResponse, type ConversationSender } from "./ConversationalSynth";
+// Types for agent API
+type ConversationSender = 'user' | 'assistant' | 'tool' | 'system';
+
+interface ConversationMessage {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: Date;
+  sender?: ConversationSender;
+}
+
+interface SynthResponse {
+  type: 'info' | 'sleep' | 'edit' | 'probe' | 'generate' | 'fetch';
+  content: string;
+  files?: Array<{ fileName: string; question: string }>;
+  prompt?: string;
+  suggestedName?: string;
+  content_type?: 'image' | 'video' | 'logo' | 'audio';
+  voice_settings?: { voice_id?: string; language_code?: string; speaking_rate?: number; pitch?: number };
+  seedImageFileName?: string;
+  query?: string;
+}
+
+interface SynthContext {
+  messages: ConversationMessage[];
+  currentComposition?: any;
+  mediaLibrary: MediaBinItem[];
+  compositionDuration?: number;
+  provider?: string;
+}
 
 interface Message {
   id: string;
@@ -195,8 +223,38 @@ export function ChatBox({
     };
   }, [getToken]);
 
-  // Initialize Conversational Synth with getToken for authenticated backend calls
-  const [synth] = useState(() => new ConversationalSynth("dummy-api-key", getToken));
+  // Call the agent API to get the next action
+  const callAgentAPI = useCallback(async (
+    context: SynthContext,
+    signal?: AbortSignal
+  ): Promise<SynthResponse> => {
+    const headers = await getAuthHeaders();
+    
+    const response = await fetch(apiUrl('/api/v1/agent/chat'), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        messages: context.messages.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          isUser: msg.isUser,
+          sender: msg.sender ?? (msg.isUser ? 'user' : 'assistant'),
+          timestamp: msg.timestamp.toISOString()
+        })),
+        currentComposition: context.currentComposition,
+        mediaLibrary: context.mediaLibrary,
+        compositionDuration: context.compositionDuration,
+        provider: context.provider || "gemini"
+      }),
+      signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`Agent API error: ${response.status}`);
+    }
+
+    return await response.json();
+  }, [getAuthHeaders]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -219,12 +277,10 @@ export function ChatBox({
       const startTime = Date.now();
       while (Date.now() - startTime < timeoutMs) {
         if (currentCompositionRef.current !== previousSnapshot) {
-          console.log("🆕 Composition snapshot refreshed for next agent turn");
           return true;
         }
         await sleep(pollIntervalMs);
       }
-      console.warn("⚠️ Composition snapshot did not refresh before timeout");
       return false;
     },
     []
@@ -258,12 +314,6 @@ export function ChatBox({
   // Handle retry button click
   const handleRetry = useCallback((message: Message) => {
     if (message.retryData?.originalMessage) {
-      console.log("🔄 Retrying with existing conversation history");
-      console.log("🔄 Current media bin items:", mediaBinItems.map(item => ({
-        name: item.name,
-        hasRemoteUrl: !!item.mediaUrlRemote,
-        isUploading: item.isUploading
-      })));
       // The message is already in the conversation history, just re-run the workflow
       handleConversationalMessage();
     }
@@ -352,7 +402,6 @@ export function ChatBox({
     videos: Array<{ fileName: string; question: string }>,
     signal?: AbortSignal
   ): Promise<Message[]> => {
-    console.log(`🔍 Executing batch probe request for ${videos.length} video(s)`);
     
     // Resolve all fileNames to URLs
     const resolvedVideos = await Promise.all(
@@ -365,20 +414,16 @@ export function ChatBox({
         
         if (!isUrl) {
           // fileName is a name reference - look it up in media library
-          console.log(`🔍 Resolving "${trimmedFileName}" from media library...`);
           const mediaItem = mediaBinItemsRef.current.find(item => item.name.trim() === trimmedFileName);
           
           if (mediaItem) {
             // Prefer remote URL over GCS URI for better MIME type detection
             fileUrl = mediaItem.mediaUrlRemote || mediaItem.gcsUri || '';
-            console.log(`🔍 Resolved "${trimmedFileName}" → ${fileUrl}`);
             
             if (!fileUrl) {
               throw new Error(`Media item "${trimmedFileName}" has no URL available`);
             }
           } else {
-            console.warn(`⚠️ Media item "${trimmedFileName}" not found in library`);
-            console.warn(`⚠️ Available names:`, mediaBinItemsRef.current.map(item => `"${item.name.trim()}"`));
             throw new Error(`Media item "${trimmedFileName}" not found in library`);
           }
         }
@@ -420,9 +465,7 @@ export function ChatBox({
       // Log each video's analysis to console
       for (const videoResult of result.results) {
         if (videoResult.success && videoResult.analysis) {
-          console.log('Probe analysis:', videoResult.title || videoResult.file_url, videoResult.analysis);
         } else if (!videoResult.success) {
-          console.error('Probe error:', videoResult.title || videoResult.file_url, videoResult.error_message || 'Analysis failed');
         }
       }
       
@@ -445,10 +488,8 @@ export function ChatBox({
       return [responseMessage];
 
     } catch (error) {
-      console.error("❌ Batch probe analysis failed:", error);
       
       // Log errors to console
-      console.error('Probe request failed for videos:', videos.map(v => v.fileName), error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -477,23 +518,10 @@ export function ChatBox({
 
   const analyzeMediaWithGemini = async (mediaFile: MediaBinItem, question: string, signal?: AbortSignal): Promise<string> => {
     // All media analysis now goes through the backend API
-    // Backend handles videos, images, audio, and documents via Gemini
-    
-    console.log("🔍 Analyzing media with backend API:", {
-      name: mediaFile.name,
-      mediaUrlRemote: mediaFile.mediaUrlRemote,
-      mediaUrlLocal: mediaFile.mediaUrlLocal,
-      isUploading: mediaFile.isUploading,
-      uploadProgress: mediaFile.uploadProgress,
-      gcsUri: mediaFile.gcsUri
-    });
-    
-    // Check if media file has been uploaded to GCS
     // Use GCS URI (gs://) for Vertex AI access, fallback to HTTPS URL
     const fileUrl = mediaFile.gcsUri || mediaFile.mediaUrlRemote;
     
     if (!fileUrl) {
-      console.error("❌ No GCS URL available for media file:", mediaFile);
       
       // Provide specific error based on upload status
       if (mediaFile.isUploading) {
@@ -506,7 +534,6 @@ export function ChatBox({
     try {
       // Call backend media analysis endpoint with GCS URI
       // Backend uses gs:// URI with Vertex AI for direct GCS access
-      console.log("🔗 Sending file URL to backend:", fileUrl);
       const headers = await getAuthHeaders();
       const response = await fetch(apiUrl('/api/v1/analysis/media'), {
         method: 'POST',
@@ -530,11 +557,9 @@ export function ChatBox({
         throw new Error(result.error_message || 'Media analysis failed');
       }
 
-      console.log("✅ Backend analysis complete:", result.model_used);
       return result.analysis;
 
     } catch (error) {
-      console.error("❌ Backend media analysis failed:", error);
       throw error;
     }
   };
@@ -550,11 +575,9 @@ export function ChatBox({
     generatedItemsArray?: MediaBinItem[], // Optional array to track generated items
     signal?: AbortSignal
   ): Promise<{ messages: Message[], newMediaItem: MediaBinItem | null }> => {
-    console.log("🎨 Executing generation request:", { prompt, suggestedName, description, contentType, seedImageFileName, voiceSettings });
     
     try {
       // Call the backend generation API for both image and video
-      console.log(`� Calling backend ${contentType} generation API for:`, prompt);
       
       const requestBody: any = {
         content_type: contentType,
@@ -576,13 +599,9 @@ export function ChatBox({
             if (imageUrl) {
               // Send URL to backend (backend will download it)
               requestBody.reference_image_url = imageUrl;
-              console.log(`🖼️ Resolved seed image "${seedImageFileName}" → ${imageUrl.substring(0, 60)}...`);
             } else {
-              console.warn(`⚠️ Seed image "${seedImageFileName}" has no valid URL`);
             }
           } else {
-            console.warn(`⚠️ Seed image "${seedImageFileName}" not found in media library`);
-            console.warn(`📋 Available media:`, mediaBinItems.map(item => item.name));
           }
         }
       }
@@ -605,7 +624,6 @@ export function ChatBox({
       }
 
       const result = await response.json();
-      console.log(`🎨 ${contentType} generation result:`, result);
 
       if (!result.success) {
         throw new Error(result.error_message || 'Generation failed');
@@ -616,7 +634,6 @@ export function ChatBox({
       
       if (result.status === 'processing' && result.operation_id) {
         // Video generation is async - poll for completion
-        console.log(`🎥 Video generation started, polling operation: ${result.operation_id}`);
         
         const maxAttempts = 120; // 10 minutes max
         let attempts = 0;
@@ -642,11 +659,9 @@ export function ChatBox({
           }
           
           const statusResult = await statusResponse.json();
-          console.log(`🎥 Video generation status (attempt ${attempts + 1}):`, statusResult.status);
           
           if (statusResult.status === 'completed') {
             generatedAsset = statusResult.generated_asset;
-            console.log(`✅ Video generation completed:`, generatedAsset);
             break;
           } else if (statusResult.status === 'failed') {
             throw new Error(statusResult.error_message || 'Video generation failed');
@@ -665,8 +680,6 @@ export function ChatBox({
         generatedAsset = result.generated_asset;
       }
       
-      console.log(`🎨 Generated ${contentType} asset:`, generatedAsset);
-      console.log(`🎨 Generated file URL:`, generatedAsset.file_url);
 
       // Create the MediaBinItem for the generated content
       // Make sure the URL points to the correct FastAPI server
@@ -675,7 +688,6 @@ export function ChatBox({
         ? generatedAsset.file_url 
         : `${fastApiBaseUrl}${generatedAsset.file_url}`;
       
-      console.log(`🎨 Final ${contentType} URL:`, mediaUrl);
 
       // Use name from backend (already unique)
       const name = generatedAsset.name;
@@ -700,7 +712,6 @@ export function ChatBox({
         right_transition_id: null,
       };
 
-      console.log(`🎨 Created ${contentType} MediaBinItem:`, newMediaItem);
 
       // Add the generated content to the media bin
       if (onAddGeneratedImage) {
@@ -708,7 +719,6 @@ export function ChatBox({
 
         // Sync ref immediately so in-flight workflows see the new asset
         mediaBinItemsRef.current = [...mediaBinItemsRef.current, newMediaItem];
-        console.log(`📦 Immediately added ${newMediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
       }
 
       // Create success message that clearly indicates completion
@@ -745,7 +755,6 @@ export function ChatBox({
       return { messages, newMediaItem };
 
     } catch (error) {
-      console.error(`${contentType} generation failed:`, error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: `Failed to generate ${contentType}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -765,25 +774,10 @@ export function ChatBox({
     count: number,
     signal?: AbortSignal
   ): Promise<Message[]> => {
-    console.log("🎬 Executing stock video fetch request:", { provider, query, count });
     
     try {
-      // Debug: log what we're about to send
-      console.log("🔍 About to call backend with query:", query);
-      console.log("🔍 Request count parameter:", count);
-      console.log("🔍 Request body:", { 
-        query: query, 
-        media_type: "video",
-        orientation: "landscape",
-        max_results: count || 3,
-        per_page: 50
-      });
-      
-      // Debug: Log the full URL being called
       const fetchUrl = apiUrl("/api/v1/stock/search");
-      console.log("🔍 Full fetch URL:", fetchUrl);
       
-      // Call the actual backend API to fetch stock videos
       const headers = await getAuthHeaders();
       const response = await fetch(fetchUrl, {
         method: "POST",
@@ -803,10 +797,6 @@ export function ChatBox({
       }
 
       const result = await response.json();
-      console.log("🎬 Backend fetch result:", result);
-      console.log("🎬 Number of items returned:", result.items?.length || 0);
-      console.log("🎬 Total results from provider:", result.total_results);
-      console.log("🎬 AI curation explanation:", result.ai_curation_explanation);
 
       if (!result.success || !result.items || result.items.length === 0) {
         throw new Error(result.error_message || "No videos found");
@@ -833,18 +823,9 @@ export function ChatBox({
         
         for (let index = 0; index < result.items.length; index++) {
           const item = result.items[index];
-          console.log(`🎬 [VIDEO ${index}] Processing video:`, {
-            id: item.id,
-            idType: typeof item.id,
-            creator: item.creator_name,
-            quality: item.quality,
-            storage_url: item.storage_url
-          });
           
           // storage_url is already a full GCS URL from backend
           const videoUrl = item.storage_url;
-            
-          console.log(`🎬 [VIDEO ${index}] Video URL: ${videoUrl}`);
 
           // Use name from backend (already unique)
           const name = item.name;
@@ -868,18 +849,10 @@ export function ChatBox({
             left_transition_id: null,
             right_transition_id: null,
           };
-
-          console.log(`🎬 [VIDEO ${index}] Created MediaBinItem:`, {
-            mediaItemId: mediaItem.id,
-            mediaItemName: mediaItem.name,
-            itemId: item.id,
-            remoteUrl: mediaItem.mediaUrlRemote
-          });
           
           // Update parent state (async) AND ref (immediate) for consistent state across iterations
           await onAddGeneratedImage(mediaItem);
           mediaBinItemsRef.current = [...mediaBinItemsRef.current, mediaItem];
-          console.log(`📦 Immediately added ${mediaItem.name} to ref. Ref now has ${mediaBinItemsRef.current.length} items`);
         }
         
         // Note: All videos are already uploaded to GCS by the backend
@@ -905,7 +878,6 @@ export function ChatBox({
       return [videoOptionsMessage];
 
     } catch (error) {
-      console.error("Stock video fetch failed:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: `Failed to fetch stock videos: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -929,8 +901,6 @@ export function ChatBox({
       .find(m => (m.sender ?? (m.isUser ? 'user' : 'assistant')) === 'user');
     const messageContent = lastUserMessage?.content || '';
     
-    console.log("User message:", messageContent, "Mentioned items:", mentionedItems.map(item => item.name));
-    console.log("🧠 Processing conversational message with unified workflow:", messageContent);
 
     // Initialize unified workflow state
     // We maintain a local history that is perfectly synchronous with what we want the agent to see
@@ -960,14 +930,12 @@ export function ChatBox({
     };
     
     try {
-      // Unified workflow loop: synth → execute → update history → repeat
+      // Unified workflow loop: agent → execute → update history → repeat
       while (continueWorkflow && continueWorkflowRef.current && iterationCount < MAX_ITERATIONS) {
         iterationCount++;
-        console.log(`🔄 Unified workflow iteration ${iterationCount}`);
       
         try {
-            // Prepare context for the synth
-            // We map the Message objects to ConversationMessage objects expected by the synth
+            // Prepare context for the agent
             const conversationMessages: ConversationMessage[] = conversationHistory.map(msg => ({
               id: msg.id,
               content: msg.content,
@@ -986,20 +954,13 @@ export function ChatBox({
                 compositionDuration: undefined,
                 provider: selectedModel
             };
-
-            console.log(`📚 Media library has ${currentMediaBin.length} items for iteration ${iterationCount}`);
-            console.log("Synth call: conversation_analysis");
             
             // Get the next action from the agent
-            const synthResponse = await synth.processMessage(synthContext, abortController.signal);
-            console.log("Synth response:", synthResponse);
-            
-            console.log(`🎯 Synth response type: ${synthResponse.type}`);
+            const agentResponse = await callAgentAPI(synthContext, abortController.signal);
 
             // Execute the action and update history
-            // We pass addMessageToHistory so the action can append messages sequentially
             const shouldContinue = await executeResponseAction(
-                synthResponse, 
+                agentResponse, 
                 synthContext, 
                 addMessageToHistory, 
                 abortController.signal
@@ -1008,9 +969,6 @@ export function ChatBox({
             continueWorkflow = shouldContinue;
 
         } catch (error) {
-            console.error(`❌ Unified workflow iteration ${iterationCount} failed:`, error);
-            console.log("Synth error:", error instanceof Error ? error.message : String(error));
-            
             const errorMessage: Message = {
                 id: (Date.now() + iterationCount).toString(),
                 content: "I'm having trouble processing your request. Let me try a different approach.",
@@ -1025,7 +983,6 @@ export function ChatBox({
       }
 
       if (iterationCount >= MAX_ITERATIONS) {
-          console.warn("⚠️ Unified workflow hit max iterations limit");
           const maxIterationMessage: Message = {
             id: Date.now().toString(),
             content: "I've completed several steps but need to pause here. How can I help you next?",
@@ -1037,12 +994,9 @@ export function ChatBox({
           addMessageToHistory(maxIterationMessage);
       }
 
-      console.log("Workflow complete");
 
     } catch (error) {
-      console.error("❌ Unified workflow failed:", error);
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log("🛑 Workflow was cancelled by user");
         const cancelMessage: Message = {
           id: Date.now().toString(),
           content: "Workflow cancelled.",
@@ -1078,7 +1032,6 @@ export function ChatBox({
     addMessage: (msg: Message) => void,
     signal?: AbortSignal
   ): Promise<boolean> => {
-    console.log(`🎬 Executing action for response type: ${synthResponse.type}`);
     
     if (synthResponse.type === 'info') {
         // Info response - just display and continue
@@ -1196,7 +1149,6 @@ export function ChatBox({
         addMessage(announcement);
 
         // 2. Execute action
-        console.log("🎬 Executing edit:", synthResponse.content);
         const previousCompositionSnapshot = currentCompositionRef.current;
         
         let success = false;
@@ -1209,7 +1161,6 @@ export function ChatBox({
                 signal
             );
         }
-        console.log("Edit result:", success ? "success" : "failed");
         
         // 3. Show composition diff (if successful)
         if (success) {
@@ -1248,7 +1199,6 @@ export function ChatBox({
     }
 
     // Fallback for unknown types
-    console.log("❓ Executing fallback for unknown type:", synthResponse.type);
     const fallbackMsg: Message = {
         id: generateUUID(),
         content: synthResponse.content,
@@ -1298,7 +1248,6 @@ export function ChatBox({
     try {
       // Check if we're in standalone preview mode - use conversational synth
       if (isStandalonePreview) {
-        console.log("🎬 Standalone preview mode - using conversational synth");
         
         // Pass the updated messages directly to avoid async state issues
         await handleConversationalMessageWithUpdatedMessages(updatedMessages);
@@ -1306,7 +1255,6 @@ export function ChatBox({
         return;
       }
 
-      console.log("📹 Using timeline-based AI (not standalone mode)");
       // Original timeline-based AI functionality
       // Use the stored mentioned items to get their IDs
       const mentionedScrubberIds = itemsToSend.map(item => item.id);
@@ -1366,7 +1314,6 @@ export function ChatBox({
 
       onMessagesChange(prevMessages => [...prevMessages, userMessage, aiMessage]);
     } catch (error) {
-      console.error("Error calling AI API:", error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -1632,7 +1579,6 @@ export function ChatBox({
                               onClick={async () => {
                                 const success = await onRetryFix();
                                 if (!success) {
-                                  console.error("Retry failed");
                                 }
                               }}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors"
@@ -2027,7 +1973,6 @@ export function ChatBox({
                     size="sm"
                     className="h-7 w-7 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                     onClick={() => {
-                      console.log("⏹️ User clicked stop button - cancelling workflow");
                       continueWorkflowRef.current = false;
                       abortControllerRef.current?.abort();
                     }}
