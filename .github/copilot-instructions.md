@@ -72,3 +72,73 @@ app/
 - TypeScript
 - Tailwind CSS + Radix UI (shadcn)
 - Supabase (auth)
+
+## Backend Project Structure
+
+```
+backend/
+  main.py                 # FastAPI app entry point
+  pyproject.toml          # Python project config (uv)
+
+  api/                    # API route handlers
+    agent_router.py       # AI agent endpoints
+    analysis_router.py    # Media analysis endpoints
+    composition_router.py # Composition generation endpoints
+    media_router.py       # Media management endpoints
+    session_router.py     # Session persistence endpoints
+    stock_router.py       # Stock media search endpoints
+    upload_router.py      # File upload endpoints
+
+  business_logic/         # Core business logic
+    analyze_media.py      # Media analysis logic
+    fetch_media.py        # Stock media fetching
+    generate_composition.py   # Composition generation
+    generate_media.py     # AI media generation
+    invoke_agent.py       # Agent invocation logic
+    session_service.py    # Session management
+
+  core/                   # App configuration
+    config.py             # Environment config
+    dependencies.py       # FastAPI dependencies
+    security.py           # Auth/security utilities
+
+  models/                 # Pydantic models
+    requests/             # Request DTOs
+    responses/            # Response DTOs
+
+  prompts/                # LLM prompt templates
+    agent_prompts.py      # Agent system prompts
+    composition_prompts.py    # Composition generation prompts
+
+  rag/                    # RAG system
+    examples/             # Few-shot examples for prompts
+    llm_selector.py       # LLM provider selection
+
+  services/               # External service providers
+    base/                 # Abstract base classes
+      ChatProvider.py
+      ImageGenerationProvider.py
+      MediaAnalysisProvider.py
+      MediaProvider.py
+      StorageProvider.py
+      VideoGenerationProvider.py
+      VoiceGenerationProvider.py
+    anthropic/            # Claude integration
+    google/               # Gemini, Imagen, VEO, TTS
+    openai/               # OpenAI, Whisper
+    pexels/               # Stock media
+    schemas/              # Response schemas
+
+  tests/                  # Test files
+  utils/                  # Utility functions
+  migrations/             # SQL migrations
+```
+
+## Backend Stack
+
+- FastAPI
+- Python 3.12
+- uv (package manager)
+- Pydantic
+- Google Cloud (Vertex AI, GCS)
+- Supabase (database)
