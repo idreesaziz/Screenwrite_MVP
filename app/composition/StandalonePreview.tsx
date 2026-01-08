@@ -201,7 +201,6 @@ export function StandaloneVideoPlayer({
   playerRef,
   durationInFrames = 300,
 }: StandaloneVideoPlayerProps) {
-  console.log("StandaloneVideoPlayer - Content length:", content.length, "Content:", content);
 
   // If no content, show placeholder
   if (content.length === 0) {
@@ -237,7 +236,6 @@ export function StandaloneVideoPlayer({
 
   const finalDurationInFrames = durationInFrames || Math.round(calculatedDuration * 30); // 30 FPS
 
-  console.log("Standalone player - Total duration:", calculatedDuration, "seconds, frames:", finalDurationInFrames);
 
   return (
     <Player

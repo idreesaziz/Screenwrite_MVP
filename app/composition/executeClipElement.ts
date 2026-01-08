@@ -188,24 +188,18 @@ export function renderElementObject(
     if ((element.name === 'Video' || element.name === 'Img' || element.name === 'Audio' || element.name === 'OffthreadVideo') && propsWithDefaults.src) {
       const srcValue = propsWithDefaults.src;
       
-      console.log(`🔍 [URL Resolver] Processing ${element.name} with src:`, srcValue, `(type: ${typeof srcValue})`);
-      console.log(`🔍 [URL Resolver] Media library available:`, context.mediaLibrary ? `yes (${context.mediaLibrary.length} items)` : 'no');
       
       // If src is a string (name reference), look up by name
       if (typeof srcValue === 'string' && context.mediaLibrary) {
-        console.log(`🔍 [URL Resolver] Looking for name "${srcValue}" in media library...`);
-        console.log(`🔍 [URL Resolver] Media library contents:`, context.mediaLibrary);
         
         // Look up media item by exact name match
         const mediaItem = context.mediaLibrary.find(item => item.name === srcValue);
         
         if (mediaItem) {
-          console.log(`🔍 [URL Resolver] Found media item:`, mediaItem);
           // Resolve to actual URL (prefer remote, fallback to local)
           const resolvedUrl = mediaItem.mediaUrlRemote || mediaItem.mediaUrlLocal;
           if (resolvedUrl) {
             propsWithDefaults.src = resolvedUrl;
-            console.log(`✅ [URL Resolver] Resolved src:"${srcValue}" → ${resolvedUrl}`);
           } else {
             console.warn(`⚠️ [URL Resolver] Media item with name "${srcValue}" has no URL`, mediaItem);
           }

@@ -43,10 +43,7 @@ export function DynamicComposition({
 
   // Blueprint-based rendering
   if (blueprint) {
-    console.log("🎬 [DynamicComposition] Rendering blueprint composition with", blueprint.length, "tracks");
-    console.log("🎬 [DynamicComposition] Media library:", mediaLibrary ? `${mediaLibrary.length} items` : 'not provided');
     if (mediaLibrary) {
-      console.log("🎬 [DynamicComposition] Media library items:", mediaLibrary);
     }
     return (
       <BlueprintComposition 
@@ -108,7 +105,6 @@ export function DynamicVideoPlayer({
   onUpdateTransform,
   mediaLibrary,
 }: DynamicVideoPlayerProps) {
-  console.log("DynamicVideoPlayer - Blueprint tracks:", blueprint?.length || 0);
 
   // State for custom video controls
   const [isPlaying, setIsPlaying] = useState(false);

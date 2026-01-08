@@ -5,11 +5,7 @@ import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import { flip } from "@remotion/transitions/flip";
-import { zoomIn, zoomOut } from "./presentations/zoom";
-import { blur } from "./presentations/blur";
-import { glitch } from "./presentations/glitch";
-import { clockWipe } from "./presentations/clock-wipe";
-import { iris } from "./presentations/iris";
+import { zoomIn, zoomOut, blur, glitch, clockWipe, iris } from "./presentations";
 import { interp } from "~/lib/animations";
 import type { 
   CompositionBlueprint, 
@@ -57,11 +53,8 @@ export function BlueprintComposition({ blueprint, mediaLibrary }: BlueprintCompo
   // Ensure we have valid tracks array
   const validBlueprint = Array.isArray(blueprint) ? blueprint : [];
 
-  console.log("🎬 BlueprintComposition: Rendering", validBlueprint.length, "tracks");
   validBlueprint.forEach((track, i) => {
-    console.log(`🎬 Track ${i}:`, track.clips?.length || 0, "clips");
     track.clips?.forEach(clip => {
-      console.log(`🎬   - ${clip.id}: ${clip.startTimeInSeconds}s-${clip.endTimeInSeconds}s`);
     });
   });
 
@@ -122,13 +115,9 @@ function groupClipsIntoSegments(clips: Clip[]): ClipSegment[] {
   const segments: ClipSegment[] = [];
   let i = 0;
   
-  console.log(`🎬 groupClipsIntoSegments: Processing ${clips.length} clips`);
   
   while (i < clips.length) {
     const currentClip = clips[i];
-    console.log(`🎬 Processing clip ${i}: ${currentClip.id} (${currentClip.startTimeInSeconds}s-${currentClip.endTimeInSeconds}s)`);
-    console.log(`🎬 - Has transitionToNext: ${!!currentClip.transitionToNext}`);
-    console.log(`🎬 - Has transitionFromPrevious: ${!!currentClip.transitionFromPrevious}`);
     
     // Check for any transitions (including orphaned ones)
     const hasOrphanedTransitionTo = currentClip.transitionToNext && (
@@ -145,10 +134,8 @@ function groupClipsIntoSegments(clips: Clip[]): ClipSegment[] {
     if (currentClip.transitionToNext && i < clips.length - 1) {
       const nextClip = clips[i + 1];
       const timeDiff = Math.abs(currentClip.endTimeInSeconds - nextClip.startTimeInSeconds);
-      console.log(`🎬 Adjacency check: Current clip ends at ${currentClip.endTimeInSeconds}s, next clip starts at ${nextClip.startTimeInSeconds}s, diff: ${timeDiff}`);
       // Check if clips are adjacent (current end time == next start time)
       if (timeDiff < 0.001) {
-        console.log(`🎬 ✅ Clips are adjacent! Creating transition group...`);
         // Start building a transition group
         const transitionGroup: Clip[] = [currentClip];
         let j = i + 1;
@@ -181,11 +168,9 @@ function groupClipsIntoSegments(clips: Clip[]): ClipSegment[] {
         
         i = j + 1;
       } else {
-        console.log(`🎬 ❌ Clips not adjacent (diff: ${timeDiff}), checking for orphaned transitions...`);
         // Adjacent transition failed, check for orphaned transitions
         if (hasOrphanedTransitionTo || hasOrphanedTransitionFrom) {
           // This clip has orphaned transitions, needs TransitionSeries with empty divs
-          console.log(`🎬 Creating orphaned transition segment for ${currentClip.id}`);
           // For orphaned transitions, timing should be WITHIN clip boundaries, not outside
           segments.push({
             type: 'transition-group',
@@ -196,7 +181,6 @@ function groupClipsIntoSegments(clips: Clip[]): ClipSegment[] {
           });
         } else {
           // No transitions, individual clip
-          console.log(`🎬 Creating individual segment for ${currentClip.id}`);
           segments.push({
             type: 'individual',
             clips: [currentClip],
@@ -230,9 +214,7 @@ function groupClipsIntoSegments(clips: Clip[]): ClipSegment[] {
     }
   }
   
-  console.log(`🎬 Final segments created: ${segments.length} segments`);
   segments.forEach((segment, index) => {
-    console.log(`🎬 Segment ${index}: type=${segment.type}, clips=[${segment.clips.map(c => c.id).join(', ')}], startTime=${segment.startTime}s`);
   });
   
   return segments;
@@ -264,7 +246,6 @@ function SegmentRenderer({
   
   // Only log once per segment, not every frame
   if (startFrame === 0) {
-    console.log(`🎬 SegmentRenderer: Processing segment type="${segment.type}" with ${segment.clips.length} clips: [${segment.clips.map(c => c.id).join(', ')}]`);
   }
   
   if (segment.type === 'individual') {
@@ -274,7 +255,6 @@ function SegmentRenderer({
       (clip.endTimeInSeconds - clip.startTimeInSeconds) * fps
     );
     
-    console.log(`🎬 SegmentRenderer (Individual Clip): Clip ID=${clip.id}, StartTime=${clip.startTimeInSeconds}s, EndTime=${clip.endTimeInSeconds}s, FromFrame=${startFrame}, DurationFrames=${durationInFrames}`);
 
     // Create execution context for individual clips
     const executionContext = createExecutionContext(clip.startTimeInSeconds);
@@ -296,7 +276,6 @@ function SegmentRenderer({
     // Process clips (regular adjacent logic or single orphaned clip)
     if (segment.clips.length === 1 && (segment.hasOrphanedStart || segment.hasOrphanedEnd)) {
       if (startFrame === 0) {
-        console.log(`🎬 SegmentRenderer: Taking ORPHANED transition path for single clip`);
       }
       // Single clip with orphaned transitions - use TransitionSeries with empty divs
       const clip = segment.clips[0];
@@ -453,7 +432,6 @@ function SegmentRenderer({
       }
     } else {
       if (startFrame === 0) {
-        console.log(`🎬 SegmentRenderer: Taking CROSS-TRANSITION path for ${segment.clips.length} clips`);
       }
       // Regular adjacent clips logic (existing code)
       totalDurationFrames += calculateTransitionGroupDuration(segment.clips, fps);
@@ -491,7 +469,6 @@ function SegmentRenderer({
         if (hasTransitionToNext) {
           const presentation = getTransitionPresentation(clip.transitionToNext!, videoConfig);
           if (startFrame === 0) {
-            console.log(`🎬 Adding TransitionSeries.Transition after clip ${clip.id}, duration: ${transitionDuration} frames, presentation:`, presentation);
           }
           sequences.push(
             <TransitionSeries.Transition
@@ -623,7 +600,6 @@ function ClipContent({
   // Execute the clip's element string as TSX
   const clipElement = executeClipElement(clip.element, executionContext);
   
-  console.log(`🎬 ClipContent: Executed clip ${clip.id}, returned element:`, clipElement);
 
   return clipElement;
 }
