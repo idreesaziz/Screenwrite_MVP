@@ -6,7 +6,7 @@ import { BlueprintComposition } from "./BlueprintComposition";
 import { calculateBlueprintDuration } from "./executeClipElement";
 import type { CompositionBlueprint } from "./BlueprintTypes";
 import { Play, Pause, Maximize, Volume2, VolumeX } from "lucide-react";
-import { TransformOverlay } from "~/components/editor/TransformOverlay";
+import { TransformOverlay } from "~/components/editor/canvas/TransformOverlay";
 
 // Destructure commonly used components for convenience
 const { 

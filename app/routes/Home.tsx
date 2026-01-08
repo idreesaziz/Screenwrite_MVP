@@ -3,7 +3,7 @@ import type { PlayerRef } from "@remotion/player";
 import { ChevronLeft, LogOut, User } from "lucide-react";
 
 // Components
-import LeftPanel from "~/components/editor/LeftPanel";
+import LeftPanel from "~/components/editor/layout/LeftPanel";
 import { DynamicVideoPlayer } from "~/composition/DynamicComposition";
 import { calculateBlueprintDuration } from "~/composition/executeClipElement";
 import { Button } from "~/components/ui/button";
