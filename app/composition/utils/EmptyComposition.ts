@@ -1,4 +1,4 @@
-import type { CompositionBlueprint } from './BlueprintTypes';
+import type { CompositionBlueprint } from '../types/BlueprintTypes';
 
 /**
  * Empty composition with 3 tracks

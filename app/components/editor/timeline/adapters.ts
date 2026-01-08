@@ -1,4 +1,4 @@
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint } from "~/composition";
 import type { TimelineRow, TimelineAction, TimelineEffect } from "@xzdarcy/react-timeline-editor";
 
 /**

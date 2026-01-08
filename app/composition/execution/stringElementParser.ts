@@ -1,4 +1,4 @@
-import type { FlatElement, AnimatedProperty } from "./BlueprintTypes";
+import type { FlatElement, AnimatedProperty } from "../types/BlueprintTypes";
 
 /**
  * Split a string by a delimiter, but respect nesting within parentheses, brackets, and braces.

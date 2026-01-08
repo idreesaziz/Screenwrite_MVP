@@ -6,10 +6,10 @@
  * - Style props: grouped into a style object
  */
 
-import type { ComponentSchema } from './BlueprintTypes';
+import type { ComponentSchema } from '../types/BlueprintTypes';
 import * as Remotion from 'remotion';
 import React from 'react';
-import { SplitText, BlurText, TypewriterText } from './text-animations';
+import { SplitText, BlurText, TypewriterText } from '../text-animations';
 
 export const COMPONENT_REGISTRY: Record<string, ComponentSchema> = {
   // Standard HTML elements - all props go to style

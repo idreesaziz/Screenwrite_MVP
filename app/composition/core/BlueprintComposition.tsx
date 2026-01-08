@@ -5,15 +5,15 @@ import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import { flip } from "@remotion/transitions/flip";
-import { zoomIn, zoomOut, blur, glitch, clockWipe, iris } from "./presentations";
+import { zoomIn, zoomOut, blur, glitch, clockWipe, iris } from "../presentations";
 import { interp } from "~/lib/animations";
 import type { 
   CompositionBlueprint, 
   Track, 
   Clip,
   BlueprintExecutionContext 
-} from "./BlueprintTypes";
-import { executeClipElement } from "./executeClipElement";
+} from "../types/BlueprintTypes";
+import { executeClipElement } from "../execution/executeClipElement";
 
 export interface BlueprintCompositionProps {
   blueprint: CompositionBlueprint;

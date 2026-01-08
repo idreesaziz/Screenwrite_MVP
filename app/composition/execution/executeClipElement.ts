@@ -4,7 +4,7 @@ import type {
   ElementObject, 
   AnimatedProperty, 
   ElementContainer 
-} from "./BlueprintTypes";
+} from "../types/BlueprintTypes";
 import { 
   getComponentSchema, 
   getComponent, 

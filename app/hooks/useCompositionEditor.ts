@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useUndoRedo } from "./useUndoRedo";
-import { emptyCompositionBlueprint, ensureMinimumTracks } from "~/composition/EmptyComposition";
+import { emptyCompositionBlueprint, ensureMinimumTracks } from "~/composition";
 import { updateClipTransform, type TransformValues } from "~/lib/transformUtils";
-import type { CompositionBlueprint, Track, Clip } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint, Track, Clip } from "~/composition";
 import type { MediaBinItem } from "~/components/editor/timeline/types";
 
 export interface CompositionEditorActions {

@@ -2,9 +2,11 @@ import { useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { apiUrl } from "~/lib/api";
-import { calculateBlueprintDuration } from "~/composition/executeClipElement";
-import { ensureMinimumTracks } from "~/composition/EmptyComposition";
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import {
+  calculateBlueprintDuration,
+  ensureMinimumTracks,
+  type CompositionBlueprint,
+} from "~/composition";
 import type { MediaBinItem } from "~/components/editor/timeline/types";
 
 interface PreviewSettings {

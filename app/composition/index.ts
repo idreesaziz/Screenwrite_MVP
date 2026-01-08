@@ -13,19 +13,19 @@ export type {
   ClipElement,
   TransitionConfig,
   ComponentSchema,
-} from './BlueprintTypes';
+} from './types/BlueprintTypes';
 
 // Composition Components
-export { BlueprintComposition } from './BlueprintComposition';
-export { DynamicVideoPlayer } from './DynamicComposition';
-export { StandalonePreviewComposition, StandaloneVideoPlayer } from './StandalonePreview';
+export { BlueprintComposition } from './core/BlueprintComposition';
+export { DynamicVideoPlayer } from './core/DynamicComposition';
+export { StandalonePreviewComposition, StandaloneVideoPlayer } from './core/StandalonePreview';
 
 // Utilities
-export { emptyCompositionBlueprint, ensureMinimumTracks } from './EmptyComposition';
-export { calculateBlueprintDuration, executeClipElement } from './executeClipElement';
-export { parseElementString, parsePropsFromString } from './stringElementParser';
-export { convertFlatToNested } from './flatElementConverter';
-export { COMPONENT_REGISTRY, getRemotionComponent } from './componentRegistry';
+export { emptyCompositionBlueprint, ensureMinimumTracks } from './utils/EmptyComposition';
+export { calculateBlueprintDuration, executeClipElement } from './execution/executeClipElement';
+export { parseElementString, parsePropsFromString } from './execution/stringElementParser';
+export { convertFlatToNested } from './execution/flatElementConverter';
+export { COMPONENT_REGISTRY, getRemotionComponent } from './execution/componentRegistry';
 
 // Text Animations
 export {

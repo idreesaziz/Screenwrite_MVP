@@ -3,8 +3,8 @@ import * as Remotion from "remotion";
 import { Player, type PlayerRef } from "@remotion/player";
 import { interp } from "~/lib/animations";
 import { BlueprintComposition } from "./BlueprintComposition";
-import { calculateBlueprintDuration } from "./executeClipElement";
-import type { CompositionBlueprint } from "./BlueprintTypes";
+import { calculateBlueprintDuration } from "../execution/executeClipElement";
+import type { CompositionBlueprint } from "../types/BlueprintTypes";
 import { Play, Pause, Maximize, Volume2, VolumeX } from "lucide-react";
 import { TransformOverlay } from "~/components/editor/canvas/TransformOverlay";
 

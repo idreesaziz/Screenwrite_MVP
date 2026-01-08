@@ -2,7 +2,7 @@
  * Utility to convert flat element list (with parentId references) to nested tree structure
  */
 
-import type { FlatElement, FlatElementContainer, ElementObject } from "./BlueprintTypes";
+import type { FlatElement, FlatElementContainer, ElementObject } from "../types/BlueprintTypes";
 
 /**
  * Convert flat element list to nested tree structure

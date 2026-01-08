@@ -1,4 +1,4 @@
-import type { Clip, CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { Clip, CompositionBlueprint } from "~/composition";
 
 /**
  * Transform values for a clip

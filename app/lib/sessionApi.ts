@@ -3,7 +3,7 @@
  */
 
 import { apiUrl } from "./api";
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint } from "~/composition";
 import type { MediaBinItem } from "~/components/editor/timeline/types";
 
 // Backend message format (role-based)

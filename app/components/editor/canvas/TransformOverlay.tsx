@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import type { CompositionBlueprint, Clip } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint, Clip } from "~/composition";
 import {
   getVisibleClips,
   calculateClipBounds,

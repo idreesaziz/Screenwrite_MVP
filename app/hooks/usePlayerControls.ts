@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type RefObject } from "react";
 import type { PlayerRef } from "@remotion/player";
-import type { CompositionBlueprint, Track, Clip } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint, Track, Clip } from "~/composition";
 
 interface PlayerControlsState {
   currentFrame: number;

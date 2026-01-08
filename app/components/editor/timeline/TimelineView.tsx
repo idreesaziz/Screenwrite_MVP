@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint } from "~/composition";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Button } from "~/components/ui/button";
 import { Scissors, Trash2, Undo2, Redo2 } from "lucide-react";

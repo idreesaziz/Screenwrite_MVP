@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from "react-router";
 import { FileImage, Settings, BetweenVerticalEnd } from "lucide-react";
 import { type MediaBinItem } from "~/components/editor/timeline/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint } from "~/composition";
 
 interface LeftPanelProps {
   mediaBinItems: MediaBinItem[];

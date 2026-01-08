@@ -4,8 +4,7 @@ import { ChevronLeft, LogOut, User } from "lucide-react";
 
 // Components
 import LeftPanel from "~/components/editor/layout/LeftPanel";
-import { DynamicVideoPlayer } from "~/composition/DynamicComposition";
-import { calculateBlueprintDuration } from "~/composition/executeClipElement";
+import { DynamicVideoPlayer, calculateBlueprintDuration } from "~/composition";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Input } from "~/components/ui/input";

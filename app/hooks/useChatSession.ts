@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useSession } from "./useSession";
 import type { ChatMessage, SessionListItem } from "~/lib/sessionApi";
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint } from "~/composition";
 import type { MediaBinItem } from "~/components/editor/timeline/types";
-import { emptyCompositionBlueprint } from "~/composition/EmptyComposition";
+import { emptyCompositionBlueprint } from "~/composition";
 
 export interface Message {
   id: string;

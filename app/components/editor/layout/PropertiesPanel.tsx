@@ -21,7 +21,7 @@ import {
   AlignJustify,
 } from "lucide-react";
 import { parseElementString } from "~/lib/transformUtils";
-import type { CompositionBlueprint, Clip } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint, Clip } from "~/composition";
 
 interface PropertiesPanelContext {
   selectedClipId: string | null;

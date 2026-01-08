@@ -17,7 +17,7 @@ import {
   type ChatMessage,
   type MissingFile,
 } from "~/lib/sessionApi";
-import type { CompositionBlueprint } from "~/composition/BlueprintTypes";
+import type { CompositionBlueprint } from "~/composition";
 import type { MediaBinItem } from "~/components/editor/timeline/types";
 
 interface UseSessionOptions {
