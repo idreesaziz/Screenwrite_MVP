@@ -23,9 +23,9 @@ export { StandalonePreviewComposition, StandaloneVideoPlayer } from './core/Stan
 // Utilities
 export { emptyCompositionBlueprint, ensureMinimumTracks } from './utils/EmptyComposition';
 export { calculateBlueprintDuration, executeClipElement } from './execution/executeClipElement';
-export { parseElementString, parsePropsFromString } from './execution/stringElementParser';
+export { parseStringElement, convertStringElementsToFlat, hasStringElements } from './execution/stringElementParser';
 export { convertFlatToNested } from './execution/flatElementConverter';
-export { COMPONENT_REGISTRY, getRemotionComponent } from './execution/componentRegistry';
+export { COMPONENT_REGISTRY, getComponent, getComponentSchema } from './execution/componentRegistry';
 
 // Text Animations
 export {
