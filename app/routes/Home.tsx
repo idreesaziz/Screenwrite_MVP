@@ -31,7 +31,7 @@ import { useUndoRedoShortcuts } from "~/hooks/useUndoRedo";
 
 // Types
 import type { MediaBinItem } from "~/components/editor/timeline/types";
-import type { AgentProvider, EditProvider } from "~/components/editor/chat/providerTypes";
+import type { AgentProvider, EditProvider } from "~/types/provider";
 
 const PREVIEW_SETTINGS = {
   width: 1920,

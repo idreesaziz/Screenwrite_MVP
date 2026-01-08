@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import type { AgentProvider, EditProvider } from "./providerTypes";
+import type { AgentProvider, EditProvider } from "~/types/provider";
 
 interface SettingsModalProps {
   isOpen: boolean;

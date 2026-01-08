@@ -1,6 +1,6 @@
 import React from "react";
 import { Bot, Sparkles, Code, Zap, DollarSign } from "lucide-react";
-import type { AgentProvider, EditProvider } from "./providerTypes";
+import type { AgentProvider, EditProvider } from "~/types/provider";
 
 interface ProviderPairing {
   id: string;

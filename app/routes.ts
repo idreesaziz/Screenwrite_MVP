@@ -9,8 +9,7 @@ export default [
         route("/", "routes/Home.tsx", [
             index("components/editor/timeline/MediaBin.tsx"),
             route("/properties", "components/editor/PropertiesPanel.tsx"),
-            route("/transitions", "components/editor/media/Transitions.tsx"),
-            route("/media-bin", "components/editor/redirects/mediaBinLoader.ts"),
+            route("/transitions", "components/editor/timeline/Transitions.tsx"),
         ]),
     ]),
     
