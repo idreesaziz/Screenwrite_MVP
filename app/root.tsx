@@ -10,8 +10,8 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { Toaster } from "./components/ui/sonner";
-import { ThemeProvider } from "./components/ui/ThemeProvider";
-import { AuthProvider } from "./components/auth/AuthProvider";
+import { ThemeProvider } from "./components/ui/theme-provider";
+import { AuthProvider } from "~/components/editor/auth/AuthProvider";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.png" },

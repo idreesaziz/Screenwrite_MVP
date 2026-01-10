@@ -1,0 +1,627 @@
+import React from "react";
+import { AbsoluteFill, Sequence, useVideoConfig, Easing } from "remotion";
+import { TransitionSeries, linearTiming, springTiming } from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
+import { slide } from "@remotion/transitions/slide";
+import { wipe } from "@remotion/transitions/wipe";
+import { flip } from "@remotion/transitions/flip";
+import { zoomIn, zoomOut, blur, glitch, clockWipe, iris } from "../presentations";
+import { interp } from "~/lib/animations";
+import type { 
+  CompositionBlueprint, 
+  Track, 
+  Clip,
+  BlueprintExecutionContext 
+} from "../types/BlueprintTypes";
+import { executeClipElement } from "../execution/executeClipElement";
+
+export interface BlueprintCompositionProps {
+  blueprint: CompositionBlueprint;
+  mediaLibrary?: Array<{
+    index: number;
+    mediaUrlLocal: string | null;
+    mediaUrlRemote: string;
+  }>;
+}
+
+/**
+ * Main blueprint composition renderer using proper Remotion TransitionSeries
+ * Implements the freeze technique for intuitive duration calculation
+ */
+export function BlueprintComposition({ blueprint, mediaLibrary }: BlueprintCompositionProps) {
+  const { fps, width, height } = useVideoConfig();
+  const videoConfig = { width, height };
+
+  // Create base execution context with helper functions
+  const createExecutionContext = (clipStartTime: number): BlueprintExecutionContext => ({
+    interp: (
+      timestamps: number[], 
+      values: number[], 
+      easing?: 'in' | 'out' | 'inOut' | 'linear'
+    ) => {
+      // Convert global timing to clip-relative timing
+      const localTimePoints = timestamps.map(t => t - clipStartTime);
+      
+      return interp(localTimePoints, values, easing || 'inOut');
+    },
+    inSeconds: (seconds: number): number => Math.round(seconds * fps),
+    sequenceStartTime: clipStartTime,
+    fps: fps,
+    mediaLibrary: mediaLibrary,
+  });
+
+  // Ensure we have valid tracks array
+  const validBlueprint = Array.isArray(blueprint) ? blueprint : [];
+
+  validBlueprint.forEach((track, i) => {
+    track.clips?.forEach(clip => {
+    });
+  });
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
+      {validBlueprint.map((track, trackIndex) => (
+        <TrackRenderer
+          key={`track-${trackIndex}-${track.clips.length}`}
+          track={track}
+          createExecutionContext={createExecutionContext}
+        />
+      ))}
+    </AbsoluteFill>
+  );
+}
+
+/**
+ * Intelligent track renderer that respects startTime/endTime while detecting adjacent clips for transitions
+ * - Non-adjacent clips: rendered with Sequence at their exact timing
+ * - Adjacent clips with transitions: grouped into TransitionSeries with freeze technique
+ */
+function TrackRenderer({ 
+  track, 
+  createExecutionContext 
+}: { 
+  track: Track; 
+  createExecutionContext: (clipStartTime: number) => BlueprintExecutionContext;
+}) {
+  const { fps, width, height } = useVideoConfig();
+  const videoConfig = { width, height };
+  
+  // Ensure track has clips array
+  const clips = track.clips || [];
+  
+  // Group clips into segments: either individual clips or transition groups
+  const segments = groupClipsIntoSegments(clips);
+  
+  return (
+    <AbsoluteFill>
+      {segments.map((segment, segmentIndex) => (
+        <SegmentRenderer
+          key={`segment-${segmentIndex}-${segment.clips.map(c => c.id).join('-')}`}
+          segment={segment}
+          createExecutionContext={createExecutionContext}
+          fps={fps}
+          videoConfig={videoConfig}
+        />
+      ))}
+    </AbsoluteFill>
+  );
+}
+
+/**
+ * Groups clips into segments based on adjacency and transitions
+ * Now handles orphaned transitions (transitionToNext/transitionFromPrevious without adjacent clips)
+ */
+function groupClipsIntoSegments(clips: Clip[]): ClipSegment[] {
+  const segments: ClipSegment[] = [];
+  let i = 0;
+  
+  
+  while (i < clips.length) {
+    const currentClip = clips[i];
+    
+    // Check for any transitions (including orphaned ones)
+    const hasOrphanedTransitionTo = currentClip.transitionToNext && (
+      i >= clips.length - 1 || 
+      Math.abs(currentClip.endTimeInSeconds - clips[i + 1].startTimeInSeconds) > 0.001
+    );
+    
+    const hasOrphanedTransitionFrom = currentClip.transitionFromPrevious && (
+      i === 0 || 
+      Math.abs(clips[i - 1].endTimeInSeconds - currentClip.startTimeInSeconds) > 0.001
+    );
+    
+    // Check if this clip starts a regular adjacent transition group
+    if (currentClip.transitionToNext && i < clips.length - 1) {
+      const nextClip = clips[i + 1];
+      const timeDiff = Math.abs(currentClip.endTimeInSeconds - nextClip.startTimeInSeconds);
+      // Check if clips are adjacent (current end time == next start time)
+      if (timeDiff < 0.001) {
+        // Start building a transition group
+        const transitionGroup: Clip[] = [currentClip];
+        let j = i + 1;
+        
+        // Add subsequent adjacent clips with transitions
+        while (j < clips.length) {
+          const clip = clips[j];
+          const prevClip = clips[j - 1];
+          
+          // Check adjacency
+          if (Math.abs(prevClip.endTimeInSeconds - clip.startTimeInSeconds) < 0.001) {
+            transitionGroup.push(clip);
+            // If this clip doesn't have a transition to next, or it's the last clip, stop
+            if (!clip.transitionToNext || j === clips.length - 1) {
+              break;
+            }
+            j++;
+          } else {
+            break;
+          }
+        }
+        
+        segments.push({
+          type: 'transition-group',
+          clips: transitionGroup,
+          startTime: currentClip.startTimeInSeconds,
+          hasOrphanedStart: false,
+          hasOrphanedEnd: false
+        });
+        
+        i = j + 1;
+      } else {
+        // Adjacent transition failed, check for orphaned transitions
+        if (hasOrphanedTransitionTo || hasOrphanedTransitionFrom) {
+          // This clip has orphaned transitions, needs TransitionSeries with empty divs
+          // For orphaned transitions, timing should be WITHIN clip boundaries, not outside
+          segments.push({
+            type: 'transition-group',
+            clips: [currentClip],
+            startTime: currentClip.startTimeInSeconds, // Keep within clip timing boundaries
+            hasOrphanedStart: !!hasOrphanedTransitionFrom,
+            hasOrphanedEnd: !!hasOrphanedTransitionTo
+          });
+        } else {
+          // No transitions, individual clip
+          segments.push({
+            type: 'individual',
+            clips: [currentClip],
+            startTime: currentClip.startTimeInSeconds,
+            hasOrphanedStart: false,
+            hasOrphanedEnd: false
+          });
+        }
+        i++;
+      }
+    } else if (hasOrphanedTransitionTo || hasOrphanedTransitionFrom) {
+      // This clip has orphaned transitions but no adjacent clips
+      segments.push({
+        type: 'transition-group',
+        clips: [currentClip],
+        startTime: currentClip.startTimeInSeconds, // Keep within clip timing boundaries for orphaned transitions
+        hasOrphanedStart: !!hasOrphanedTransitionFrom,
+        hasOrphanedEnd: !!hasOrphanedTransitionTo
+      });
+      i++;
+    } else {
+      // Individual clip (no transition)
+      segments.push({
+        type: 'individual',
+        clips: [currentClip],
+        startTime: currentClip.startTimeInSeconds,
+        hasOrphanedStart: false,
+        hasOrphanedEnd: false
+      });
+      i++;
+    }
+  }
+  
+  segments.forEach((segment, index) => {
+  });
+  
+  return segments;
+}
+
+type ClipSegment = {
+  type: 'individual' | 'transition-group';
+  clips: Clip[];
+  startTime: number;
+  hasOrphanedStart: boolean;
+  hasOrphanedEnd: boolean;
+};
+
+/**
+ * Renders a segment (either individual clip or transition group)
+ */
+function SegmentRenderer({
+  segment,
+  createExecutionContext,
+  fps,
+  videoConfig
+}: {
+  segment: ClipSegment;
+  createExecutionContext: (clipStartTime: number) => BlueprintExecutionContext;
+  fps: number;
+  videoConfig: { width: number; height: number };
+}) {
+  const startFrame = Math.round(segment.startTime * fps);
+  
+  // Only log once per segment, not every frame
+  if (startFrame === 0) {
+  }
+  
+  if (segment.type === 'individual') {
+    // Render single clip at its specified time
+    const clip = segment.clips[0];
+    const durationInFrames = Math.round(
+      (clip.endTimeInSeconds - clip.startTimeInSeconds) * fps
+    );
+    
+
+    // Create execution context for individual clips
+    const executionContext = createExecutionContext(clip.startTimeInSeconds);
+
+    return (
+      <Sequence
+        from={startFrame}
+        durationInFrames={durationInFrames}
+        layout="none"
+      >
+        <ClipContent clip={clip} executionContext={executionContext} />
+      </Sequence>
+    );
+  } else {
+    // Render transition group using TransitionSeries with support for orphaned transitions
+    const sequences: React.ReactElement[] = [];
+    let totalDurationFrames = 0;
+    
+    // Process clips (regular adjacent logic or single orphaned clip)
+    if (segment.clips.length === 1 && (segment.hasOrphanedStart || segment.hasOrphanedEnd)) {
+      if (startFrame === 0) {
+      }
+      // Single clip with orphaned transitions - use TransitionSeries with empty divs
+      const clip = segment.clips[0];
+      const clipDurationFrames = Math.round((clip.endTimeInSeconds - clip.startTimeInSeconds) * fps);
+      
+      // Calculate initial transition durations
+      let transitionFromDuration = segment.hasOrphanedStart && clip.transitionFromPrevious
+        ? Math.round(clip.transitionFromPrevious.durationInSeconds * fps)
+        : 0;
+      let transitionToDuration = segment.hasOrphanedEnd && clip.transitionToNext
+        ? Math.round(clip.transitionToNext.durationInSeconds * fps)
+        : 0;
+      
+      // Safeguard: Ensure orphaned transitions don't exceed clip duration
+      const totalTransitionDuration = transitionFromDuration + transitionToDuration;
+      if (totalTransitionDuration > clipDurationFrames) {
+        // Scale down transitions proportionally to fit within clip duration
+        const scaleFactor = Math.max(0.1, (clipDurationFrames * 0.9) / totalTransitionDuration); // Leave at least 10% for content
+        transitionFromDuration = Math.round(transitionFromDuration * scaleFactor);
+        transitionToDuration = Math.round(transitionToDuration * scaleFactor);
+        
+        console.warn(`🎬 Orphaned transitions too long for clip ${clip.id}: scaled down by ${(scaleFactor * 100).toFixed(1)}%`);
+        console.warn(`🎬 Original: ${transitionFromDuration / scaleFactor}+${transitionToDuration / scaleFactor} frames, Scaled: ${transitionFromDuration}+${transitionToDuration} frames`);
+      }
+      
+      // For orphaned transitions, keep within clip boundaries (don't extend duration)
+      // Total duration should equal the original clip duration
+      totalDurationFrames = clipDurationFrames;
+      
+      // For orphaned transitions, structure the sequence to keep transitions within clip duration
+      
+      if (segment.hasOrphanedStart && segment.hasOrphanedEnd) {
+        // Both transitions: content plays for full duration, transitions overlay
+        const contentDuration = clipDurationFrames; // Full clip duration for orphaned transitions
+        const executionContext = createExecutionContext(clip.startTimeInSeconds);
+        
+        // Empty sequence for fade in
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={transitionFromDuration}>
+            <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }} />
+          </TransitionSeries.Sequence>
+        );
+        
+        // Transition in
+        sequences.push(
+          <TransitionSeries.Transition
+            presentation={getTransitionPresentation(clip.transitionFromPrevious!, videoConfig)}
+            timing={linearTiming({ 
+              durationInFrames: transitionFromDuration,
+              easing: Easing.inOut(Easing.cubic)
+            })}
+          />
+        );
+        
+        // Main content (shortened to accommodate transitions)
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={contentDuration}>
+            <ClipContentWithFreeze 
+              clip={clip} 
+              executionContext={executionContext} 
+              freezeAfterFrames={contentDuration}
+              totalSequenceDuration={contentDuration}
+            />
+          </TransitionSeries.Sequence>
+        );
+        
+        // Transition out
+        sequences.push(
+          <TransitionSeries.Transition
+            presentation={getTransitionPresentation(clip.transitionToNext!, videoConfig)}
+            timing={linearTiming({ 
+              durationInFrames: transitionToDuration,
+              easing: Easing.inOut(Easing.cubic)
+            })}
+          />
+        );
+        
+        // Empty sequence for fade out
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={transitionToDuration}>
+            <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }} />
+          </TransitionSeries.Sequence>
+        );
+        
+      } else if (segment.hasOrphanedStart && clip.transitionFromPrevious) {
+        // Only fade in: content plays for full duration, transition overlays at start
+        const contentDuration = clipDurationFrames; // Full clip duration for orphaned transitions
+        const executionContext = createExecutionContext(clip.startTimeInSeconds);
+        
+        // Empty sequence for fade in
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={transitionFromDuration}>
+            <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }} />
+          </TransitionSeries.Sequence>
+        );
+        
+        // Transition in
+        sequences.push(
+          <TransitionSeries.Transition
+            presentation={getTransitionPresentation(clip.transitionFromPrevious, videoConfig)}
+            timing={linearTiming({ 
+              durationInFrames: transitionFromDuration,
+              easing: Easing.inOut(Easing.cubic)
+            })}
+          />
+        );
+        
+        // Main content (remaining duration)
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={contentDuration}>
+            <ClipContentWithFreeze 
+              clip={clip} 
+              executionContext={executionContext} 
+              freezeAfterFrames={contentDuration}
+              totalSequenceDuration={contentDuration}
+            />
+          </TransitionSeries.Sequence>
+        );
+        
+      } else if (segment.hasOrphanedEnd && clip.transitionToNext) {
+        // Only fade out: content plays for full duration, transition overlays at end
+        const contentDuration = clipDurationFrames; // Full clip duration for orphaned transitions
+        const executionContext = createExecutionContext(clip.startTimeInSeconds);
+        
+        // Main content (shortened for transition)
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={contentDuration}>
+            <ClipContentWithFreeze 
+              clip={clip} 
+              executionContext={executionContext} 
+              freezeAfterFrames={contentDuration}
+              totalSequenceDuration={contentDuration}
+            />
+          </TransitionSeries.Sequence>
+        );
+        
+        // Transition out
+        sequences.push(
+          <TransitionSeries.Transition
+            presentation={getTransitionPresentation(clip.transitionToNext, videoConfig)}
+            timing={linearTiming({ 
+              durationInFrames: transitionToDuration,
+              easing: Easing.inOut(Easing.cubic)
+            })}
+          />
+        );
+        
+        // Empty sequence for fade out
+        sequences.push(
+          <TransitionSeries.Sequence durationInFrames={transitionToDuration}>
+            <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }} />
+          </TransitionSeries.Sequence>
+        );
+      }
+    } else {
+      if (startFrame === 0) {
+      }
+      // Regular adjacent clips logic (existing code)
+      totalDurationFrames += calculateTransitionGroupDuration(segment.clips, fps);
+      
+      segment.clips.forEach((clip, index) => {
+        const clipDurationFrames = Math.round(
+          (clip.endTimeInSeconds - clip.startTimeInSeconds) * fps
+        );
+        
+        // Apply freeze technique: extend clip duration by transition duration
+        const hasTransitionToNext = clip.transitionToNext && index < segment.clips.length - 1;
+        const transitionDuration = hasTransitionToNext 
+          ? Math.round(clip.transitionToNext!.durationInSeconds * fps)
+          : 0;
+        
+        const sequenceDurationFrames = clipDurationFrames + transitionDuration;
+        
+        // Add the sequence with proper freeze technique
+        // Create execution context for TransitionSeries clips
+        const executionContext = createExecutionContext(clip.startTimeInSeconds);
+        sequences.push(
+          <TransitionSeries.Sequence 
+            durationInFrames={sequenceDurationFrames}
+          >
+            <ClipContentWithFreeze 
+              clip={clip} 
+              executionContext={executionContext} 
+              freezeAfterFrames={clipDurationFrames}
+              totalSequenceDuration={sequenceDurationFrames}
+            />
+          </TransitionSeries.Sequence>
+        );
+        
+        // Add transition if this clip has one and it's not the last clip
+        if (hasTransitionToNext) {
+          const presentation = getTransitionPresentation(clip.transitionToNext!, videoConfig);
+          if (startFrame === 0) {
+          }
+          sequences.push(
+            <TransitionSeries.Transition
+              presentation={presentation}
+              timing={linearTiming({ 
+                durationInFrames: transitionDuration,
+                easing: Easing.inOut(Easing.cubic)
+              })}
+            />
+          );
+        }
+      });
+    }
+    
+    return (
+      <Sequence
+        from={startFrame}
+        durationInFrames={totalDurationFrames}
+        layout="none"
+      >
+        <TransitionSeries>
+          {sequences}
+        </TransitionSeries>
+      </Sequence>
+    );
+  }
+}
+
+/**
+ * Calculate total duration for a transition group (intuitive timing)
+ */
+function calculateTransitionGroupDuration(clips: Clip[], fps: number): number {
+  if (clips.length === 0) return 0;
+  
+  const startTime = clips[0].startTimeInSeconds;
+  const endTime = clips[clips.length - 1].endTimeInSeconds;
+  return Math.round((endTime - startTime) * fps);
+}
+
+/**
+ * Helper function to get Remotion presentation from transition configuration
+ * New simplified system: direction encoded in type name
+ */
+function getTransitionPresentation(
+  transitionConfig: import('./BlueprintTypes').TransitionConfig,
+  videoConfig: { width: number; height: number }
+): any {
+  const { width, height } = videoConfig;
+  const { type } = transitionConfig;
+  
+  switch (type) {
+    case 'fade':
+      return fade({
+        shouldFadeOutExitingScene: true
+      });
+      
+    // Slide transitions
+    case 'slide-left':
+      return slide({ direction: 'from-left' });
+    case 'slide-right':
+      return slide({ direction: 'from-right' });
+    case 'slide-top':
+      return slide({ direction: 'from-top' });
+    case 'slide-bottom':
+      return slide({ direction: 'from-bottom' });
+      
+    // Wipe transitions
+    case 'wipe-left':
+      return wipe({ direction: 'from-left' });
+    case 'wipe-right':
+      return wipe({ direction: 'from-right' });
+    case 'wipe-top':
+      return wipe({ direction: 'from-top' });
+    case 'wipe-bottom':
+      return wipe({ direction: 'from-bottom' });
+    case 'wipe-top-left':
+      return wipe({ direction: 'from-top-left' });
+    case 'wipe-top-right':
+      return wipe({ direction: 'from-top-right' });
+    case 'wipe-bottom-left':
+      return wipe({ direction: 'from-bottom-left' });
+    case 'wipe-bottom-right':
+      return wipe({ direction: 'from-bottom-right' });
+      
+    // Flip transitions
+    case 'flip-left':
+      return flip({ direction: 'from-left', perspective: 1000 });
+    case 'flip-right':
+      return flip({ direction: 'from-right', perspective: 1000 });
+    case 'flip-top':
+      return flip({ direction: 'from-top', perspective: 1000 });
+    case 'flip-bottom':
+      return flip({ direction: 'from-bottom', perspective: 1000 });
+      
+    case 'clock-wipe':
+      return clockWipe({ width, height });
+      
+    case 'iris':
+      return iris({ width, height });
+      
+    // Custom transitions
+    case 'zoom-in':
+      return zoomIn({ width, height });
+    case 'zoom-out':
+      return zoomOut({ width, height });
+    case 'blur':
+      return blur({ width, height });
+    case 'glitch':
+      return glitch({ width, height });
+      
+    default:
+      return fade({ shouldFadeOutExitingScene: true });
+  }
+}
+
+
+
+/**
+ * Renders the actual content of a clip using executeClipElement
+ * This is used within TransitionSeries.Sequence components
+ */
+function ClipContent({ 
+  clip, 
+  executionContext 
+}: { 
+  clip: Clip; 
+  executionContext: BlueprintExecutionContext;
+}) {
+  // Execute the clip's element string as TSX
+  const clipElement = executeClipElement(clip.element, executionContext);
+  
+
+  return clipElement;
+}
+
+/**
+ * Renders clip content with proper freeze technique for TransitionSeries
+ * Video elements will naturally freeze on their last frame when the source ends
+ */
+function ClipContentWithFreeze({ 
+  clip, 
+  executionContext,
+  freezeAfterFrames,
+  totalSequenceDuration
+}: { 
+  clip: Clip; 
+  executionContext: BlueprintExecutionContext;
+  freezeAfterFrames: number;
+  totalSequenceDuration: number;
+}) {
+  // Simply execute the clip element - Remotion handles freeze behavior automatically
+  // when the video source ends (last frame remains visible)
+  return executeClipElement(clip.element, executionContext);
+}
+
+

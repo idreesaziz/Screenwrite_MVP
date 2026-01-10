@@ -2,19 +2,16 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
     // Public routes
-    route("/auth/sign-in", "routes/auth.sign-in.tsx"),
+    route("/auth/sign-in", "routes/SignIn.tsx"),
     
     // Protected routes (require authentication)
-    route("/", "components/auth/ProtectedRoute.tsx", [
-        route("/", "routes/home.tsx", [
-            index("components/timeline/MediaBin.tsx"),
-            route("/properties", "components/editor/PropertiesPanel.tsx"),
-            route("/transitions", "components/media/Transitions.tsx"),
-            route("/media-bin", "components/redirects/mediaBinLoader.ts"),
+    route("/", "components/editor/auth/ProtectedRoute.tsx", [
+        route("/", "routes/Home.tsx", [
+            index("components/editor/timeline/MediaBin.tsx"),
+            route("/properties", "components/editor/layout/PropertiesPanel.tsx"),
+            route("/transitions", "components/editor/timeline/Transitions.tsx"),
         ]),
-        route("/learn", "routes/learn.tsx"),
-        route("/test", "routes/test.tsx"),
     ]),
     
-    route("*", "./NotFound.tsx")
+    route("*", "routes/NotFound.tsx")
 ] satisfies RouteConfig;

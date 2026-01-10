@@ -16,9 +16,9 @@ import {
   type SessionListItem,
   type ChatMessage,
   type MissingFile,
-} from "../utils/sessionApi";
-import type { CompositionBlueprint } from "../video-compositions/BlueprintTypes";
-import type { MediaBinItem } from "../types/media";
+} from "~/lib/sessionApi";
+import type { CompositionBlueprint } from "~/composition";
+import type { MediaBinItem } from "~/components/editor/timeline/types";
 
 interface UseSessionOptions {
   getToken: () => Promise<string | null>;
@@ -176,12 +176,12 @@ export function useSession({
       setCurrentSessionId(session.id);
       
       // Convert backend messages to frontend format
-      const frontendMessages = (session.messages || []).map((msg, index) => 
+      const frontendMessages = (session.messages || []).map((msg: any, index: number) => 
         toFrontendMessage(msg, index)
       );
       
       // Convert backend media bin items to frontend format
-      const frontendMediaBin = (session.media_bin || []).map(item => 
+      const frontendMediaBin = (session.media_bin || []).map((item: any) => 
         toFrontendMediaBinItem(item)
       );
       
