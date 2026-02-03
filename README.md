@@ -1,12 +1,13 @@
 # Screenwrite
 
-Screenwrite is an AI‑assisted video editor that blends a timeline UI with a programmable composition engine. It translates natural‑language edits into a structured Remotion blueprint, then renders clips, transitions, and animated text deterministically. The goal is to make advanced video workflows reproducible, editable, and inspectable as code.
+Screenwrite is an AI‑assisted video editor that turns natural‑language requests into concrete timeline edits. It converts user intent into a structured composition blueprint and renders clips, transitions, and animated text deterministically. The goal is to make advanced video editing fast, repeatable, and reliable.
 
 ## Highlights
-- **Blueprint composition engine** with track/clip models, adjacency‑aware transitions, and orphaned transition handling.
-- **Element DSL + renderer**: string‑based elements parsed into flat → nested trees and rendered through a typed component registry.
+- **Natural‑language editing** that updates timeline clips, text, and transitions based on intent.
+- **Composition blueprint engine** with track/clip models, adjacency‑aware transitions, and orphaned transition handling.
+- **Element renderer**: string‑based elements parsed into flat → nested trees and rendered through a typed component registry.
 - **Animation system**: `@animate[...]` keyframes supporting numeric, color, and complex CSS transform interpolation.
-- **AI composition pipeline**: structured JSON output, overlap resolution, and aspect‑ratio safeguards before the editor consumes results.
+- **AI orchestration** with structured JSON output, overlap resolution, and aspect‑ratio safeguards.
 - **Provider‑agnostic backend**: Gemini/Claude/OpenAI chat providers wired behind a shared `ChatProvider` interface.
 
 ## Tech Stack
@@ -96,7 +97,7 @@ backend/              # FastAPI services
 
 # System Architecture
 
-Screenwrite is split into a **deterministic render core** and an **AI orchestration layer**, with a thin UI shell for editing and inspection.
+Screenwrite is split into a **deterministic render core** and an **AI orchestration layer**, with a UI shell for editing and inspection.
 
 ## 1) Frontend (React Router + Remotion)
 - **Editor shell** (`app/routes/Home.tsx`) manages layout, state, and tool orchestration.
